@@ -25,26 +25,28 @@ component serializable="false" accessors="true"{
 	// Bit that determines if we are class loading or not
 	property name="useClassloader";
 	// Bit that determines if the sdk ignores couchbase timeouts
-	property name="ignoreCouchbaseTimeouts";
+	property name="ignoreTimeouts";
 
 	/**
 	* Constructor
 	* Get a CouchbaseClient based on the initial server list provided. This constructor should be used if the bucket name is the same as the username 
 	* (which is normally the case). If your bucket does not have a password (likely the "default" bucket), use an empty string instead. This method is only a 
 	* convenience method so you don't have to create a CouchbaseConnectionFactory for yourself.
-	* @baselist.hint the URI or URI array or list of one or more servers from the cluster
-	* @bucketname.hint the bucket name in the cluster you wish to use
-	* @pwd.hint the password for the bucket
-	* @cf.hint the ConnectionFactory to use to create connections
+	* @serverList.hint The URI or URI array or list of one or more servers from the cluster
+	* @bucketname.hint The bucket name in the cluster you wish to use
+	* @password.hint The password for the bucket
+	* @connectionFactory.hint The ConnectionFactory to use to create connections
 	* @useClassLoader.hint By default we class load all required java libraries, if you set this to false, that means the lib folder of this SDK will be added to the servlet container's lib path manually.
+	* @ignoreTimeouts.hint Bit that determines if we should ignore Couchbase connection timeouts or throw exceptions, default is to ignore.
 	*/
 	CouchbaseClient function init( 
-		any baseList="http://127.0.0.1:8091/pools", 
+		any serverList="http://127.0.0.1:8091/pools", 
 		string bucketName="default",
-		string pwd="",
-		CouchbaseConnectionFactory cf,
+		string password="",
+		CouchbaseConnectionFactory connectionFactory,
+		CouchbaseConfig couchbaseConfig,
 		boolean useClassloader=true,
-		boolean ignoreCouchbaseTimeouts=true
+		boolean ignoreTimeouts=true
 	){
 
 		/****************** Setup SDK dependencies & properties ******************/
@@ -68,7 +70,7 @@ component serializable="false" accessors="true"{
 		// Loading via JavaLoder?
 		variables.useClassLoader = arguments.useClassloader;
 		// Timeout bits
-		variables.ignoreCouchbaseTimeouts = arguments.ignoreCouchbaseTimeouts;
+		variables.ignoreTimeouts = arguments.ignoreTimeouts;
 		
 		/****************** Load up the SDK ******************/
 		// Load up javaLoader with Couchbase SDK
@@ -76,20 +78,20 @@ component serializable="false" accessors="true"{
 			loadSDK();
 
 		// Do we have a connection factory?
-		if( structKeyExists( arguments, "cf" ) ){
-			variables.couchbaseClient = getJava( "com.couchbase.client.CouchbaseClient" ).init( arguments.cf );
+		if( structKeyExists( arguments, "connectionFactory" ) ){
+			variables.couchbaseClient = getJava( "com.couchbase.client.CouchbaseClient" ).init( arguments.connectionFactory );
 		} 
 		// else load couchbase client with incoming server list
 		else{
-			var serverURIs = variables.util.buildServerURIs( arguments.baseList );
+			var serverURIs = variables.util.buildServerURIs( arguments.serverList );
 			variables.couchbaseClient = getJava( "com.couchbase.client.CouchbaseClient" )
-				.init( serverURIs, arguments.bucketName, arguments.pwd );
+				.init( serverURIs, arguments.bucketName, arguments.password );
 		}
 
 		// LOAD ENUMS
 		this.persistTo 		= getJava( "net.spy.memcached.PersistTo" );
 		this.replicateTo 	= getJava( "net.spy.memcached.ReplicateTo" );
-		
+
 		return this;
 	}
 
@@ -107,35 +109,30 @@ component serializable="false" accessors="true"{
 		required string key, 
 		required any value, 
 		numeric exp=0, 
-		persistTo, 
-		replicateTo 
+		numeric persistTo, 
+		numeric replicateTo
 	){
 
 		// serialization determinations go here
 
 		// store it
 		try{
-			var future = "";
+
+			// default persist and replicate
+			if( !structKeyExists( arguments, "persistTo" ) ){ arguments.persistTo = this.persistTo.MASTER; }
+			if( !structKeyExists( arguments, "replicateTo" ) ){ arguments.replicateTo = this.replicateTo.ZERO; }
 
 			// with replicate and persist
-			if( structKeyExists( arguments, "persistTo") && structKeyExists( arguments, "replicateTo") ){
-				future = variables.couchbaseClient.set( arguments.key, 
+			var future = variables.couchbaseClient.set( arguments.key, 
 														javaCast( "int", arguments.exp*60 ), 
 														arguments.value, 
 														arguments.persistTo, 
 														arguments.replicateTo );
-			}
-			// basic storage
-			else{
-				future = variables.couchbaseClient.set( arguments.key, 
-														javaCast( "int", arguments.exp*60 ), 
-														arguments.value );
-			}
 
 			return future;
 		}
 		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.ignoreCouchbaseTimeouts ) {
+			if( variables.util.isTimeoutException( e ) && variables.ignoreTimeouts ) {
 				// returns void
 				return;
 			}
@@ -159,7 +156,7 @@ component serializable="false" accessors="true"{
 			}
 		}
 		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.ignoreCouchbaseTimeouts ) {
+			if( variables.util.isTimeoutException( e ) && variables.ignoreTimeouts ) {
 				// returns void
 				return;
 			}

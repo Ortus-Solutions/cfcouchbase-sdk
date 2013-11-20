@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== 
+Build a new distribution of CFCouchbase SDK
+====================================================================== -->
+<project name="couchbase-sdk-build" default="deploy">
+    <description>
+    	Build a new distribution of CFCouchbase SDK
+    </description>
+    
+	<!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
+	<property name="sdk.version"	value="1.0.0"/>
+	    
+	<!-- Build Labels -->
+	<tstamp prefix="start"/>
+	
+	<!-- Init -->
+    <target name="init">	
+    	<!-- Default environment check, if not passed via -Denvironment -->
+    	<condition property="environment" value="local">
+    		<not><isset property="environment" /></not>
+    	</condition>
+    	<echo>Loading from environment: ${environment}</echo>
+    	
+    	<!-- Load env properties -->
+    	<loadproperties srcFile="build-${environment}.properties"/>
+
+    	<!-- Build Number -->
+		<propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
+			<entry key="build.number" 
+					type="int" 
+			     	operation="+"
+					pattern="00000"
+			     	default="1" />
+		</propertyfile>
+		<property file="build.number"/>
+    	<property name="build.label" value="cfcouchbase-sdk-v${databoss.version}.${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
+    </target>  
+	
+	<!-- Deploy -->
+	<target name="deploy" depends="init">
+		<!-- Deploy Standalone Version -->
+		<antcall target="deployStandalone" />
+		<!--Cleanup -->
+		<antcall target="cleanup"></antcall>
+	</target>
+	
+	<!--deployStandalone-->
+    <target name="deployStandalone">
+        <echo>Starting to deploy Standalone</echo>
+    	
+    	<!-- Create Build -->
+    	<mkdir dir="${dir.build}"/>
+    	    	
+    	<!-- Deploy common -->
+    	<antcall target="deployCommon"></antcall>
+    	    	
+    	<!-- zip it -->
+    	<zip destfile="${dir.dist}/cfcouchbase_v{databoss.version}.zip" basedir="${dir.build}" />
+    	
+    </target>
+	
+    <!--Cleanup-->
+    <target name="cleanup">
+        <delete dir="${dir.build}" />
+        <echo>Cleanup Complete.</echo>
+    </target>
+	
+</project>

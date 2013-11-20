@@ -44,7 +44,6 @@ component serializable="false" accessors="true"{
 		string bucketName="default",
 		string password="",
 		CouchbaseConnectionFactory connectionFactory,
-		CouchbaseConfig couchbaseConfig,
 		boolean useClassloader=true,
 		boolean ignoreTimeouts=true
 	){

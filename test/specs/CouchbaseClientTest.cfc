@@ -22,7 +22,7 @@ component{
 				expect(	couchbase ).toBeComponent();
 			});
 
-			describe( "set operation", function(){
+			describe( "set operations", function(){
 				it( "with just key and value", function(){
 					var future = couchbase.set( key="unittest", value="hello" );
 					while( !future.isDone() ){
@@ -32,7 +32,7 @@ component{
 				});			
 			});
 
-			describe( "get operation", function(){
+			describe( "get operations", function(){
 				it( "of a valid object ", function(){
 					var data = now();
 					var future = couchbase.set( key="unittest", value=data );

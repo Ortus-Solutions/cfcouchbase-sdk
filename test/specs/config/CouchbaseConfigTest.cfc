@@ -27,60 +27,31 @@ component{
 /*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
-		couchbase = new cfcouchbase.CouchbaseClient();
 	}
 
 	function afterAll(){
-		couchbase.shutdown();
 	}
 
 /*********************************** BDD SUITES ***********************************/
 
 	function run(){
-		describe( "Couchbase Client", function(){
+		describe( "Couchbase Config", function(){
 
-			describe( "can be constructed ", function(){
-				
-				it( "with vanilla settings", function(){
-					expect(	couchbase ).toBeComponent();
-				});
-
-				it( "with config struct literal", function(){
-					expect(	new cfcouchbase.CouchbaseClient( {servers="http://127.0.0.1:8091", bucketname="default"} ) ).toBeComponent();
-				});
-
-				it( "with config object instance", function(){
-					var config = new cfcouchbase.config.CouchbaseConfig( bucketname="luis", viewTimeout="1000" );
-					expect(	new cfcouchbase.CouchbaseClient( config ) ).toBeComponent();
-				});
-
-				it( "with config object path", function(){
-					expect(	new cfcouchbase.CouchbaseClient( config="test.resources.Config" ) ).toBeComponent();
-				});
-			
-			});
-			
-
-			describe( "set operations", function(){
-				it( "with just key and value", function(){
-					var future = couchbase.set( key="unittest", value="hello" );
-					while( !future.isDone() ){
-						// wait for it to finish.
-					}	
-					expect(	future.getStatus().isSuccess() ).toBeTrue();
-				});			
+			beforeEach(function(){
+				config = new cfcouchbase.config.CouchbaseConfig();
 			});
 
+			it( "inits correctly", function(){
+				data = config.getMemento();
+				expect(	data ).toBeStruct();
+				expect( data.servers ).toBe( "http://127.0.0.1:8091" );
+			});
 
-			describe( "get operations", function(){
-				it( "of a valid object ", function(){
-					var data = now();
-					var future = couchbase.set( key="unittest", value=data );
-					while( !future.isDone() ){
-						// wait for it to finish.
-					}	
-					expect(	couchbase.get( "unittest" ) ).toBe( data );
-				});			
+			it( "inits with name-value pairs", function(){
+				config.init( bucketname="test", password="bogus", obsPollMax=50 );
+				expect(	config.getBucketname() ).toBe( 'test' );
+				expect(	config.getPassword() ).toBe( 'bogus' );
+				expect(	config.getobsPollMax() ).toBe( '50' );
 			});
 		
 		});

@@ -62,8 +62,8 @@ component{
 			
 
 			describe( "set operations", function(){
-				it( "with just key and value", function(){
-					var future = couchbase.set( key="unittest", value="hello" );
+				it( "with just ID and value", function(){
+					var future = couchbase.set( ID="unittest", value="hello" );
 					while( !future.isDone() ){
 						// wait for it to finish.
 					}	
@@ -72,7 +72,7 @@ component{
 
 				it( "with json data", function(){
 					var data = serializeJSON( { "name"="Lui", "awesome"=true, "when"=now(), "children" = [1,2] } );
-					var future = couchbase.set( key="unittest-json", value=data );
+					var future = couchbase.set( ID="unittest-json", value=data );
 					while( !future.isDone() ){
 						// wait for it to finish.
 					}		
@@ -107,10 +107,25 @@ component{
 			});
 
 
+			describe( "replace operations", function(){
+				it( "will replace a document", function(){
+					var future = couchbase.set( ID="replaceMe", value="whatever", timeout=1 );
+					future.get();
+					var future = couchbase.replace( ID="replaceMe", value="new value", timeout=1 );
+					
+					//expect(	future.get() ).toBe( true );
+					
+					var future = couchbase.replace( ID=createUUID(), value="Not gonna' exist", timeout=1 );
+																				
+					//expect(	future.get() ).toBe( false );
+				});			
+			});
+
+
 			describe( "get operations", function(){
 				it( "of a valid object", function(){
 					var data = now();
-					var future = couchbase.set( key="unittest", value=data );
+					var future = couchbase.set( ID="unittest", value=data );
 					while( !future.isDone() ){
 						// wait for it to finish.
 					}	
@@ -122,13 +137,13 @@ component{
 			describe( "add operations", function(){
 				it( "will only add once", function(){
 					var data = now();
-					var randKey = createUUID();
-					var future = couchbase.add( key=randKey, value=data, timeout=1 );
+					var randID = createUUID();
+					var future = couchbase.add( ID=randID, value=data, timeout=1 );
 					
 					expect(	future.get() ).toBe( true );
-					expect(	couchbase.get( randKey ) ).toBe( data );
+					expect(	couchbase.get( randID ) ).toBe( data );
 					
-					var future = couchbase.add( key=randKey, value=data, timeout=1 );
+					var future = couchbase.add( ID=randID, value=data, timeout=1 );
 										
 					expect(	future.get() ).toBe( false );
 				});			

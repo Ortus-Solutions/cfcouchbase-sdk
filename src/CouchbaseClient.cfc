@@ -106,11 +106,11 @@ component serializable="false" accessors="true"{
 	* To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc. 
 	* A PersistTo.TWO durability setting implies a replication to at least one node.
 	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
-	* @key.hint
-	* @value.hint
+	* @key.hint The unique id of the document to store
+	* @value.hint The value to store
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint
-	* @replicateTo.hint
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Default is 0.
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Default is 0.
 	*/ 
 	any function set( 
 		required string key, 
@@ -155,8 +155,8 @@ component serializable="false" accessors="true"{
 	* @key.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint
-	* @replicateTo.hint
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Default is 0.
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Default is 0.
 	*/ 
 	any function add( 
 		required string key, 
@@ -204,8 +204,8 @@ component serializable="false" accessors="true"{
 	* This function returns a struct of keys with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
 	* @timeout.hint The expiration of the documents in minutes.
-	* @persistTo.hint
-	* @replicateTo.hint
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Default is 0.
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Default is 0.
 	*/ 
 	any function setMulti( 
 		required struct data,
@@ -216,7 +216,11 @@ component serializable="false" accessors="true"{
 		
 		var results = {};
 		var key = '';
+		
+		// Loop over incoming key/value pairs
 		for( local.key in arguments.data ) {
+			
+			// Set each one
 			var future = set(
 				local.key,
 				arguments.data[local.key],
@@ -224,16 +228,19 @@ component serializable="false" accessors="true"{
 				arguments.persistTo, 
 				arguments.replicateTo
 			);
+			
+			// Insert the future object into our result object
 			results[local.key] = future;
 		}
 	
+		// Return the struct of futures.
 		return results;
 	}
 	
 	
 	/**
 	* Get an object from couchbase, returns null if not found.
-	* @key
+	* @key The ID of the document to retrieve.
 	*/
 	any function get( required string key ){
 		try {

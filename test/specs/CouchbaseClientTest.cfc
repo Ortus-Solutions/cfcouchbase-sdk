@@ -91,6 +91,20 @@ component{
 					expect(	couchbase.get( "unittest" ) ).toBe( data );
 				});			
 			});
+
+
+			describe( "add operations", function(){
+				it( "of a valid object ", function(){
+					var data = now();
+					var randKey = createUUID();
+					var future = couchbase.add( key=randKey, value=data, exp=1 );
+					while( !future.isDone() ){
+						// wait for it to finish.
+					}	
+					expect(	couchbase.get( "randKey" ) ).toBe( data );
+					couchbase.add( key=randKey, value=data, exp=1 );
+				});			
+			});
 		
 		});
 	}

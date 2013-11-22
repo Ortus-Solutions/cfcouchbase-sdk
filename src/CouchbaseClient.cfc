@@ -146,6 +146,51 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
+	* Set a value with durability options. This is a shorthand method so that you only need to provide a PersistTo value if you don't care if the value is already replicated. 
+	* A PersistTo.TWO durability setting implies a replication to at least one node.
+	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
+	* @key.hint
+	* @value.hint
+	* @exp.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @persistTo.hint
+	* @replciateTo.hint
+	*/ 
+	any function add( 
+		required string key, 
+		required any value, 
+		numeric timeout=0, 
+		numeric persistTo, 
+		numeric replicateTo
+	){
+
+		// serialization determinations go here
+
+		// store it
+		try{
+
+			// default persist and replicate
+			if( !structKeyExists( arguments, "persistTo" ) ){ arguments.persistTo = this.persistTo.MASTER; }
+			if( !structKeyExists( arguments, "replicateTo" ) ){ arguments.replicateTo = this.replicateTo.ZERO; }
+
+			// with replicate and persist
+			var future = variables.couchbaseClient.add( arguments.key, 
+														javaCast( "int", arguments.timeout*60 ), 
+														arguments.value, 
+														arguments.persistTo, 
+														arguments.replicateTo );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+	/**
 	* Get an object from couchbase, returns null if not found.
 	* @key
 	*/

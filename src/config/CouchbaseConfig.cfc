@@ -30,19 +30,61 @@ component accessors="true"{
 	// Coucbhase Configuration Properties
 	//****************************************************************************************
 
+	/**
+	* The list of servers to connect to
+	*/
 	property name="servers"						default="http://127.0.0.1:8091";
+	/**
+	* The bucketname to connect to
+	*/
 	property name="bucketName"					default="default";
+	/**
+	* The optional password of the bucket
+	*/
 	property name="password"					default="";
+	/**
+	* Time in millisecs for an operation to Timeout
+	*/
 	property name="opTimeout"					default="2500"		type="numeric";	
+	/**
+	* The maximum time to block waiting for op queue operations to complete, in milliseconds.	
+	*/
 	property name="opQueueMaxBlockTime"			default="10000"		type="numeric";
+	/**
+	* Number of operations to timeout before the node is deemed down	
+	*/
 	property name="timeoutExceptionThreshold"	default="998"		type="numeric";
+	/**
+	* Read Buffer Size	
+	*/
 	property name="readBufferSize"				default="16384"		type="numeric";
+	/**
+	* Optimize behavior for the network	
+	*/
 	property name="shouldOptimize"				default="false" 	type="boolean";
+	/**
+	* Maximum number of milliseconds to wait between reconnect attempts.	
+	*/
 	property name="maxReconnectDelay"			default="30000"		type="numeric";
+	/**
+	* Wait for the specified interval before the Observe operation polls the nodes.	
+	*/
 	property name="obsPollInterval"				default="400"		type="numeric";
+	/**
+	* The maximum times to poll the master and replica(s) to meet the desired durability requirements.	
+	*/
 	property name="obsPollMax"					default="10"		type="numeric";
+	/**
+	* Time in millisecs for a view operation to Timeout
+	*/
 	property name="viewTimeout"					default="75000"		type="numeric";
+	/**
+	* Ignore Couchbase timeouts on operations, if false, then exceptions are thrown
+	*/
 	property name="ignoreTimeouts"				default="true"		type="boolean";
+	/**
+	* By default we class load all the Couchbase SDK, if false, then the SDK library must be in the servlet library path
+	*/
 	property name="useClassLoader"				default="true"		type="boolean";
 
 	// Default params, just in case using cf9

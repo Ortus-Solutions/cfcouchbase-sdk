@@ -73,7 +73,7 @@ component serializable="false" accessors="true"{
 		// lib path
 		variables.libPath = getDirectoryFromPath( getMetadata( this ).path ) & "lib";
 		// setup class loader ID
-		variables.javaLoaderID = "cfcouchbase-#variables.version#-loader-#variables.libID#";
+		variables.javaLoaderID = "cfcouchbase-#variables.version#-classloader";
 		// our UUID creation helper
 		variables.UUIDHelper = createobject("java", "java.util.UUID");
 		// Java Time Units

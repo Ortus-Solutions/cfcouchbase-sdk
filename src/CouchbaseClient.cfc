@@ -147,7 +147,7 @@ component serializable="false" accessors="true"{
 			rethrow;
 		}
 	}
-
+	
 	/**
 	* This method is the same as Set(), except the future that is returned will return true if the key being set doesn't already exist.  
 	* The future will return false if the item being set does already exist.  It will not throw an error if the key already exists, you must check the future. 
@@ -193,6 +193,44 @@ component serializable="false" accessors="true"{
 			rethrow;
 		}
 	}
+	
+	
+	
+	
+	
+	/**
+	* Set multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the keys of the struct are the document IDs.
+	* The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
+	* This function returns a struct of keys with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
+	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
+	* @timeout.hint The expiration of the documents in minutes.
+	* @persistTo.hint
+	* @replicateTo.hint
+	*/ 
+	any function setMulti( 
+		required struct data,
+		numeric timeout=0, 
+		numeric persistTo, 
+		numeric replicateTo
+	){
+		
+		var results = {};
+		var key = '';
+		for( local.key in arguments.data ) {
+			var future = set(
+				local.key,
+				arguments.data[local.key],
+				arguments.timeout,
+				arguments.persistTo, 
+				arguments.replicateTo
+			);
+			results[local.key] = future;
+		}
+	
+		return results;
+	}
+	
+	
 	/**
 	* Get an object from couchbase, returns null if not found.
 	* @key

@@ -1,5 +1,4 @@
 /**
-********************************************************************************
 * Copyright Since 2005 Ortus Solutions, Corp
 * www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org
 *
@@ -109,15 +108,15 @@ component serializable="false" accessors="true"{
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Default is 0.
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Default is 0.
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
 	*/ 
 	any function set( 
 		required string ID, 
 		required any value, 
 		numeric timeout=0, 
-		numeric persistTo, 
-		numeric replicateTo
+		any persistTo, 
+		any replicateTo
 	){
 
 		// serialization determinations go here
@@ -126,9 +125,8 @@ component serializable="false" accessors="true"{
 		try{
 
 			// default persist and replicate
-			if( !structKeyExists( arguments, "persistTo" ) ){ arguments.persistTo = this.persistTo.MASTER; }
-			if( !structKeyExists( arguments, "replicateTo" ) ){ arguments.replicateTo = this.replicateTo.ZERO; }
-
+			defaultPersistReplicate( arguments );
+			
 			// with replicate and persist
 			var future = variables.couchbaseClient.set( arguments.ID, 
 														javaCast( "int", arguments.timeout*60 ), 
@@ -155,15 +153,15 @@ component serializable="false" accessors="true"{
 	* @ID.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Default is 0.
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Default is 0.
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
 	*/ 
 	any function add( 
 		required string ID, 
 		required any value, 
 		numeric timeout=0, 
-		numeric persistTo, 
-		numeric replicateTo
+		any persistTo, 
+		any replicateTo
 	){
 
 		// serialization determinations go here
@@ -172,9 +170,8 @@ component serializable="false" accessors="true"{
 		try{
 
 			// default persist and replicate
-			if( !structKeyExists( arguments, "persistTo" ) ){ arguments.persistTo = this.persistTo.MASTER; }
-			if( !structKeyExists( arguments, "replicateTo" ) ){ arguments.replicateTo = this.replicateTo.ZERO; }
-
+			defaultPersistReplicate( arguments );
+			
 			// with replicate and persist
 			var future = variables.couchbaseClient.add( arguments.ID, 
 														javaCast( "int", arguments.timeout*60 ), 
@@ -204,33 +201,35 @@ component serializable="false" accessors="true"{
 	* This function returns a struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
 	* @timeout.hint The expiration of the documents in minutes.
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Default is 0.
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Default is 0.
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
 	*/ 
 	any function setMulti( 
 		required struct data,
 		numeric timeout=0, 
-		numeric persistTo, 
-		numeric replicateTo
+		any persistTo, 
+		any replicateTo
 	){
 		
 		var results = {};
-		var ID = '';
 		
+		// default persist and replicate
+		defaultPersistReplicate( arguments );
+
 		// Loop over incoming key/value pairs
-		for( local.ID in arguments.data ) {
+		for( var local.ID in arguments.data ) {
 			
 			// Set each one
 			var future = set(
-				local.ID,
-				arguments.data[local.ID],
-				arguments.timeout,
-				arguments.persistTo, 
-				arguments.replicateTo
+				id=local.ID,
+				value=arguments.data[ local.ID ],
+				timeout=arguments.timeout,
+				persistTo=arguments.persistTo, 
+				replicateTo=arguments.replicateTo
 			);
 			
 			// Insert the future object into our result object
-			results[local.ID] = future;
+			results[ local.ID ] = future;
 		}
 	
 		// Return the struct of futures.
@@ -418,5 +417,18 @@ component serializable="false" accessors="true"{
 			throw( message='Error Loading Couchbase Client Jars: #e.message# #e.detail#', detail=e.stacktrace );
 		}
 	}
+
+	/**
+	* Default persist and replicate from arguments
+	*/
+	private CouchbaseClient function defaultPersistReplicate( required args ) {
+
+		if( !structKeyExists( args, "persistTo" ) ){ args.persistTo = this.persistTo.ZERO; }
+		if( !structKeyExists( args, "replicateTo" ) ){ args.replicateTo = this.replicateTo.ZERO; }
+
+		return this;
+	}
+	
+	
 
 }

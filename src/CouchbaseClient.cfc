@@ -26,46 +26,42 @@
 */
 component serializable="false" accessors="true"{
 
-	// Location of the library SDK
-	property name="libPath";
-	// The unique ID of the class loader
-	property name="javaLoaderID";
-	// The version of this library
+	/**
+	* The version of this library
+	*/
 	property name="version";
-	// The version of the Couchbase SDK
+	/** 
+	* The version of the Couchbase SDK
+	*/
 	property name="SDKVersion";
-	// The unique ID of this SDK
+	/**
+	* The unique ID of this SDK
+	*/
 	property name="libID";
-	// The UUID Helper
+	/**
+	* The UUID Helper
+	*/
 	property name="uuidHelper";
-	// The java CouchbaseClient object
+	/** 
+	* The java CouchbaseClient object
+	*/
 	property name="couchbaseClient";
-	// The SDK utility class
-	property name="util";
-	// Bit that determines if we are class loading or not
-	property name="useClassloader";
-	// Bit that determines if the sdk ignores couchbase timeouts
-	property name="ignoreTimeouts";
-	// The couchbase configuration object
+	/**
+	*The couchbase configuration object
+	*/
 	property name="couchbaseConfig";
-
+	/**
+	* The SDK utility class
+	*/
+	property name="util";
+	
 	/**
 	* Constructor
-	* Get a CouchbaseClient based on the initial server list provided. This constructor should be used if the bucket name is the same as the username 
-	* (which is normally the case). If your bucket does not have a password (likely the "default" bucket), use an empty string instead. This method is only a 
-	* convenience method so you don't have to create a CouchbaseConnectionFactory for yourself.
-	* @config.hint The configuration structure or a configuration object or path to a configuration object for a connection. Valid struct elements are: servers, bucketName, password
-	* @bucketname.hint The bucket name in the cluster you wish to use
-	* @password.hint The password for the bucket
-	* @connectionFactory.hint The ConnectionFactory to use to create connections
-	* @useClassLoader.hint By default we class load all required java libraries, if you set this to false, that means the lib folder of this SDK will be added to the servlet container's lib path manually.
-	* @ignoreTimeouts.hint Bit that determines if we should ignore Couchbase connection timeouts or throw exceptions, default is to ignore.
+	* This creates a connection to a Couchbase server using the passed in config argument, which can be a struct literal of options, a path to a config object
+	* or an instance of a cfcouchbase.config.CouchbaseConfig object.  For all the possible config settings, look at the CouchbaseConfig object.
+	* @config.hint The configuration structure, config object or path to a config object.
 	*/
-	CouchbaseClient function init( 
-		any config={},
-		boolean useClassloader=true,
-		boolean ignoreTimeouts=true
-	){
+	CouchbaseClient function init( any config={} ){
 
 		/****************** Setup SDK dependencies & properties ******************/
 
@@ -80,30 +76,21 @@ component serializable="false" accessors="true"{
 		variables.javaLoaderID = "cfcouchbase-#variables.version#-loader-#variables.libID#";
 		// our UUID creation helper
 		variables.UUIDHelper = createobject("java", "java.util.UUID");
-		// Java URI class
-		variables.URIClass	= createObject("java", "java.net.URI");
 		// Java Time Units
 		variables.timeUnitClass = createObject("java", "java.util.concurrent.TimeUnit");
 		// SDK Utility class
 		variables.util = new util.Utility();
-		// Loading via JavaLoder?
-		variables.useClassLoader = arguments.useClassloader;
-		// Timeout bits
-		variables.ignoreTimeouts = arguments.ignoreTimeouts;
-		
-		/****************** Load up the SDK ******************/
+		// validate configuration
+		variables.couchbaseConfig = validateConfig( arguments.config );
 
 		// Load up javaLoader with Couchbase SDK
-		if( variables.useClassloader )
+		if( variables.couchbaseConfig.getUseClassloader() )
 			loadSDK();
 
 		// LOAD ENUMS
 		this.persistTo 		= getJava( "net.spy.memcached.PersistTo" );
 		this.replicateTo 	= getJava( "net.spy.memcached.ReplicateTo" );
-
-		// validate configuration
-		variables.couchbaseConfig = validateConfig( arguments.config );
-
+		
 		// Build the connection factory and client
 		variables.couchbaseClient = buildCouchbaseClient( variables.couchbaseConfig );
 
@@ -147,7 +134,7 @@ component serializable="false" accessors="true"{
 			return future;
 		}
 		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.ignoreTimeouts ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
 				// returns void
 				return;
 			}
@@ -171,7 +158,7 @@ component serializable="false" accessors="true"{
 			}
 		}
 		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.ignoreTimeouts ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
 				// returns void
 				return;
 			}
@@ -200,7 +187,7 @@ component serializable="false" accessors="true"{
 	/************************* JAVA INTEGRATION ***********************************/
 
 	/**
-    * Get the java loader instances
+    * Get the java loader instance
     */
     any function getJavaLoader() {
     	if( ! structKeyExists( server, variables.javaLoaderID ) ){ loadSDK(); }
@@ -212,7 +199,7 @@ component serializable="false" accessors="true"{
     * @className.hint The class to get
     */
     any function getJava( required className ) {
-    	return ( variables.useClassLoader ? getJavaLoader().create( arguments.className ) : createObject( "java", arguments.className ) );
+    	return ( variables.couchbaseConfig.getUseClassloader() ? getJavaLoader().create( arguments.className ) : createObject( "java", arguments.className ) );
 	}
 	
 	/************************* PRIVATE ***********************************/
@@ -238,7 +225,7 @@ component serializable="false" accessors="true"{
         	.setMaxReconnectDelay( javaCast( "long", configData.maxReconnectDelay ) )
         	.setObsPollInterval( javaCast( "long", configData.obsPollInterval ) )
         	.setObsPollMax( javaCast( "int", configData.obsPollMax ) )
-        	.setViewTimeout( javaCast( "int", configData.viewTimeout ) )
+        	.setViewTimeout( javaCast( "int", configData.viewTimeout ) );
         
         // Build our connection factory with the defaults we set above
 		var cf = factoryBuilder.buildCouchbaseConnection( serverURIs, configData.bucketName, configData.password );

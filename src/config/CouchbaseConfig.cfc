@@ -42,6 +42,8 @@ component accessors="true"{
 	property name="obsPollInterval"				default="400"		type="numeric";
 	property name="obsPollMax"					default="10"		type="numeric";
 	property name="viewTimeout"					default="75000"		type="numeric";
+	property name="ignoreTimeouts"				default="true"		type="boolean";
+	property name="useClassLoader"				default="true"		type="boolean";
 
 	// Default params, just in case using cf9
 	variables.servers 						= "http://127.0.0.1:8091";
@@ -56,6 +58,8 @@ component accessors="true"{
 	variables.obsPollInterval 				= 400;
 	variables.obsPollMax 					= 10;
 	variables.viewTimeout					= 75000;
+	variables.ignoreTimeouts				= true;
+	variables.useClassLoader				= true;
 
 	/**
 	* Constructor

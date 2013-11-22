@@ -100,19 +100,22 @@ component serializable="false" accessors="true"{
 	/************************* COUCHBASE SDK METHODS ***********************************/
 
 	/**
-	* Set a value with durability options. This is a shorthand method so that you only need to provide a PersistTo value if you don't care if the value is already replicated. 
+	* Set a value with durability options. It is asyncronouse by default so it returns immediatley without waiting for the actual set to complete.  Call future.set()
+	* if you need to confirm the document has been set.  Even then, the document is only guarunteed to be in memory on a single node.  To force the document to be replicated 
+	* to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  (This assumes you have replicas enabled)   
+	* To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc. 
 	* A PersistTo.TWO durability setting implies a replication to at least one node.
 	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
 	* @key.hint
 	* @value.hint
-	* @exp.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint
-	* @replciateTo.hint
+	* @replicateTo.hint
 	*/ 
 	any function set( 
 		required string key, 
 		required any value, 
-		numeric exp=0, 
+		numeric timeout=0, 
 		numeric persistTo, 
 		numeric replicateTo
 	){
@@ -128,7 +131,7 @@ component serializable="false" accessors="true"{
 
 			// with replicate and persist
 			var future = variables.couchbaseClient.set( arguments.key, 
-														javaCast( "int", arguments.exp*60 ), 
+														javaCast( "int", arguments.timeout*60 ), 
 														arguments.value, 
 														arguments.persistTo, 
 														arguments.replicateTo );
@@ -146,14 +149,14 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Set a value with durability options. This is a shorthand method so that you only need to provide a PersistTo value if you don't care if the value is already replicated. 
-	* A PersistTo.TWO durability setting implies a replication to at least one node.
-	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
+	* This method is the same as Set(), except the future that is returned will return true if the key being set doesn't already exist.  
+	* The future will return false if the item being set does already exist.  It will not throw an error if the key already exists, you must check the future. 
+	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
 	* @key.hint
 	* @value.hint
-	* @exp.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint
-	* @replciateTo.hint
+	* @replicateTo.hint
 	*/ 
 	any function add( 
 		required string key, 

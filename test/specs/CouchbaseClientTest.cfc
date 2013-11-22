@@ -94,15 +94,17 @@ component{
 
 
 			describe( "add operations", function(){
-				it( "of a valid object ", function(){
+				it( "will only add once ", function(){
 					var data = now();
 					var randKey = createUUID();
-					var future = couchbase.add( key=randKey, value=data, exp=1 );
-					while( !future.isDone() ){
-						// wait for it to finish.
-					}	
-					expect(	couchbase.get( "randKey" ) ).toBe( data );
-					couchbase.add( key=randKey, value=data, exp=1 );
+					var future = couchbase.add( key=randKey, value=data, timeout=1 );
+					
+					expect(	future.get() ).toBe( true );
+					expect(	couchbase.get( randKey ) ).toBe( data );
+					
+					var future = couchbase.add( key=randKey, value=data, timeout=1 );
+										
+					expect(	future.get() ).toBe( false );
 				});			
 			});
 		

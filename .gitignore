@@ -1,7 +1,5 @@
 org.eclipse.core.resources.prefs
 node_modules
-
-
 /WEB-INF
 settings.xml
 .project

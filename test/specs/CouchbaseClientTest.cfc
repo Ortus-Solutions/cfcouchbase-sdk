@@ -80,9 +80,35 @@ component{
 				});		
 			});
 
+			describe( "multiSet operations", function(){
+				it( "will set multiple documents", function(){
+					var data = {
+						"id1"="value1",
+						"id2"="value2",
+						"id3"="value3"
+					};
+					var futures = couchbase.setMulti( data=data, timeout=1 );
+					
+					expect(	futures ).toBeStruct();
+					
+					expect(	futures ).toHaveKey( "id1" );
+					expect(	futures ).toHaveKey( "id2" );
+					expect(	futures ).toHaveKey( "id3" );
+					
+					expect(	futures.id1.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
+					expect(	futures.id2.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
+					expect(	futures.id3.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
+					
+					expect(	couchbase.get( "id1" ) ).toBe( "value1" );
+					expect(	couchbase.get( "id2" ) ).toBe( "value2" );
+					expect(	couchbase.get( "id3" ) ).toBe( "value3" );
+										
+				});			
+			});
+
 
 			describe( "get operations", function(){
-				it( "of a valid object ", function(){
+				it( "of a valid object", function(){
 					var data = now();
 					var future = couchbase.set( key="unittest", value=data );
 					while( !future.isDone() ){
@@ -94,7 +120,7 @@ component{
 
 
 			describe( "add operations", function(){
-				it( "will only add once ", function(){
+				it( "will only add once", function(){
 					var data = now();
 					var randKey = createUUID();
 					var future = couchbase.add( key=randKey, value=data, timeout=1 );

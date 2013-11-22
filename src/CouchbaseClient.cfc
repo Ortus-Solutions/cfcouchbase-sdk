@@ -114,7 +114,7 @@ component serializable="false" accessors="true"{
 	any function set( 
 		required string ID, 
 		required any value, 
-		numeric timeout=0, 
+		numeric timeout, 
 		any persistTo, 
 		any replicateTo
 	){
@@ -126,6 +126,8 @@ component serializable="false" accessors="true"{
 
 			// default persist and replicate
 			defaultPersistReplicate( arguments );
+			// default timeouts
+			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 			
 			// with replicate and persist
 			var future = variables.couchbaseClient.set( arguments.ID, 
@@ -159,7 +161,7 @@ component serializable="false" accessors="true"{
 	any function add( 
 		required string ID, 
 		required any value, 
-		numeric timeout=0, 
+		numeric timeout, 
 		any persistTo, 
 		any replicateTo
 	){
@@ -171,6 +173,8 @@ component serializable="false" accessors="true"{
 
 			// default persist and replicate
 			defaultPersistReplicate( arguments );
+			// default timeouts
+			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 			
 			// with replicate and persist
 			var future = variables.couchbaseClient.add( arguments.ID, 
@@ -191,10 +195,6 @@ component serializable="false" accessors="true"{
 		}
 	}
 	
-	
-	
-	
-	
 	/**
 	* Set multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
 	* The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
@@ -206,7 +206,7 @@ component serializable="false" accessors="true"{
 	*/ 
 	any function setMulti( 
 		required struct data,
-		numeric timeout=0, 
+		numeric timeout, 
 		any persistTo, 
 		any replicateTo
 	){
@@ -215,6 +215,8 @@ component serializable="false" accessors="true"{
 		
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
+		// default timeouts
+		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 
 		// Loop over incoming key/value pairs
 		for( var local.ID in arguments.data ) {
@@ -245,21 +247,29 @@ component serializable="false" accessors="true"{
 	* @ID.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
 	*/ 
 	any function replace( 
 		required string ID, 
 		required any value, 
-		numeric timeout=0
+		numeric timeout,
+		any persistTo, 
+		any replicateTo
 	){
-
-		// serialization determinations go here
 
 		// store it
 		try{
-
-			var future = variables.couchbaseClient.add( arguments.ID, 
-														javaCast( "int", arguments.timeout*60 ), 
-														arguments.value );
+			// default persist and replicate
+			defaultPersistReplicate( arguments );
+			// default timeouts
+			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+			// store it
+			var future = variables.couchbaseClient.replace( arguments.ID, 
+															javaCast( "int", arguments.timeout*60 ), 
+															arguments.value,
+															arguments.persistTo,
+															arguments.replicateTo );
 
 			return future;
 		}

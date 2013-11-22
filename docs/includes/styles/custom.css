@@ -1,0 +1,21 @@
+.hero-unit{ padding: 50px !important;}
+body{ font-family: 'Ubuntu',"Helvetica Neue",Helvetica,Arial,sans-serif; font-size: 15px; font-weight: 300;}
+p{margin: 10px 0px 10px 0px}
+h1, h2{ border-bottom: 1px solid #ccc}
+h1{ font-size: 35px; margin: 20px 0px; }
+h2, h3, h4, h5{ margin: 20px 0px}
+.toc-container h2{ font-size: 35px; border-bottom: none;}
+pre{ margin: 20px 0px; font-size: 13px}
+body{margin:50px;}
+#header .label{ font-size: 16px; padding: 10px;}
+.footer {
+  margin-top: 25px;
+  padding: 15px 0 36px;
+  border-top: 1px solid #e5e5e5;
+}
+.footer p {
+  margin-bottom: 0;
+  color: #555;
+}
+li{ margin: 5px 0px }
+.well{ margin-top: 20px; }

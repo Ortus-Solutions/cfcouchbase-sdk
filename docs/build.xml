@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== 
+Export docs
+====================================================================== -->
+<project name="ortus-cfcouchbasesdk-docs" default="deploy">
+    <description>
+    	Build a new distribution of CFCouchbase SDK Docs
+    </description>
+    
+    <!-- set global properties for this build -->
+	<property name="src.docs" value="http://cf10cboxdev.jfetmac/cfcouchbase-sdk/docs/docs/index.cfm" />
+	<property name="dist.dir" value="../distributions" />
+	<property name="build.dir" value="${dist.dir}/docs" />
+    
+	<!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
+	<property name="sdk.version"	value="1.0.0"/>
+		    
+	<!--Deploy-->
+    <target name="deployStandalone">
+        <echo>Starting to deploy CFCouchbase SDK Docs</echo>
+    	
+    	<!-- docs -->
+		<mkdir dir="${build.dir}" />
+    	<get dest="${build.dir}/index.html" src="${src.docs}?version=${sdk.version}" verbose="true"/>
+		<copy todir="${build.dir}" >
+			<fileset file="favicon.ico" />
+		</copy>
+    	<copy todir="${build.dir}/includes" >
+    		<fileset dir="includes" />
+    	</copy>
+	
+		<zip destfile="${dist.dir}/cfcouchbase_docs_v${sdk.version}.zip" basedir="${build.dir}" />
+	
+    </target>
+	
+	<target name="deploy">
+		<!-- docs -->
+		<mkdir dir="../www/docs" />
+		<get dest="../www/docs/index.html" src="${src.docs}" verbose="true"/>
+    	<copy todir="../www/docs/includes" >
+    		<fileset dir="includes" />
+    	</copy>
+		<copy todir="../www/docs/" >
+			<fileset file="favicon.ico" />
+		</copy>
+		<copy todir="../www/docs/" >
+			<fileset file=".htaccess" />
+		</copy>
+	</target>
+    
+</project>

@@ -1,0 +1,23 @@
+The Java Wikipedia API is published under the Eclipse Public License - v 1.0:
+http://www.opensource.org/licenses/eclipse-1.0.php
+
+This package uses modified sources and libraries from other open source projects:
+a) HTMLCleaner which is published under BSD license.
+For more information see:
+http://htmlcleaner.sourceforge.net/
+
+b) The JSPWiki LatexConverter which is published under the GNU Lesser General Public License.
+For more information see:
+http://jspwiki.org/wiki/LatexConverter
+
+c) Textile-J which is published under Apache license.
+For more information see:
+https://textile-j.dev.java.net/
+
+d) The Flying Saucer project which is published under the GNU Lesser General Public License.
+For more information see:
+https://xhtmlrenderer.dev.java.net/
+
+e) iText (PDF generation) which is published under the Mozilla Public License
+For more information see:
+http://www.lowagie.com/iText/ and http://itextpdf.sourceforge.net/

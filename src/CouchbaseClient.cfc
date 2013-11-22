@@ -288,36 +288,4 @@ component serializable="false" accessors="true"{
 		}
 	}
 
-	/**
-    * Format the incoming simple couchbase server URL location strings into our format, this allows for 
-    * declaring simple URLs like 127.0.0.1:8091
-    */
-    private array function formatServers( required servers ) {
-    	var i = 0;
-    	
-		if( !isArray( arguments.servers ) ){
-			servers = listToArray( arguments.servers );
-		}
-				
-		// Massage server URLs to be "PROTOCOL://host:port/pools/"
-		while( ++i <= arrayLen( arguments.servers ) ){
-			
-			// Add protocol if neccessary
-			if( !findNoCase( "http", arguments.servers[ i ] ) ){
-				arguments.servers[ i ] = "http://" & arguments.servers[ i ];
-			}
-			
-			// Strip trailing slash via regex, its fast
-			arguments.servers[ i ] = reReplace( arguments.servers[ i ], "/$", "");
-			
-			// Add directory
-			if( right( arguments.servers[ i ], 6 ) != '/pools' ){
-				arguments.servers[ i ] &= '/pools';
-			}
-			
-		} // end server loop
-		
-		return arguments.servers;
-	}
-
 }

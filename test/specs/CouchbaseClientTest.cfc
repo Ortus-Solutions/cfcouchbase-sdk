@@ -68,7 +68,16 @@ component{
 						// wait for it to finish.
 					}	
 					expect(	future.getStatus().isSuccess() ).toBeTrue();
-				});			
+				});	
+
+				it( "with json data", function(){
+					var data = serializeJSON( { "name"="Lui", "awesome"=true, "when"=now(), "children" = [1,2] } );
+					var future = couchbase.set( key="unittest-json", value=data );
+					while( !future.isDone() ){
+						// wait for it to finish.
+					}		
+					expect(	future.getStatus().isSuccess() ).toBeTrue();
+				});		
 			});
 
 

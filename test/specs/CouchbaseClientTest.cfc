@@ -46,12 +46,12 @@ component{
 				});
 
 				it( "with config struct literal", function(){
-					expect(	new cfcouchbase.CouchbaseClient( {servers="http://127.0.0.1:8091", bucketname="default"} ) ).toBeComponent();
+					expect(	new cfcouchbase.CouchbaseClient( config={servers="http://127.0.0.1:8091", bucketname="default"} ) ).toBeComponent();
 				});
 
 				it( "with config object instance", function(){
 					var config = new cfcouchbase.config.CouchbaseConfig( bucketname="luis", viewTimeout="1000" );
-					expect(	new cfcouchbase.CouchbaseClient( config ) ).toBeComponent();
+					expect(	new cfcouchbase.CouchbaseClient( config=config ) ).toBeComponent();
 				});
 
 				it( "with config object path", function(){

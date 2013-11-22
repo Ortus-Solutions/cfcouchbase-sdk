@@ -264,7 +264,6 @@ component serializable="false" accessors="true"{
 		if( isSimpleValue( arguments.config ) ){
 			// build out cfc and use it
 			oConfig = new "#arguments.config#"();
-			writeDump( oConfig.getMemento() );abort;
 		}
 
 		// do we have a CFC instance just return it

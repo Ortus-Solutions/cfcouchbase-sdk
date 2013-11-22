@@ -97,6 +97,8 @@ component serializable="false" accessors="true"{
 		return this;
 	}
 
+	/************************* COUCHBASE SDK METHODS ***********************************/
+
 	/**
 	* Set a value with durability options. This is a shorthand method so that you only need to provide a PersistTo value if you don't care if the value is already replicated. 
 	* A PersistTo.TWO durability setting implies a replication to at least one node.

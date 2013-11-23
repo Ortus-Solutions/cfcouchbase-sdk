@@ -205,6 +205,17 @@ component{
 					var future = couchbase.delete( id="unittest" );
 					expect(	future.get() ).toBeTrue();
 				});
+
+				it( "of multiple documents", function(){
+					var data = { "data1" = "null", "data2"= "luis majano" };
+					var futures = couchbase.setMulti( data=data );
+					for( var key in futures ){ futures[ key ].get(); }
+
+					var futures = couchbase.delete( id=[ "data1", "data2" ] );
+					for( var key in futures ){
+						expect(	futures[ key ].get() ).toBeTrue();
+					}
+				});
 			
 			});
 		

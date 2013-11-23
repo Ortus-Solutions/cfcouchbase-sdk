@@ -76,9 +76,7 @@ component{
 			describe( "set operations", function(){
 				it( "with just ID and value", function(){
 					var future = couchbase.set( ID="unittest", value="hello" );
-					while( !future.isDone() ){
-						// wait for it to finish.
-					}	
+					future.get();
 					expect(	future.getStatus().isSuccess() ).toBeTrue();
 				});	
 
@@ -87,7 +85,21 @@ component{
 					var future = couchbase.set( ID="unittest-json", value=data );
 					future.get();	
 					expect(	future.getStatus().isSuccess() ).toBeTrue();
-				});		
+				});	
+
+				it( "can decrement values", function(){
+					var future = couchbase.set( ID="unit-decrement", value="10" );
+					future.get();	
+					var result = couchbase.decr( "unit-decrement", 1 );
+					expect(	result ).toBe( 9 );
+				});	
+
+				it( "can increment values", function(){
+					var future = couchbase.set( ID="unit-increment", value="10" );
+					future.get();	
+					var result = couchbase.incr( "unit-increment", 10 );
+					expect(	result ).toBe( 20 );
+				});	
 			});
 
 			describe( "multiSet operations", function(){

@@ -244,8 +244,8 @@ component serializable="false" accessors="true"{
 	* This method will set a value only if that ID already exists in Couchbase.  If the document ID doesn't exist, it will do nothing.
 	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
 	* future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.  
-	* @ID.hint
-	* @value.hint
+	* @ID The ID of the document to replace.
+	* @value.hint The value of the document to replace
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
@@ -354,6 +354,80 @@ component serializable="false" accessors="true"{
 			return results;
 		}
 
+	}
+
+	/**
+	* Decrement the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value. 
+	* This function returns the new value, or -1 if we were unable to decrement or add
+	* @ID.hint The id of the document to decrement
+	* @value.hint The amount to decrement
+	* @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
+	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	*/ 
+	any function decr( 
+		required string ID, 
+		required numeric value, 
+		numeric defaultValue=0,
+		numeric timeout
+	){
+
+		// store it
+		try{
+			// default timeouts
+			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+			// store it
+			var future = variables.couchbaseClient.decr( arguments.ID, 
+														 javaCast( "long", arguments.value ), 
+														 javaCast( "long", arguments.defaultValue ),
+														 javaCast( "int", arguments.timeout*60 ) );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Increment the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value. 
+	* This function returns the new value, or -1 if we were unable to increment or add
+	* @ID.hint The id of the document to increment
+	* @value.hint The amount to increment
+	* @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
+	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	*/ 
+	any function incr( 
+		required string ID, 
+		required numeric value, 
+		numeric defaultValue=0,
+		numeric timeout
+	){
+
+		// store it
+		try{
+			// default timeouts
+			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+			// store it
+			var future = variables.couchbaseClient.incr( arguments.ID, 
+														 javaCast( "long", arguments.value ), 
+														 javaCast( "long", arguments.defaultValue ),
+														 javaCast( "int", arguments.timeout*60 ) );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
 	}
 
 	/************************* JAVA INTEGRATION ***********************************/

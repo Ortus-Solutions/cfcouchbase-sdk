@@ -509,6 +509,40 @@ component serializable="false" accessors="true"{
 		}
 	}
 
+	/**
+	* Delete a value with durability options. The durability options here operate similarly to those documented in the set method.
+	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
+	* @ID The ID of the document to delete.
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	*/ 
+	any function delete( 
+		required string ID, 
+		any persistTo, 
+		any replicateTo
+	){
+
+		// store it
+		try{
+			// default persist and replicate
+			defaultPersistReplicate( arguments );
+			// store it
+			var future = variables.couchbaseClient.delete( arguments.ID, 
+														   arguments.persistTo,
+														   arguments.replicateTo );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
 	/************************* JAVA INTEGRATION ***********************************/
 
 	/**

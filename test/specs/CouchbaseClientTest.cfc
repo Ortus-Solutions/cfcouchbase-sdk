@@ -77,7 +77,6 @@ component{
 				});
 			
 			});
-			
 
 			describe( "set operations", function(){
 				it( "with just ID and value", function(){
@@ -191,6 +190,22 @@ component{
 										
 					expect(	future.get() ).toBe( false );
 				});			
+			});
+
+			describe( "delete operations", function(){
+			
+				it( "of an invalid document", function(){
+					var future = couchbase.delete( id="invalid-doc" );
+					expect(	future.get() ).toBeFalse();
+				});
+
+				it( "of a valid document", function(){
+					var future = couchbase.set( ID="unittest", value="hello" );
+					future.get();	
+					var future = couchbase.delete( id="unittest" );
+					expect(	future.get() ).toBeTrue();
+				});
+			
 			});
 		
 		});

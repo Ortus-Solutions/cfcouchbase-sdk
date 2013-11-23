@@ -76,7 +76,7 @@ component serializable="false" accessors="true"{
 		// our UUID creation helper
 		variables.UUIDHelper = createobject("java", "java.util.UUID");
 		// Java Time Units
-		variables.timeUnitClass = createObject("java", "java.util.concurrent.TimeUnit");
+		variables.timeUnit = createObject("java", "java.util.concurrent.TimeUnit");
 		// SDK Utility class
 		variables.util = new util.Utility();
 		// validate configuration
@@ -309,10 +309,10 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Shutdown the native client connection
-	* TODO: add timeouts
+	* @timeout.hint The timeout in seconds, we default to 10 seconds
 	*/
-	CouchbaseClient function shutdown(){
-		//variables.couchbaseClient.shutdown();
+	CouchbaseClient function shutdown( numeric timeout=10 ){
+		variables.couchbaseClient.shutdown( javaCast( "int", arguments.timeout ), variables.timeUnit.SECONDS );
 		return this;
 	}
 
@@ -322,6 +322,38 @@ component serializable="false" accessors="true"{
 	*/
 	any function flush( numeric delay=0 ){
 		return variables.couchbaseClient.flush( javaCast( "int", arguments.delay ) );
+	}
+
+	/**
+	* Get all of the stats from all of the connections, each key of the returned struct is a java java.net.InetSocketAddress object
+	* @stat.hint The key of an individual stat to return
+	*/
+	any function getStats( string stat ){
+		// cleanup and build friendlier stats
+		var stats 		= variables.couchbaseClient.getStats();
+		var statsArray 	= stats.values().toArray();
+
+		var results = {};
+		var index 	= 1;
+		for( var thiskey in stats ){
+			results[ ( isSimpleValue( thisKey ) ? thisKey : thisKey.toString() ) ] = statsArray[ index++ ];
+		}
+
+		// get aggregate stat
+		if( structKeyExists( arguments, "stat" ) ){
+			var statValue = 0;
+			for( var thisKey in statsArray ){
+				// make sure the stat exists
+				if( structKeyExists( thisKey, arguments.stat ) ){
+					statValue += val( thisKey[ arguments.stat ] );	
+				}
+			}
+			return statValue;
+		}
+		else{
+			return results;
+		}
+
 	}
 
 	/************************* JAVA INTEGRATION ***********************************/

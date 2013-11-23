@@ -31,13 +31,25 @@ component{
 	}
 
 	function afterAll(){
-		couchbase.shutdown();
+		couchbase.shutdown( 10 );
 	}
 
 /*********************************** BDD SUITES ***********************************/
 
 	function run(){
 		describe( "Couchbase Client", function(){
+
+			it( "can flush docs", function(){
+				var future = couchbase.flush();
+				future.get();
+				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBe( 0 );
+			});
+
+			it( "can get stats", function(){
+				var stats = couchbase.getStats();
+				expect( stats ).toBeStruct();
+				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBeNumeric();
+			});
 
 			describe( "can be constructed ", function(){
 				
@@ -73,9 +85,7 @@ component{
 				it( "with json data", function(){
 					var data = serializeJSON( { "name"="Lui", "awesome"=true, "when"=now(), "children" = [1,2] } );
 					var future = couchbase.set( ID="unittest-json", value=data );
-					while( !future.isDone() ){
-						// wait for it to finish.
-					}		
+					future.get();	
 					expect(	future.getStatus().isSuccess() ).toBeTrue();
 				});		
 			});
@@ -126,11 +136,13 @@ component{
 				it( "of a valid object", function(){
 					var data = now();
 					var future = couchbase.set( ID="unittest", value=data );
-					while( !future.isDone() ){
-						// wait for it to finish.
-					}	
+					future.get();	
 					expect(	couchbase.get( "unittest" ) ).toBe( data );
-				});			
+				});		
+
+				it( "of an invalid object", function(){
+					expect(	couchbase.get( "Nothing123" ) ).toBeNull();
+				});		
 			});
 
 

@@ -51,6 +51,12 @@ component{
 				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBeNumeric();
 			});
 
+			it( "can touch an expiration time", function(){
+				couchbase.set( id="touch-test", value="value", timeout=10 );
+				var future = couchbase.touch( id="touch-test", timeout=0 );
+				expect(	future.get() ).toBeTrue();
+			});
+
 			describe( "can be constructed ", function(){
 				
 				it( "with vanilla settings", function(){
@@ -113,7 +119,7 @@ component{
 					future.get();	
 					var result = couchbase.asyncIncr( "unit-increment", 10 );
 					expect(	result.get() ).toBe( 20 );
-				});	
+				});
 			});
 
 			describe( "multiSet operations", function(){

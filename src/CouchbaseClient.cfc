@@ -482,6 +482,33 @@ component serializable="false" accessors="true"{
 		}
 	}
 
+	/**
+	* Touch the given key to reset its expiration time. This method returns a future
+	* @ID.hint The id of the document to increment
+	* @timeout.hint The expiration of the document in minutes
+	*/ 
+	any function touch( 
+		required string ID, 
+		required numeric timeout
+	){
+
+		// store it
+		try{
+			// store it
+			var future = variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
 	/************************* JAVA INTEGRATION ***********************************/
 
 	/**

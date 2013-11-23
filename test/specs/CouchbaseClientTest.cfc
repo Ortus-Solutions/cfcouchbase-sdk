@@ -94,11 +94,25 @@ component{
 					expect(	result ).toBe( 9 );
 				});	
 
+				it( "can decrement values asynchronously", function(){
+					var future = couchbase.set( ID="unit-decrement", value="10" );
+					future.get();	
+					var result = couchbase.asyncDecr( "unit-decrement", 1 );
+					expect(	result.get() ).toBe( 9 );
+				});	
+
 				it( "can increment values", function(){
 					var future = couchbase.set( ID="unit-increment", value="10" );
 					future.get();	
 					var result = couchbase.incr( "unit-increment", 10 );
 					expect(	result ).toBe( 20 );
+				});	
+
+				it( "can increment values asynchronously", function(){
+					var future = couchbase.set( ID="unit-increment", value="10" );
+					future.get();	
+					var result = couchbase.asyncIncr( "unit-increment", 10 );
+					expect(	result.get() ).toBe( 20 );
 				});	
 			});
 

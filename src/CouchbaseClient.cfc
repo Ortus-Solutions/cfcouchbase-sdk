@@ -394,6 +394,32 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
+	* Decrement the given counter asynchronously,a future with the decremented value, or -1 if the decrement failed.
+	* @ID.hint The id of the document to decrement
+	* @value.hint The amount to decrement
+	*/ 
+	any function asyncDecr( 
+		required string ID, 
+		required numeric value
+	){
+
+		try{
+			// store it
+			var future = variables.couchbaseClient.asyncDecr( arguments.ID, javaCast( "long", arguments.value ) );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
 	* Increment the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value. 
 	* This function returns the new value, or -1 if we were unable to increment or add
 	* @ID.hint The id of the document to increment
@@ -417,6 +443,32 @@ component serializable="false" accessors="true"{
 														 javaCast( "long", arguments.value ), 
 														 javaCast( "long", arguments.defaultValue ),
 														 javaCast( "int", arguments.timeout*60 ) );
+
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Increment the given counter asynchronously,a future with the incremented value, or -1 if the increment failed.
+	* @ID.hint The id of the document to decrement
+	* @value.hint The amount to decrement
+	*/ 
+	any function asyncIncr( 
+		required string ID, 
+		required numeric value
+	){
+
+		try{
+			// store it
+			var future = variables.couchbaseClient.asyncIncr( arguments.ID, javaCast( "long", arguments.value ) );
 
 			return future;
 		}

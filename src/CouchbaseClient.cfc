@@ -553,6 +553,38 @@ component serializable="false" accessors="true"{
 		}
 	}
 
+	/**
+	* Get stats from a document and return a future or a struct of futures.
+	* @ID.hint The id of the document to get the stats for or a list or an array
+	*/ 
+	any function getDocStats( required any ID ){
+
+		// store it
+		try{
+			// simple or array
+			arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
+			
+			// iterate and prepare futures
+			var futures = {};
+			for( var thisKey in arguments.id ){
+				// store it
+				futures[ thisKey ] = variables.couchbaseClient.getKeyStats( thisKey );
+
+			}
+
+			// if > 1 futures, return struct, else return the only one future
+			return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
 	/************************* JAVA INTEGRATION ***********************************/
 
 	/**

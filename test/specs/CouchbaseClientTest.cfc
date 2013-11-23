@@ -45,12 +45,6 @@ component{
 				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBe( 0 );
 			});
 
-			it( "can get stats", function(){
-				var stats = couchbase.getStats();
-				expect( stats ).toBeStruct();
-				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBeNumeric();
-			});
-
 			it( "can touch an expiration time", function(){
 				couchbase.set( id="touch-test", value="value", timeout=10 );
 				var future = couchbase.touch( id="touch-test", timeout=0 );
@@ -216,6 +210,36 @@ component{
 						expect(	futures[ key ].get() ).toBeTrue();
 					}
 				});
+			
+			});
+
+			describe( "stats operations", function(){
+			
+				it( "can get global stats", function(){
+					var stats = couchbase.getStats();
+					expect( stats ).toBeStruct();
+					expect( couchbase.getStats( "vb_active_curr_items" ) ).toBeNumeric();
+				});
+
+				it( "can get doc stats", function(){
+					var future = couchbase.set( ID="unittest", value="hello", timeout=200 );
+					future.get();
+					var future = couchbase.getDocStats( "unittest" );
+					expect(	future.get() ).toBeStruct();
+				});
+
+				it( "can get multiple doc stats", function(){
+					var data = { "data1" = "null", "data2"= "luis majano" };
+					var futures = couchbase.setMulti( data=data );
+					for( var key in futures ){ futures[ key ].get(); }
+
+					var futures = couchbase.getDocStats( id=[ "data1", "data2" ] );
+					for( var key in futures ){
+						expect(	futures[ key ].get() ).toBeStruct();
+					}
+				});
+
+
 			
 			});
 		

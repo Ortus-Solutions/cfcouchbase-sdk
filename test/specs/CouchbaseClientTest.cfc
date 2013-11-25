@@ -65,7 +65,7 @@ component{
 				});
 
 				it( "with config object instance", function(){
-					var config = new cfcouchbase.config.CouchbaseConfig( bucketname="luis", viewTimeout="1000" );
+					var config = new cfcouchbase.config.CouchbaseConfig( bucketname="default", viewTimeout="1000" );
 					expect(	new cfcouchbase.CouchbaseClient( config=config ) ).toBeComponent();
 				});
 

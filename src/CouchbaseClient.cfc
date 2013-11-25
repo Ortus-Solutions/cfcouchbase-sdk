@@ -640,22 +640,29 @@ component serializable="false" accessors="true"{
 	* @config.hint The config options as a struct, path or instance.
 	*/
 	private cfcouchbase.config.CouchbaseConfig function validateConfig( required any config ){
-		var oConfig = "";
+		// do we have a simple path to inflate
+		if( isSimpleValue( arguments.config ) ){
+			// build out cfc
+			arguments.config = new "#arguments.config#"();
+		}
 
-		// check if its a struct of config options
+		// check family, for memento injection
+		if( isObject( arguments.config ) && !isInstanceOf( arguments.config, "cfcouchbase.config.CouchbaseConfig" ) ){
+			// get memento out via injection
+			var oConfig = new config.CouchbaseConfig();
+			arguments.config.getMemento = oConfig.getMemento;
+			return oConfig.init( argumentCollection=arguments.config.getMemento() );
+
+		}
+		else if ( isObject( arguments.config ) ){
+			return arguments.config;
+		}
+
+		// check if its a struct literal of config options
 		if( isStruct( arguments.config ) ){
 			// init config object with memento
 			return new config.CouchbaseConfig( argumentCollection=arguments.config );
 		}
-
-		// do we have a path?
-		if( isSimpleValue( arguments.config ) ){
-			// build out cfc and use it
-			oConfig = new "#arguments.config#"();
-		}
-
-		// do we have a CFC instance just return it
-		return oConfig;
 
 	}
 

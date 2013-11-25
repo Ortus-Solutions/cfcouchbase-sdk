@@ -285,9 +285,11 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* Get an object from couchbase, returns null if not found.
-	* @ID The ID of the document to retrieve.
+	* @ID.hint The ID of the document to retrieve.
+	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
-	any function get( required string ID ){
+	any function get( required string ID, boolean deserialize=true, any inflateTo ){
 		try {
 			var results = variables.couchbaseClient.get( arguments.ID );
 

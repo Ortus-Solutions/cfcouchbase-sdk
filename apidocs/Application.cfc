@@ -7,13 +7,12 @@ component{
 	// mappings
 	this.mappings[ "/colddoc" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 
-	rootPath = REReplaceNoCase( this.mappings[ "/colddoc" ], "colddoc(\\|\/)$", "" );
+	rootPath = REReplaceNoCase( this.mappings[ "/colddoc" ], "apidocs(\\|\/)$", "" );
 	this.mappings[ "/root" ] = rootPath;
-	this.mappings[ "/cfcouchbase" ] = rootPath & "/src";
+	this.mappings[ "/cfcouchbase" ] = rootPath & "src";
 	
 	// request start
 	public boolean function onRequestStart(String targetPage){
-
 		return true;
 	}
 	

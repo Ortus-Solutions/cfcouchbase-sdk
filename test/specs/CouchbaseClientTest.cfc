@@ -51,6 +51,9 @@ component{
 				expect(	future.get() ).toBeTrue();
 			});
 
+			/**************************************************************/
+			/**************** construction ********************************/
+			/**************************************************************/
 			describe( "can be constructed ", function(){
 				
 				it( "with vanilla settings", function(){
@@ -69,9 +72,19 @@ component{
 				it( "with config object path", function(){
 					expect(	new cfcouchbase.CouchbaseClient( config="test.resources.Config" ) ).toBeComponent();
 				});
+
+				it( "with simple config object", function(){
+					var config = new test.resources.SimpleConfig();
+					var cbClient = new cfcouchbase.CouchbaseClient( config=config );
+					expect(	cbClient ).toBeComponent();
+					expect(	cbClient.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
+				});
 			
 			});
 
+			/**************************************************************/
+			/**************** set operations ********************************/
+			/**************************************************************/
 			describe( "set operations", function(){
 				it( "with just ID and value", function(){
 					var future = couchbase.set( ID="unittest", value="hello" );
@@ -115,6 +128,9 @@ component{
 				});
 			});
 
+			/**************************************************************/
+			/**************** multi set ********************************/
+			/**************************************************************/
 			describe( "multiSet operations", function(){
 				it( "will set multiple documents", function(){
 					var data = {
@@ -141,7 +157,9 @@ component{
 				});			
 			});
 
-
+			/**************************************************************/
+			/**************** replace ********************************/
+			/**************************************************************/
 			describe( "replace operations", function(){
 				it( "will replace a document", function(){
 					var future = couchbase.set( ID="replaceMe", value="whatever", timeout=1 );
@@ -156,7 +174,9 @@ component{
 				});			
 			});
 
-
+			/**************************************************************/
+			/**************** get operations ********************************/
+			/**************************************************************/
 			describe( "get operations", function(){
 				it( "of a valid object", function(){
 					var data = now();
@@ -170,7 +190,9 @@ component{
 				});		
 			});
 
-
+			/**************************************************************/
+			/**************** add operations ********************************/
+			/**************************************************************/
 			describe( "add operations", function(){
 				it( "will only add once", function(){
 					var data = now();
@@ -186,6 +208,9 @@ component{
 				});			
 			});
 
+			/**************************************************************/
+			/**************** delete operations ********************************/
+			/**************************************************************/
 			describe( "delete operations", function(){
 			
 				it( "of an invalid document", function(){
@@ -213,6 +238,9 @@ component{
 			
 			});
 
+			/**************************************************************/
+			/**************** stats operations ********************************/
+			/**************************************************************/
 			describe( "stats operations", function(){
 			
 				it( "can get global stats", function(){

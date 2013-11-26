@@ -268,10 +268,33 @@ component{
 					expect(	couchbase.getAndTouch( "Nothing123", 10 ) ).toBeNull();
 				});
 
-				it( "with case-insensitive keys", function(){
+				it( "with case-insensitive IDs", function(){
 					var data = now();
-					couchbase.set( ID="mykey ", value=data ).get();
-					expect(	couchbase.get( "MYKEY" ) ).toBe( data );
+					couchbase.set( ID="myid ", value=data ).get();
+					expect(	couchbase.get( "MYID" ) ).toBe( data );
+				});
+				
+
+				it( "with multiple IDs", function(){
+					couchbase.set( ID="ID1", value="value1" ).get();
+					couchbase.set( ID="ID2", value="value2" ).get();
+					couchbase.set( ID="ID3", value="value3" ).get();
+					
+					var result = couchbase.getMulti( ["ID1","ID2","ID3","not_existant"] );
+					
+					expect(	result ).toBeStruct();
+					
+					expect(	result ).toHaveKey( "id1" );
+					expect(	result ).toHaveKey( "id2" );
+					expect(	result ).toHaveKey( "id3" );
+					
+					expect(	result.id1 ).toBe( "value1" );
+					expect(	result.id2 ).toBe( "value2" );
+					expect(	result.id3 ).toBe( "value3" );
+					
+					expect(	result ).notToHaveKey( "not_existant" );
+					 
+					
 				});
 				
 			});

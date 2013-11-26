@@ -384,6 +384,37 @@ component serializable="false" accessors="true"{
 	}
 	
 	/**
+	* Get multiple objects from couchbase.  Returns a struct of values.  Any document IDs not found will not exist in the struct.
+	* @ID.hint An array of document IDs to retrieve.
+	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	*/
+	any function getMulti( required array ID, boolean deserialize=true, any inflateTo ){
+		arguments.ID = variables.util.normalizeID(arguments.ID);
+		
+		try {
+			var result = {};
+			// Java method expects a java.util.Collection
+			var map = variables.couchbaseClient.getBulk( arguments.ID );
+			for( var key in map) {
+				var value = map[key];
+				// deserializations go here.
+				result[key] = value;				
+			}
+			return result;
+
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+	
+	/**
 	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
 	* This method will return a struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null. 

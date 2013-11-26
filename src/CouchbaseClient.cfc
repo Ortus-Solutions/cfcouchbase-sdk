@@ -308,6 +308,37 @@ component serializable="false" accessors="true"{
 			rethrow;
 		}
 	}
+	
+	/**
+	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 
+	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
+	* @ID.hint The ID of the document to retrieve.
+	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	*/
+	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo ){
+		try {
+			var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
+
+			if( !isNull( resultsWithCAS ) ){
+				var result = {};
+				result.CAS = resultsWithCAS.getCAS();
+				result.value = resultsWithCAS.getValue();
+				
+				// deserializations go here.
+
+				return result;
+			}
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
 
 	/**
 	* Shutdown the native client connection

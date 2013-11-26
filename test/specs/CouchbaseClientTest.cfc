@@ -192,6 +192,27 @@ component{
 			});
 
 			/**************************************************************/
+			/**************** getWithCAS operations ***********************/
+			/**************************************************************/
+			describe( "getWithCAS operations", function(){
+				it( "of a valid object", function(){
+					var data = now();
+					var future = couchbase.set( ID="unittest", value=data );
+					future.get();
+					var result = couchbase.getWithCAS( "unittest" );
+					 
+					expect(	result ).toBeStruct(); 
+					expect(	result.CAS ).toBeNumeric(); 
+					expect(	result.value ).toBe( data );
+					
+				});		
+
+				it( "of an invalid object", function(){
+					expect(	couchbase.get( "Nothing123" ) ).toBeNull();
+				});		
+			});
+
+			/**************************************************************/
 			/**************** add operations ******************************/
 			/**************************************************************/
 			describe( "add operations", function(){

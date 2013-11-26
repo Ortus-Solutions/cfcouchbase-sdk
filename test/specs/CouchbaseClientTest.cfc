@@ -267,6 +267,12 @@ component{
 				it( "of an invalid object with touch", function(){
 					expect(	couchbase.getAndTouch( "Nothing123", 10 ) ).toBeNull();
 				});
+
+				it( "with case-insensitive keys", function(){
+					var data = now();
+					couchbase.set( ID="mykey ", value=data ).get();
+					expect(	couchbase.get( "MYKEY" ) ).toBe( data );
+				});
 				
 			});
 

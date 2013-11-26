@@ -98,4 +98,22 @@ component accessors="true"{
 		return arguments.servers;
 	}
 
+
+	/**
+    * Normalize document ID to be lowercase and trimmed.
+    * @ID.hint The ID to normalize, or an array of IDs
+    */
+    any function normalizeID( required any ID ) {
+    	if( isSimpleValue(arguments.ID) ) {
+			return lcase(trim(arguments.ID));    		
+    	} else {
+    		var i = 1;
+    		for( var locID in arguments.ID ) {
+    			arguments.ID[i] = lcase(trim(locID));
+    			i++;
+    		}
+    		return arguments.ID;
+    	}
+	}
+
 }

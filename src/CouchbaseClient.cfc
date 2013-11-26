@@ -149,6 +149,76 @@ component serializable="false" accessors="true"{
 	}
 	
 	/**
+	* Update the value of an existing document with a CAS value.  CAS is retrieved via getWithCAS().  Since the CAS value changes every time a document is modified
+	* you will be able to tell if another process has modified the document between the time you retrieved it and updated it.  This method will only complete
+	* successfully if the original document value is unchanged.  This method is not asyncronous and therefore does not return a future since your application code
+	* will need to check the return and handle it appropriatley.
+	*
+	* This method returns a struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means   
+	* nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED"
+	* indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and
+	* attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or
+	* a regular set() commend to store the document. 
+	* @ID.hint The unique id of the document to store
+	* @value.hint The value to store
+	* @CAS.hint CAS value retrieved via getWithCAS()
+	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	*/ 
+	any function setWithCAS( 
+		required string ID, 
+		required any value, 
+		required string CAS,
+		numeric timeout, 
+		any persistTo, 
+		any replicateTo
+	){
+
+		// serialization determinations go here
+
+		// store it
+		try{
+
+			// default persist and replicate
+			defaultPersistReplicate( arguments );
+			// default timeouts
+			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+			
+			// with replicate and persist
+			var result = {};
+			// Hope for the best
+			result.status = true;
+			result.detail = "SUCCESS";
+			var CASResponse = variables.couchbaseClient.cas( arguments.ID,
+														javaCast( "long", arguments.CAS ),			 											
+														javaCast( "int", arguments.timeout*60 ), 
+														arguments.value, 
+														arguments.persistTo, 
+														arguments.replicateTo );
+														
+			// Account for the worst
+			if( CASResponse.equals(CASResponse.EXISTS) ) {
+				result.status = false;
+				result.detail = "CAS_CHANGED";				
+			} else if( CASResponse.equals(CASResponse.NOT_FOUND) ) {
+				result.status = false;
+				result.detail = "NOT_FOUND";
+			}
+			
+			return result;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+	
+	/**
 	* This method is the same as set(), except the future that is returned will return true if the ID being set doesn't already exist.  
 	* The future will return false if the item being set does already exist.  It will not throw an error if the ID already exists, you must check the future. 
 	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.

@@ -126,12 +126,7 @@ component{
 					var result = couchbase.asyncIncr( "unit-increment", 10 );
 					expect(	result.get() ).toBe( 20 );
 				});
-			});
-
-			/**************************************************************/
-			/**************** multi set ***********************************/
-			/**************************************************************/
-			describe( "multiSet operations", function(){
+				
 				it( "will set multiple documents", function(){
 					var data = {
 						"id1"="value1",
@@ -155,8 +150,46 @@ component{
 					expect(	couchbase.get( "id2" ) ).toBe( "value2" );
 					expect(	couchbase.get( "id3" ) ).toBe( "value3" );
 										
-				});			
+				});
+				
+								
+				it( "with CAS value that hasn't changed", function(){
+					couchbase.set( ID="unittest", value="hello" ).get();
+					var getResult = couchbase.getWithCAS( ID="unittest" );
+					var setResult = couchbase.setWithCAS( ID="unittest", CAS=getResult.CAS, value="New Value" );
+										
+					expect(	setResult ).toBeStruct();
+					expect(	setResult ).toHaveKey( "status" );
+					expect(	setResult ).toHaveKey( "detail" );
+					expect(	setResult.status ).toBe( true );
+					expect(	setResult.detail ).toBe( "SUCCESS" );
+				});	
+								
+				it( "with CAS value that is out-of-date", function(){
+					couchbase.set( ID="unittest", value="hello" ).get();
+					var getResult = couchbase.getWithCAS( ID="unittest" );
+					couchbase.set( ID="unittest", value="a new value" ).get();					
+					var setResult = couchbase.setWithCAS( ID="unittest", CAS=getResult.CAS, value="New Value" );
+
+					expect(	setResult ).toBeStruct();
+					expect(	setResult ).toHaveKey( "status" );
+					expect(	setResult ).toHaveKey( "detail" );
+					expect(	setResult.status ).toBe( false );
+					expect(	setResult.detail ).toBe( "CAS_CHANGED" );
+				});		
+								
+				it( "with CAS value and key that doesn't exist", function(){
+					var setResult = couchbase.setWithCAS( ID=createUUID(), CAS=123456789, value="New Value" );
+										
+					expect(	setResult ).toBeStruct();
+					expect(	setResult ).toHaveKey( "status" );
+					expect(	setResult ).toHaveKey( "detail" );
+					expect(	setResult.status ).toBe( false );
+					expect(	setResult.detail ).toBe( "NOT_FOUND" );
+				});	
+								
 			});
+
 
 			/**************************************************************/
 			/**************** replace *************************************/
@@ -188,29 +221,27 @@ component{
 
 				it( "of an invalid object", function(){
 					expect(	couchbase.get( "Nothing123" ) ).toBeNull();
-				});		
-			});
-
-			/**************************************************************/
-			/**************** getWithCAS operations ***********************/
-			/**************************************************************/
-			describe( "getWithCAS operations", function(){
-				it( "of a valid object", function(){
+				});
+				
+				it( "of a valid object with CAS", function(){
 					var data = now();
 					var future = couchbase.set( ID="unittest", value=data );
 					future.get();
 					var result = couchbase.getWithCAS( "unittest" );
 					 
 					expect(	result ).toBeStruct(); 
+					expect(	result ).toHaveKey( "CAS" );
+					expect(	result ).toHaveKey( "value" );
 					expect(	result.CAS ).toBeNumeric(); 
 					expect(	result.value ).toBe( data );
 					
 				});		
 
-				it( "of an invalid object", function(){
+				it( "of an invalid object with CAS", function(){
 					expect(	couchbase.get( "Nothing123" ) ).toBeNull();
 				});		
 			});
+
 
 			/**************************************************************/
 			/**************** add operations ******************************/

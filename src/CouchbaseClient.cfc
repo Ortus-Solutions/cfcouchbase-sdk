@@ -382,6 +382,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
+	* This method will return a struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null. 
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
@@ -389,6 +390,47 @@ component serializable="false" accessors="true"{
 	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo ){
 		try {
 			var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
+
+			if( !isNull( resultsWithCAS ) ){
+				var result = {};
+				result.CAS = resultsWithCAS.getCAS();
+				result.value = resultsWithCAS.getValue();
+				
+				// deserializations go here.
+
+				return result;
+			}
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+	
+	/**
+	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
+	* functionality where you don't want a document to timeout while it is still being accessed.
+	* This method will return a struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
+	* @ID.hint The ID of the document to retrieve.
+	* @timeout.hint The expiration of the document in minutes
+	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	*/
+	any function getAndTouch(
+					required string ID,
+					required numeric timeout,
+					boolean deserialize=true,
+					any inflateTo
+				 ){
+		try {
+			var resultsWithCAS = variables.couchbaseClient.getAndTouch(
+															arguments.ID,
+															javaCast( "int", arguments.timeout*60 )
+														   );
 
 			if( !isNull( resultsWithCAS ) ){
 				var result = {};

@@ -239,7 +239,35 @@ component{
 
 				it( "of an invalid object with CAS", function(){
 					expect(	couchbase.get( "Nothing123" ) ).toBeNull();
+				});
+				
+				it( "of a valid object with touch", function(){
+					var data = now();
+					// Set with 5 minute timeout
+					var future = couchbase.set( ID="unittest", value=data, timeout=5 ).get();
+					var stats = couchbase.getDocStats( "unittest" ).get();
+					var original_exptime = stats.key_exptime;
+					
+					// Touch with 10 minute timeout
+					var result = couchbase.getAndTouch( "unittest", 10 );
+					 
+					expect(	result ).toBeStruct(); 
+					expect(	result ).toHaveKey( "CAS" );
+					expect(	result ).toHaveKey( "value" );
+					expect(	result.CAS ).toBeNumeric(); 
+					expect(	result.value ).toBe( data );
+										
+					var stats = couchbase.getDocStats( "unittest" ).get();
+					
+					// The timeout should now be 5 minutes farther in the future
+					expect(	stats.key_exptime > original_exptime ).toBeTrue();
+					
 				});		
+
+				it( "of an invalid object with touch", function(){
+					expect(	couchbase.getAndTouch( "Nothing123", 10 ) ).toBeNull();
+				});
+				
 			});
 
 

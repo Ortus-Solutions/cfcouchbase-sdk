@@ -118,7 +118,7 @@ component serializable="false" accessors="true"{
 		any persistTo, 
 		any replicateTo
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		// serialization determinations go here
 
 		// store it
@@ -235,7 +235,7 @@ component serializable="false" accessors="true"{
 		any persistTo, 
 		any replicateTo
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		// serialization determinations go here
 
@@ -328,7 +328,7 @@ component serializable="false" accessors="true"{
 		any persistTo, 
 		any replicateTo
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		// store it
 		try{
@@ -362,7 +362,7 @@ component serializable="false" accessors="true"{
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
 	any function get( required string ID, boolean deserialize=true, any inflateTo ){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
 			var results = variables.couchbaseClient.get( arguments.ID );
@@ -390,16 +390,16 @@ component serializable="false" accessors="true"{
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
 	any function getMulti( required array ID, boolean deserialize=true, any inflateTo ){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
 			var result = {};
 			// Java method expects a java.util.Collection
 			var map = variables.couchbaseClient.getBulk( arguments.ID );
-			for( var key in map) {
-				var value = map[key];
+			for( var key in map ) {
+				var value = map[ key ];
 				// deserializations go here.
-				result[key] = value;				
+				result[ key ] = value;				
 			}
 			return result;
 
@@ -423,7 +423,7 @@ component serializable="false" accessors="true"{
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
 	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo ){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
 			var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
@@ -463,7 +463,7 @@ component serializable="false" accessors="true"{
 					boolean deserialize=true,
 					any inflateTo
 				 ){		 	 
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
 			var resultsWithCAS = variables.couchbaseClient.getAndTouch(
@@ -554,7 +554,7 @@ component serializable="false" accessors="true"{
 		numeric defaultValue=0,
 		numeric timeout
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// store it
 		try{
@@ -587,7 +587,7 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required numeric value
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		try{
 			// store it
@@ -651,7 +651,7 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required numeric value
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		try{
 			// store it
@@ -678,7 +678,7 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required numeric timeout
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// store it
 		try{
@@ -709,7 +709,7 @@ component serializable="false" accessors="true"{
 		any persistTo, 
 		any replicateTo
 	){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// store it
 		try{
@@ -747,7 +747,7 @@ component serializable="false" accessors="true"{
 	* @ID.hint The id of the document to get the stats for or a list or an array
 	*/ 
 	any function getDocStats( required any ID ){
-		arguments.ID = variables.util.normalizeID(arguments.ID);
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// store it
 		try{

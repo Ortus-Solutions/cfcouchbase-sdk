@@ -39,7 +39,7 @@ component{
 	function run(){
 		describe( "Couchbase Client", function(){
 
-			it( "can flush docs", function(){
+			xit( "can flush docs", function(){
 				var future = couchbase.flush();
 				future.get();
 				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBe( 0 );
@@ -83,7 +83,7 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** set operations ********************************/
+			/**************** set operations ******************************/
 			/**************************************************************/
 			describe( "set operations", function(){
 				it( "with just ID and value", function(){
@@ -129,7 +129,7 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** multi set ********************************/
+			/**************** multi set ***********************************/
 			/**************************************************************/
 			describe( "multiSet operations", function(){
 				it( "will set multiple documents", function(){
@@ -146,6 +146,7 @@ component{
 					expect(	futures ).toHaveKey( "id2" );
 					expect(	futures ).toHaveKey( "id3" );
 					
+					// toBeInstanceOf() expectation doesn't work on natively created Java classes
 					expect(	futures.id1.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
 					expect(	futures.id2.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
 					expect(	futures.id3.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
@@ -158,7 +159,7 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** replace ********************************/
+			/**************** replace *************************************/
 			/**************************************************************/
 			describe( "replace operations", function(){
 				it( "will replace a document", function(){
@@ -166,16 +167,16 @@ component{
 					future.get();
 					var future = couchbase.replace( ID="replaceMe", value="new value", timeout=1 );
 					
-					//expect(	future.get() ).toBe( true );
+					expect(	future.get() ).toBe( true );
 					
 					var future = couchbase.replace( ID=createUUID(), value="Not gonna' exist", timeout=1 );
 																				
-					//expect(	future.get() ).toBe( false );
+					expect(	future.get() ).toBe( false );
 				});			
 			});
 
 			/**************************************************************/
-			/**************** get operations ********************************/
+			/**************** get operations ******************************/
 			/**************************************************************/
 			describe( "get operations", function(){
 				it( "of a valid object", function(){
@@ -191,7 +192,7 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** add operations ********************************/
+			/**************** add operations ******************************/
 			/**************************************************************/
 			describe( "add operations", function(){
 				it( "will only add once", function(){
@@ -209,7 +210,7 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** delete operations ********************************/
+			/**************** delete operations ***************************/
 			/**************************************************************/
 			describe( "delete operations", function(){
 			
@@ -239,7 +240,7 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** stats operations ********************************/
+			/**************** stats operations ****************************/
 			/**************************************************************/
 			describe( "stats operations", function(){
 			

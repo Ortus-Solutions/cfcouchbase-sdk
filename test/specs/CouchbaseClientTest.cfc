@@ -378,8 +378,47 @@ component{
 					}
 				});
 
+			});
 
+			/**************************************************************/
+			/**************** append/prepend operations ****************************/
+			/**************************************************************/
+			describe( "append+prepend operations", function(){
 			
+				it( "can append", function(){
+					couchbase.set( id="append-test1", value="Hello" ).get();
+					couchbase.append( id="append-test1", value=" Luis" );
+
+					var value = couchbase.get( "append-test1" );
+					expect( value ).toBe( "Hello Luis" );
+					
+				});
+
+				it( "can append with CAS", function(){
+					var f = couchbase.set( id="append-test2", value="Hello" );
+					couchbase.append( id="append-test2", value=" Luis Majano", cas=f.getCas() );
+					
+					var value = couchbase.get( "append-test2" );
+					expect( value ).toBe( "Hello Luis Majano" );
+				});
+
+				it( "can prepend", function(){
+					couchbase.set( id="prepend-test1", value="Hello" ).get();
+					couchbase.prepend( id="prepend-test1", value="Hola and " );
+
+					var value = couchbase.get( "prepend-test1" );
+					expect( value ).toBe( "Hola and Hello" );
+					
+				});
+
+				it( "can prepend with CAS", function(){
+					var f = couchbase.set( id="prepend-test2", value="Luis" );
+					couchbase.prepend( id="prepend-test2", value="Hola ", cas=f.getCas() );
+					
+					var value = couchbase.get( "prepend-test2" );
+					expect( value ).toBe( "Hola Luis" );
+				});
+
 			});
 		
 		});

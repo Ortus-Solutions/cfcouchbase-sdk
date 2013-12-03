@@ -775,6 +775,88 @@ component serializable="false" accessors="true"{
 		}
 	}
 
+	/**
+	* Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
+	* Note that the return will be false any time a mutation has not occurred from the Future returned object.
+	* This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents
+	* @ID.hint The unique id of the document whose value will be appended
+	* @value.hint The value to append
+	* @CAS.hint CAS identifier (ignored in the ascii protocol)
+	*/ 
+	any function append( 
+		required string ID, 
+		required any value, 
+		numeric CAS
+	){
+
+		try{
+			// normalize ID
+			arguments.ID = variables.util.normalizeID( arguments.ID );
+
+			// append with cas
+			var future = "";
+			if( structKeyExists( arguments, "CAS") ){
+				future = variables.couchbaseClient.append( javaCast( "long", arguments.CAS ),			 											
+														   arguments.ID,
+														   arguments.value );
+			}
+			// append with no CAS
+			else{
+				future = variables.couchbaseClient.append( arguments.ID, arguments.value );	
+			}							
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Prepend to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
+	* Note that the return will be false any time a mutation has not occurred from the Future returned object.
+	* This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents
+	* @ID.hint The unique id of the document whose value will be prepended
+	* @value.hint The value to prepend
+	* @CAS.hint CAS identifier (ignored in the ascii protocol)
+	*/ 
+	any function prepend( 
+		required string ID, 
+		required any value, 
+		numeric CAS
+	){
+
+		try{
+			// normalize ID
+			arguments.ID = variables.util.normalizeID( arguments.ID );
+
+			// prepend with cas
+			var future = "";
+			if( structKeyExists( arguments, "CAS") ){
+				future = variables.couchbaseClient.prepend( javaCast( "long", arguments.CAS ),			 											
+														    arguments.ID,
+														    arguments.value );
+			}
+			// prepend with no CAS
+			else{
+				future = variables.couchbaseClient.prepend( arguments.ID, arguments.value );	
+			}							
+			return future;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
 	/************************* JAVA INTEGRATION ***********************************/
 
 	/**

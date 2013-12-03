@@ -244,23 +244,24 @@ component{
 				it( "of a valid object with touch", function(){
 					var data = now();
 					// Set with 5 minute timeout
-					var future = couchbase.set( ID="unittest", value=data, timeout=5 ).get();
-					var stats = couchbase.getDocStats( "unittest" ).get();
-					var original_exptime = stats.key_exptime;
+					var future = couchbase.set( ID="unittest-touch", value=data, timeout=5 ).get();
+					var stats = couchbase.getDocStats( "unittest-touch" ).get();
+					
+					var original_exptime = stats[ "key_exptime" ];
 					
 					// Touch with 10 minute timeout
-					var result = couchbase.getAndTouch( "unittest", 10 );
+					var result = couchbase.getAndTouch( "unittest-touch", 10 );
 					 
-					expect(	result ).toBeStruct(); 
+					expect(	result ).toBeStruct();
 					expect(	result ).toHaveKey( "CAS" );
 					expect(	result ).toHaveKey( "value" );
 					expect(	result.CAS ).toBeNumeric(); 
 					expect(	result.value ).toBe( data );
 										
-					var stats = couchbase.getDocStats( "unittest" ).get();
+					var stats = couchbase.getDocStats( "unittest-touch" ).get();
 					
 					// The timeout should now be 5 minutes farther in the future
-					expect(	stats.key_exptime > original_exptime ).toBeTrue();
+					expect(	stats[ "key_exptime" ] > original_exptime ).toBeTrue();
 					
 				});		
 

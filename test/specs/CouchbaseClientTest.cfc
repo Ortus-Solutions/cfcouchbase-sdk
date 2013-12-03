@@ -297,6 +297,20 @@ component{
 					 
 					
 				});
+
+				it( "done asynchronously", function(){
+					couchbase.set( id="asyncget", value="value" );
+					var f = couchbase.asyncGet( id="asyncget" );
+					expect( f.get(), "value" );
+				});
+
+				it( "with async CAS", function(){
+					couchbase.set( id="asyncgetWithCas", value="value" );
+					var f = couchbase.asyncGetWithCas( id="asyncgetWithCas" );
+					var cas = f.get();
+					expect( cas.getValue() ).toBe( "value" );
+					expect( cas.getCas() ).notToBeEmpty();
+				});
 				
 			});
 

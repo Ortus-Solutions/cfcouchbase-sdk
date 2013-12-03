@@ -382,6 +382,28 @@ component serializable="false" accessors="true"{
 			rethrow;
 		}
 	}
+
+	/**
+	* Get an object from couchbase asynchronously, returns a Java Future object
+	* @ID.hint The ID of the document to retrieve.
+	*/
+	any function asyncGet( required string ID ){
+		arguments.ID = variables.util.normalizeID( arguments.ID );
+		
+		try {
+			var future = variables.couchbaseClient.asyncGet( arguments.ID );
+			// no inflation or deserialization as it is async.
+			return future;
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
 	
 	/**
 	* Get multiple objects from couchbase.  Returns a struct of values.  Any document IDs not found will not exist in the struct.
@@ -437,6 +459,30 @@ component serializable="false" accessors="true"{
 
 				return result;
 			}
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Gets (with CAS support) the given key asynchronously. Returns a Java Future.  This method is meant to be used in conjunction with setWithCAS to be able to 
+	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
+	* The future has methods that will return the "CAS" and "value" keys.
+	* @ID.hint The ID of the document to retrieve.
+	*/
+	any function asyncGetWithCAS( required string ID ){
+		arguments.ID = variables.util.normalizeID( arguments.ID );
+		
+		try {
+			var future = variables.couchbaseClient.asyncGets( arguments.ID );
+
+			return future;			
 		}
 		catch( any e ){
 			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
@@ -856,6 +902,23 @@ component serializable="false" accessors="true"{
 			rethrow;
 		}
 	}
+
+	/************************* UTILITY INTEGRATION ***********************************/
+
+	/**
+	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
+	* inflateTo parameter wich can be an object we should inflate our data to.
+	* @data.hint A JSON document to deserialize according to our rules
+	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	*/
+	any function deserialize( required string data, any inflateTo ){
+
+		// do custom deserializations here.
+
+		// do inflations
+
+	}
+
 
 	/************************* JAVA INTEGRATION ***********************************/
 

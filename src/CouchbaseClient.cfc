@@ -435,6 +435,30 @@ component serializable="false" accessors="true"{
 			rethrow;
 		}
 	}
+
+	/**
+	* Get multiple objects from couchbase asynchronously.  Returns a bulk Java Future.  Any document IDs not found will not exist in the struct.
+	* @ID.hint An array of document IDs to retrieve.
+	*/
+	any function asyncGetMulti( required array ID ){
+		arguments.ID = variables.util.normalizeID( arguments.ID );
+		
+		try {
+			// Java method expects a java.util.Collection
+			var result = variables.couchbaseClient.asyncGetBulk( arguments.ID );
+			
+			return result;
+
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
 	
 	/**
 	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 

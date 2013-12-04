@@ -104,12 +104,12 @@ component accessors="true"{
     * @ID.hint The ID to normalize, or an array of IDs
     */
     any function normalizeID( required any ID ) {
-    	if( isSimpleValue(arguments.ID) ) {
-			return lcase(trim(arguments.ID));    		
+    	if( isSimpleValue( arguments.ID ) ) {
+			return lcase( trim( arguments.ID ) );    		
     	} else {
     		var i = 1;
     		for( var locID in arguments.ID ) {
-    			arguments.ID[i] = lcase(trim(locID));
+    			arguments.ID[ i ] = lcase( trim( locID ) );
     			i++;
     		}
     		return arguments.ID;

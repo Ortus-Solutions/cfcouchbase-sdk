@@ -35,24 +35,38 @@ component{
 /*********************************** BDD SUITES ***********************************/
 
 	function run(){
-		describe( "Couchbase Config", function(){
-
-			beforeEach(function(){
-				config = new cfcouchbase.config.CouchbaseConfig();
-				debug( config.getMemento() );
+		describe( "Couchbase Client Construction", function(){
+				
+			afterEach(function( currentSpec ){
+				couchbase.shutdown();
 			});
 
-			it( "inits correctly", function(){
-				data = config.getMemento();
-				expect(	data ).toBeStruct();
-				expect( data.servers ).toBe( "http://127.0.0.1:8091" );
+			it( "with vanilla settings", function(){
+				couchbase = new cfcouchbase.CouchbaseClient();
+				expect(	couchbase ).toBeComponent();
 			});
 
-			it( "inits with name-value pairs", function(){
-				config.init( bucketname="test", password="bogus", obsPollMax=50 );
-				expect(	config.getBucketname() ).toBe( 'test' );
-				expect(	config.getPassword() ).toBe( 'bogus' );
-				expect(	config.getobsPollMax() ).toBe( '50' );
+			it( "with config struct literal", function(){
+				couchbase = new cfcouchbase.CouchbaseClient( config={servers="http://127.0.0.1:8091", bucketname="default"} );
+				expect(	couchbase ).toBeComponent();
+			});
+
+			it( "with config object instance", function(){
+				var config = new cfcouchbase.config.CouchbaseConfig( bucketname="default", viewTimeout="1000" );
+				couchbase = new cfcouchbase.CouchbaseClient( config=config );
+				expect(	couchbase ).toBeComponent();
+			});
+
+			it( "with config object path", function(){
+				couchbase = new cfcouchbase.CouchbaseClient( config="test.resources.Config" );
+				expect(	couchbase ).toBeComponent();
+			});
+
+			it( "with simple config object", function(){
+				var config = new test.resources.SimpleConfig();
+				couchbase = new cfcouchbase.CouchbaseClient( config=config );
+				expect(	couchbase ).toBeComponent();
+				expect(	couchbase.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
 			});
 		
 		});

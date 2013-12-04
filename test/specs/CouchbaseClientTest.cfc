@@ -52,37 +52,6 @@ component{
 			});
 
 			/**************************************************************/
-			/**************** construction ********************************/
-			/**************************************************************/
-			describe( "can be constructed ", function(){
-				
-				it( "with vanilla settings", function(){
-					expect(	couchbase ).toBeComponent();
-				});
-
-				it( "with config struct literal", function(){
-					expect(	new cfcouchbase.CouchbaseClient( config={servers="http://127.0.0.1:8091", bucketname="default"} ) ).toBeComponent();
-				});
-
-				it( "with config object instance", function(){
-					var config = new cfcouchbase.config.CouchbaseConfig( bucketname="default", viewTimeout="1000" );
-					expect(	new cfcouchbase.CouchbaseClient( config=config ) ).toBeComponent();
-				});
-
-				it( "with config object path", function(){
-					expect(	new cfcouchbase.CouchbaseClient( config="test.resources.Config" ) ).toBeComponent();
-				});
-
-				it( "with simple config object", function(){
-					var config = new test.resources.SimpleConfig();
-					var cbClient = new cfcouchbase.CouchbaseClient( config=config );
-					expect(	cbClient ).toBeComponent();
-					expect(	cbClient.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
-				});
-			
-			});
-
-			/**************************************************************/
 			/**************** set operations ******************************/
 			/**************************************************************/
 			describe( "set operations", function(){
@@ -212,6 +181,7 @@ component{
 			/**************** get operations ******************************/
 			/**************************************************************/
 			describe( "get operations", function(){
+
 				it( "of a valid object", function(){
 					var data = now();
 					var future = couchbase.set( ID="unittest", value=data );
@@ -229,9 +199,6 @@ component{
 					future.get();
 					var result = couchbase.getWithCAS( "unittest" );
 					 
-					expect(	result ).toBeStruct(); 
-					expect(	result ).toHaveKey( "CAS" );
-					expect(	result ).toHaveKey( "value" );
 					expect(	result.CAS ).toBeNumeric(); 
 					expect(	result.value ).toBe( data );
 					
@@ -252,9 +219,6 @@ component{
 					// Touch with 10 minute timeout
 					var result = couchbase.getAndTouch( "unittest-touch", 10 );
 					 
-					expect(	result ).toBeStruct();
-					expect(	result ).toHaveKey( "CAS" );
-					expect(	result ).toHaveKey( "value" );
 					expect(	result.CAS ).toBeNumeric(); 
 					expect(	result.value ).toBe( data );
 										
@@ -274,7 +238,6 @@ component{
 					couchbase.set( ID="myid ", value=data ).get();
 					expect(	couchbase.get( "MYID" ) ).toBe( data );
 				});
-				
 
 				it( "with multiple IDs", function(){
 					couchbase.set( ID="ID1", value="value1" ).get();
@@ -283,53 +246,75 @@ component{
 					
 					var result = couchbase.getMulti( ["ID1","ID2","ID3","not_existant"] );
 					
-					expect(	result ).toBeStruct();
-					
-					expect(	result ).toHaveKey( "id1" );
-					expect(	result ).toHaveKey( "id2" );
-					expect(	result ).toHaveKey( "id3" );
-					
 					expect(	result.id1 ).toBe( "value1" );
 					expect(	result.id2 ).toBe( "value2" );
 					expect(	result.id3 ).toBe( "value3" );
 					
 					expect(	result ).notToHaveKey( "not_existant" );
-					 
-					
 				});
 
-				it( "with async get", function(){
-					couchbase.set( id="asyncget", value="value" );
-					var f = couchbase.asyncGet( id="asyncget" );
-					expect( f.get(), "value" );
-				});
-
-				it( "with async CAS", function(){
-					couchbase.set( id="asyncgetWithCas", value="value" );
-					var f = couchbase.asyncGetWithCas( id="asyncgetWithCas" );
-					var cas = f.get();
-					expect( cas.getValue() ).toBe( "value" );
-					expect( cas.getCas() ).notToBeEmpty();
-				});
-
-				it( "with async and touch", function(){
-					var data = now();
-					// Set with 5 minute timeout
-					var future = couchbase.set( ID="unittest-asynctouch", value=data, timeout=5 ).get();
-					var stats = couchbase.getDocStats( "unittest-asynctouch" ).get();
+				/**************************************************************/
+				/**************** async operations ******************************/
+				/**************************************************************/
+				describe( "that are asynchronous", function(){
 					
-					var original_exptime = stats[ "key_exptime" ];
-					
-					// Touch with 10 minute timeout
-					var casValue = couchbase.asyncGetAndTouch( "unittest-asynctouch", 10 ).get();
+					it( "with valid object", function(){
+						couchbase.set( id="asyncget", value="value" );
+						var f = couchbase.asyncGet( id="asyncget" );
+						expect( f.get(), "value" );
+					});
 
-					expect(	casValue.getCas() ).toBeNumeric(); 
-					expect(	casValue.getValue() ).toBe( data );
-										
-					var stats = couchbase.getDocStats( "unittest-asynctouch" ).get();
-					
-					// The timeout should now be 5 minutes farther in the future
-					expect(	stats[ "key_exptime" ] > original_exptime ).toBeTrue();
+					it( "with invalid object", function(){
+						var f = couchbase.asyncGet( id="I am an invalid object" );
+						expect( f.get() ).toBeNull();
+					});
+
+					it( "with CAS", function(){
+						couchbase.set( id="asyncgetWithCas", value="value" );
+						var f = couchbase.asyncGetWithCas( id="asyncgetWithCas" );
+						var cas = f.get();
+						expect( cas.getValue() ).toBe( "value" );
+						expect( cas.getCas() ).notToBeEmpty();
+					});
+
+					it( "with touch", function(){
+						var data = now();
+						// Set with 5 minute timeout
+						var future = couchbase.set( ID="unittest-asynctouch", value=data, timeout=5 ).get();
+						var stats = couchbase.getDocStats( "unittest-asynctouch" ).get();
+						
+						var original_exptime = stats[ "key_exptime" ];
+						
+						// Touch with 10 minute timeout
+						var casValue = couchbase.asyncGetAndTouch( "unittest-asynctouch", 10 ).get();
+
+						expect(	casValue.getCas() ).toBeNumeric(); 
+						expect(	casValue.getValue() ).toBe( data );
+											
+						var stats = couchbase.getDocStats( "unittest-asynctouch" ).get();
+						
+						// The timeout should now be 5 minutes farther in the future
+						expect(	stats[ "key_exptime" ] > original_exptime ).toBeTrue();
+						
+					});
+
+					it( "with multiple IDs", function(){
+						couchbase.set( ID="async-id1", value="value1" ).get();
+						couchbase.set( ID="async-id2", value="value2" ).get();
+						couchbase.set( ID="async-id3", value="value3" ).get();
+						
+						var result = couchbase.asyncGetMulti( ["async-ID1","async-ID2","async-ID3","not_existant"] ).get();
+						
+						debug( var="Hello", duplicate=true );
+						
+
+						expect(	result[ "async-id1" ] ).toBe( "value1" );
+						expect(	result[ "async-id2" ] ).toBe( "value2" );
+						expect(	result[ "async-id3" ] ).toBe( "value3" );
+						
+						expect(	result ).notToHaveKey( "not_existant" );
+					});
+
 					
 				});
 				

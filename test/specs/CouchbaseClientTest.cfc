@@ -263,7 +263,7 @@ component{
 					// The timeout should now be 5 minutes farther in the future
 					expect(	stats[ "key_exptime" ] > original_exptime ).toBeTrue();
 					
-				});		
+				});
 
 				it( "of an invalid object with touch", function(){
 					expect(	couchbase.getAndTouch( "Nothing123", 10 ) ).toBeNull();
@@ -298,7 +298,7 @@ component{
 					
 				});
 
-				it( "done asynchronously", function(){
+				it( "with async get", function(){
 					couchbase.set( id="asyncget", value="value" );
 					var f = couchbase.asyncGet( id="asyncget" );
 					expect( f.get(), "value" );
@@ -310,6 +310,27 @@ component{
 					var cas = f.get();
 					expect( cas.getValue() ).toBe( "value" );
 					expect( cas.getCas() ).notToBeEmpty();
+				});
+
+				it( "with async and touch", function(){
+					var data = now();
+					// Set with 5 minute timeout
+					var future = couchbase.set( ID="unittest-asynctouch", value=data, timeout=5 ).get();
+					var stats = couchbase.getDocStats( "unittest-asynctouch" ).get();
+					
+					var original_exptime = stats[ "key_exptime" ];
+					
+					// Touch with 10 minute timeout
+					var casValue = couchbase.asyncGetAndTouch( "unittest-asynctouch", 10 ).get();
+
+					expect(	casValue.getCas() ).toBeNumeric(); 
+					expect(	casValue.getValue() ).toBe( data );
+										
+					var stats = couchbase.getDocStats( "unittest-asynctouch" ).get();
+					
+					// The timeout should now be 5 minutes farther in the future
+					expect(	stats[ "key_exptime" ] > original_exptime ).toBeTrue();
+					
 				});
 				
 			});

@@ -538,6 +538,35 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
+	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
+	* functionality where you don't want a document to timeout while it is still being accessed.
+	* This method will return a Future object that retrieves a CASValue class that you can use to get the value and cas of the object.
+	* @ID.hint The ID of the document to retrieve.
+	* @timeout.hint The expiration of the document in minutes
+	*/
+	any function asyncGetAndTouch(
+					required string ID,
+					required numeric timeout
+	){		 	 
+		
+		arguments.ID = variables.util.normalizeID( arguments.ID );
+		
+		try {
+			var future = variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+
+			return future;
+		}
+		catch( any e ){
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
 	* Shutdown the native client connection
 	* @timeout.hint The timeout in seconds, we default to 10 seconds
 	*/

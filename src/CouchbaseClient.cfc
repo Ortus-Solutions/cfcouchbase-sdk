@@ -369,8 +369,7 @@ component serializable="false" accessors="true"{
 
 			if( !isNull( results ) ){
 				// deserializations go here.
-
-				return results;
+				return ( arguments.deserialize && isJSON( results ) ? deserializeJSON( results ) : results );
 			}
 		}
 		catch( any e ){
@@ -421,7 +420,7 @@ component serializable="false" accessors="true"{
 			for( var key in map ) {
 				var value = map[ key ];
 				// deserializations go here.
-				result[ key ] = value;				
+				result[ key ] = ( arguments.deserialize && isJSON( value ) ? deserializeJSON( value ) : value );		
 			}
 			return result;
 
@@ -475,11 +474,15 @@ component serializable="false" accessors="true"{
 			var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
 
 			if( !isNull( resultsWithCAS ) ){
-				var result = {};
-				result.CAS = resultsWithCAS.getCAS();
-				result.value = resultsWithCAS.getValue();
-				
+				// build struct out.
+				var result = {
+					cas 	= resultsWithCAS.getCAS(),
+					value 	= resultsWithCAS.getValue()
+				};
+
 				// deserializations go here.
+				if( arguments.deserialize && isJSON( result.value ) )
+					result.value = deserializeJSON( result.value );
 
 				return result;
 			}
@@ -542,11 +545,15 @@ component serializable="false" accessors="true"{
 														   );
 
 			if( !isNull( resultsWithCAS ) ){
-				var result = {};
-				result.CAS = resultsWithCAS.getCAS();
-				result.value = resultsWithCAS.getValue();
-				
+				// build struct out.
+				var result = {
+					cas 	= resultsWithCAS.getCAS(),
+					value 	= resultsWithCAS.getValue()
+				};
+
 				// deserializations go here.
+				if( arguments.deserialize && isJSON( result.value ) )
+					result.value = deserializeJSON( result.value );
 
 				return result;
 			}

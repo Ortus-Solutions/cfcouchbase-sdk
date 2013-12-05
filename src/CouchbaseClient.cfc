@@ -875,6 +875,30 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
+	* Get the addresses of available servers
+	*/ 
+	array function getAvailableServers(){
+		var servers = variables.couchbaseClient.getAvailableServers();
+		var index	= 1;
+		for( var thisServer in servers ){
+			servers[ index++ ] = thisServer.toString();
+		}
+		return servers;
+	}
+
+	/**
+	* Get the addresses of available servers
+	*/ 
+	array function getUnAvailableServers(){
+		var servers = variables.couchbaseClient.getUnAvailableServers();
+		var index	= 1;
+		for( var thisServer in servers ){
+			servers[ index++ ] = thisServer.toString();
+		}
+		return servers;
+	}
+
+	/**
 	* Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
 	* Note that the return will be false any time a mutation has not occurred from the Future returned object.
 	* This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents

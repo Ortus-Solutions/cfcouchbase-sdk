@@ -51,6 +51,17 @@ component{
 				expect(	future.get() ).toBeTrue();
 			});
 
+			it( "can get available servers", function(){
+				var servers = couchbase.getAvailableServers();
+				expect(	arrayLen( servers ) ).toBeGTE( 1 );
+			});
+
+			it( "can get unavailable servers", function(){
+				var servers = couchbase.getUnAvailableServers();
+				expect(	arrayLen( servers ) ).toBe( 0 );
+			});
+
+
 			/**************************************************************/
 			/**************** set operations ******************************/
 			/**************************************************************/

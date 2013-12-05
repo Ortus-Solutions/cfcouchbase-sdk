@@ -361,7 +361,7 @@ component serializable="false" accessors="true"{
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
-	any function get( required string ID, boolean deserialize=true, any inflateTo ){
+	any function get( required string ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
@@ -369,7 +369,7 @@ component serializable="false" accessors="true"{
 
 			if( !isNull( results ) ){
 				// deserializations go here.
-				return ( arguments.deserialize && isJSON( results ) ? deserializeJSON( results ) : results );
+				return this.deserialize( results, arguments.inflateTo, arguments.deserialize );
 			}
 		}
 		catch( any e ){
@@ -410,7 +410,7 @@ component serializable="false" accessors="true"{
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
-	any function getMulti( required array ID, boolean deserialize=true, any inflateTo ){
+	any function getMulti( required array ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
@@ -420,7 +420,7 @@ component serializable="false" accessors="true"{
 			for( var key in map ) {
 				var value = map[ key ];
 				// deserializations go here.
-				result[ key ] = ( arguments.deserialize && isJSON( value ) ? deserializeJSON( value ) : value );		
+				result[ key ] = this.deserialize( value, arguments.inflateTo, arguments.deserialize );	
 			}
 			return result;
 
@@ -467,7 +467,7 @@ component serializable="false" accessors="true"{
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	*/
-	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo ){
+	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		try {
@@ -477,12 +477,8 @@ component serializable="false" accessors="true"{
 				// build struct out.
 				var result = {
 					cas 	= resultsWithCAS.getCAS(),
-					value 	= resultsWithCAS.getValue()
+					value 	= this.deserialize( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
 				};
-
-				// deserializations go here.
-				if( arguments.deserialize && isJSON( result.value ) )
-					result.value = deserializeJSON( result.value );
 
 				return result;
 			}
@@ -534,7 +530,7 @@ component serializable="false" accessors="true"{
 					required string ID,
 					required numeric timeout,
 					boolean deserialize=true,
-					any inflateTo
+					any inflateTo=""
 				 ){		 	 
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
@@ -548,12 +544,8 @@ component serializable="false" accessors="true"{
 				// build struct out.
 				var result = {
 					cas 	= resultsWithCAS.getCAS(),
-					value 	= resultsWithCAS.getValue()
+					value 	= this.deserialize( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
 				};
-
-				// deserializations go here.
-				if( arguments.deserialize && isJSON( result.value ) )
-					result.value = deserializeJSON( result.value );
 
 				return result;
 			}
@@ -1030,7 +1022,8 @@ component serializable="false" accessors="true"{
 		required string designDocument, 
 		required string name,
 		struct options={},
-		boolean deserialize=true
+		boolean deserialize=true,
+		any inflateTo=""
 	){
 		try{
 			var oQuery 	= getQuery( arguments.options );
@@ -1055,7 +1048,7 @@ component serializable="false" accessors="true"{
 				var thisDocument = { id : thisRow.getId(), document : "" };
 				// Did we get a document or none?
 				if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
-					thisDocument.document = ( arguments.deserialize && isJson( thisRow.getDocument() ) ? deserializeJSON( thisRow.getDocument() ) : thisRow.getDocument() );
+					thisDocument.document = this.deserialize( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize )
 				}
 				arrayAppend( cfresults, thisDocument );
 			}
@@ -1142,13 +1135,18 @@ component serializable="false" accessors="true"{
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
 	*/
-	any function deserialize( required string data, any inflateTo ){
+	any function deserialize( required string data, any inflateTo="", boolean deserialize=true ){
 
 		// do custom deserializations here.
+		if( arguments.deserialize && isJSON( arguments.data ) ){
+			arguments.data = deserializeJSON( arguments.data );
+			// do inflations here
 
-		// do inflations
-
+		}
+		
+		return arguments.data;
 	}
 
 

@@ -68,16 +68,25 @@ component{
 
 			it( "can do a enhanced query with no docs", function(){
 				var results = couchbase.query( 'beer', 'brewery_beers', { limit: javaCast("int", 100)} );
-				debug( results );
+				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 			});
 
-			it( "can do a enhanced query with docs", function(){
+			it( "can do a deserialized query with docs", function(){
 				var results = couchbase.query( 'beer', 'brewery_beers', { limit: javaCast("int", 100), includeDocs: true} );
+				debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 				expect(	results[ 1 ].document ).toBeStruct();
+			});
+
+			it( "can do a non-deserialized query with docs", function(){
+				var results = couchbase.query( 'beer', 'brewery_beers', { limit: javaCast("int", 100), includeDocs: true}, false );
+				debug( results );
+				expect(	results ).toBeArray();
+				expect(	arrayLen( results ) ).toBeGT( 1 );
+				expect(	results[ 1 ].document ).toBeString();
 			});
 		
 		});

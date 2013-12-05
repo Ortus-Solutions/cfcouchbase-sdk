@@ -980,6 +980,97 @@ component serializable="false" accessors="true"{
 		}
 	}
 
+	/************************* VIEW INTEGRATION ***********************************/
+
+	/**
+	* Gets a new Couchbase query class object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries. 
+	* You can pass an optional options struct with name-value pairs of view options like:
+	* debug:boolean, descending:boolean, endKeyDocID:string, group:boolean, groupLevel:numeric, etc.
+	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
+	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. Make sure values are casted.
+	*/
+	any function newQuery( struct options={} ){
+		try{
+			var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
+			// options
+			for( var thisKey in arguments.options ){
+				evaluate( "oQuery.set#thisKey#( arguments.options[ thisKey ] )" );
+			}
+
+			return oQuery;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Queries a Couchbase view and returns a raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse). 
+	* See: http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/ViewResponse.html
+	* @view.hint A couchbase view object (com.couchbase.client.protocol.views.View)
+	* @query.hint A couchbase query object (com.couchbase.client.protocol.views.Query)
+	*/
+	any function query( required any view, required any query ){
+		try{
+			var results = variables.couchbaseClient.query( arguments.view, arguments.query );
+
+			return results;
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Gets access to a view contained in a design document from the cluster by returning a View Java object (com.couchbase.client.protocol.views.View). 
+	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
+	* @designDocument.hint The name of the design document
+	* @name.hint The name of the view to get
+	*/
+	any function getView( required string designDocument, required string name ){
+		try{
+			return variables.couchbaseClient.getView( arguments.designDocument, arguments.name );	
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
+	* Gets access to a spatial view contained in a design document from the cluster by returning a View Java object (com.couchbase.client.protocol.views.SpatialView). 
+	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
+	* @designDocument.hint The name of the design document
+	* @name.hint The name of the view to get
+	*/
+	any function getSpatialView( required string designDocument, required string name ){
+		try{
+			return variables.couchbaseClient.getSpatialView( arguments.designDocument, arguments.name );	
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
 	/************************* UTILITY INTEGRATION ***********************************/
 
 	/**

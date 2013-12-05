@@ -116,4 +116,20 @@ component accessors="true"{
     	}
 	}
 
+	/**
+    * Deal with errors that came back from the cluster
+    * rowErrors is an array of com.couchbase.client.protocol.views.RowError
+    */
+    any function handleRowErrors( message, rowErrors, type ){
+    	local.detail = '';
+
+    	// iterate and build errors
+    	for( local.error in arguments.rowErrors ) {
+    		local.detail &= local.error.getFrom();
+    		local.detail &= local.error.getReason();
+    	}
+    	
+    	throw( message=arguments.message, detail=local.detail, type=arguments.type );
+    }
+
 }

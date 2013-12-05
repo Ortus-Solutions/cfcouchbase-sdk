@@ -989,7 +989,7 @@ component serializable="false" accessors="true"{
 	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. Make sure values are casted.
 	*/
-	any function newQuery( struct options={} ){
+	any function getQuery( struct options={} ){
 		try{
 			var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
 			// options
@@ -1010,12 +1010,69 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
+	* Queries a Couchbase view and returns a CFML struct of structs representation. Each row contains the following items: id, document
+	* The options struct maps to the set of options found
+	* in the native Couchbase query object (com.couchbase.client.protocol.views.Query) 
+	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
+	* @designDocument.hint The name of the design document
+	* @view.hint The name of the view to get
+	* @options.hint The query options to use for this query. Make sure you javacast any necessary options.
+	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
+	*/
+	any function query( 
+		required string designDocument, 
+		required string name,
+		struct options={},
+		boolean deserialize=true
+	){
+		try{
+			var oQuery 	= getQuery( arguments.options );
+			var oView  	= getView( arguments.designDocument, arguments.name );
+			var results = rawQuery( oView, oQuery );
+
+			// Were there errors
+	    	if( arrayLen( results.getErrors() ) ){
+	    		// This will log only and not throw an exception
+	    		// PLEASE NOTE, the response received may not include all documents if one or more nodes are offline 
+		    	// and not yet failed over.  Couchbase basically sends back what docs it _can_ access and ignores the other nodes.
+	    		variables.util.handleRowErrors( message='There was an error executing the view: #arguments.view#',
+	    										rowErrors=results.getErrors(),
+	    										type='CouchbaseClient.ViewException' );
+	    	}
+
+	    	// iterate and build it out with or without desrializations
+			var iterator 	= results.iterator();
+			var cfresults 	= [];
+			while( iterator.hasNext() ){
+				var thisRow 	 = iterator.next();
+				var thisDocument = { id : thisRow.getId(), document : "" };
+				// Did we get a document or none?
+				if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
+					thisDocument.document = ( arguments.deserialize && isJson( thisRow.getDocument() ) ? deserializeJSON( thisRow.getDocument() ) : thisRow.getDocument() );
+				}
+				arrayAppend( cfresults, thisDocument );
+			}
+
+			return cfresults;
+
+		}
+		catch( any e ) {
+			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
+				// returns void
+				return;
+			}
+			// For any other type of exception, rethrow.
+			rethrow;
+		}
+	}
+
+	/**
 	* Queries a Couchbase view and returns a raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse). 
 	* See: http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/ViewResponse.html
 	* @view.hint A couchbase view object (com.couchbase.client.protocol.views.View)
 	* @query.hint A couchbase query object (com.couchbase.client.protocol.views.Query)
 	*/
-	any function query( required any view, required any query ){
+	any function rawQuery( required any view, required any query ){
 		try{
 			var results = variables.couchbaseClient.query( arguments.view, arguments.query );
 

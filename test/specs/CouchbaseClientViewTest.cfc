@@ -88,6 +88,13 @@ component{
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 				expect(	results[ 1 ].document ).toBeString();
 			});
+
+			it( "can do a paginated query with docs", function(){
+				var results = couchbase.query( 'beer', 'brewery_beers', { limit: 10, skip: 20, includeDocs: true}, false );
+				debug( results );
+				expect(	results ).toBeArray();
+				expect(	arrayLen( results ) ).toBe( 10 );
+			});
 		
 		});
 	}

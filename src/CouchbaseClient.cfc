@@ -982,11 +982,11 @@ component serializable="false" accessors="true"{
 	/************************* VIEW INTEGRATION ***********************************/
 
 	/**
-	* Gets a new Couchbase query class object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries. 
-	* You can pass an optional options struct with name-value pairs of view options like:
+	* Gets a new Java Couchbase query class object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries. 
+	* You can pass an optional options struct with name-value pairs of simple query options like:
 	* debug:boolean, descending:boolean, endKeyDocID:string, group:boolean, groupLevel:numeric, etc.
 	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
-	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information.
+	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. This only does the simple 1 value options
 	*/
 	any function getQuery( struct options={} ){
 		try{
@@ -1006,7 +1006,7 @@ component serializable="false" accessors="true"{
 					}
 					default : { thisValue = arguments.options[ thisKey ]; }
 				}
-
+				// evaluate setting.
 				evaluate( "oQuery.set#thisKey#( thisValue )" );
 			}
 
@@ -1029,18 +1029,19 @@ component serializable="false" accessors="true"{
 	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* @designDocument.hint The name of the design document
 	* @view.hint The name of the view to get
-	* @options.hint The query options to use for this query.
+	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'getQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
 	*/
 	any function query( 
 		required string designDocument, 
 		required string name,
-		struct options={},
+		any options={},
 		boolean deserialize=true,
 		any inflateTo=""
 	){
 		try{
-			var oQuery 	= getQuery( arguments.options );
+			// if options is struct, then build out the query, else use it as an object.
+			var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
 			var oView  	= getView( arguments.designDocument, arguments.name );
 			var results = rawQuery( oView, oQuery );
 
@@ -1062,7 +1063,7 @@ component serializable="false" accessors="true"{
 				var thisDocument = { id : thisRow.getId(), document : "" };
 				// Did we get a document or none?
 				if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
-					thisDocument.document = this.deserialize( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize )
+					thisDocument.document = this.deserialize( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
 				}
 				arrayAppend( cfresults, thisDocument );
 			}

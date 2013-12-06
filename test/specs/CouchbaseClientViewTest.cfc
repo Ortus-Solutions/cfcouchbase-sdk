@@ -107,7 +107,7 @@ component{
 				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBe( 0 );
-				//expect(	results[ 1 ].document ).toBeStruct();
+				//expect( results[ 1 ].document ).toBeStruct();
 			});
 
 			it( "can do a query with custom transformations", function(){

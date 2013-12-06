@@ -986,14 +986,28 @@ component serializable="false" accessors="true"{
 	* You can pass an optional options struct with name-value pairs of view options like:
 	* debug:boolean, descending:boolean, endKeyDocID:string, group:boolean, groupLevel:numeric, etc.
 	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
-	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. Make sure values are casted.
+	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information.
 	*/
 	any function getQuery( struct options={} ){
 		try{
 			var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
 			// options
 			for( var thisKey in arguments.options ){
-				evaluate( "oQuery.set#thisKey#( arguments.options[ thisKey ] )" );
+				var thisValue = "";
+				// provide some basic auto-casting.
+				switch( thisKey ){
+					case "groupLevel" : case "limit" : case "skip" : { 
+						thisValue = javaCast( "int", arguments.options[ thisKey ] );
+						break;
+					}
+					case "debug" : case "descending" : case "group" : case "inclusiveEnd" : case "includeDocs" : case "reduce" : { 
+						thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
+						break;
+					}
+					default : { thisValue = arguments.options[ thisKey ]; }
+				}
+
+				evaluate( "oQuery.set#thisKey#( thisValue )" );
 			}
 
 			return oQuery;
@@ -1015,7 +1029,7 @@ component serializable="false" accessors="true"{
 	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* @designDocument.hint The name of the design document
 	* @view.hint The name of the view to get
-	* @options.hint The query options to use for this query. Make sure you javacast any necessary options.
+	* @options.hint The query options to use for this query.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
 	*/
 	any function query( 

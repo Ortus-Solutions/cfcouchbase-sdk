@@ -51,7 +51,7 @@ component{
 			});
 
 			it( "can produce a raw query object with options", function(){
-				var oQuery = couchbase.getQuery( { debug: true, limit: javaCast( "int", 10 ) } );
+				var oQuery = couchbase.getQuery( { debug: true, limit: 10 } );
 				expect(	oQuery.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.Query" );
 				var args = oQuery.getArgs();
 				expect(	args[ "debug" ] ).toBeTrue();
@@ -59,7 +59,7 @@ component{
 			});
 
 			it( "can do a raw query", function(){
-				var oQuery = couchbase.getQuery( { limit: javaCast( "int", 10 ), includeDocs:true } );
+				var oQuery = couchbase.getQuery( { limit: 10, includeDocs:true } );
 				var oView  = couchbase.getView( "beer", "brewery_beers" );
 				var results = couchbase.rawquery( oView, oQuery );
 
@@ -67,23 +67,23 @@ component{
 			});
 
 			it( "can do a enhanced query with no docs", function(){
-				var results = couchbase.query( 'beer', 'brewery_beers', { limit: javaCast("int", 100)} );
+				var results = couchbase.query( 'beer', 'brewery_beers', { limit: 100 } );
 				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 			});
 
 			it( "can do a deserialized query with docs", function(){
-				var results = couchbase.query( 'beer', 'brewery_beers', { limit: javaCast("int", 100), includeDocs: true} );
-				debug( results );
+				var results = couchbase.query( 'beer', 'brewery_beers', { limit: 100, includeDocs: true} );
+				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 				expect(	results[ 1 ].document ).toBeStruct();
 			});
 
 			it( "can do a non-deserialized query with docs", function(){
-				var results = couchbase.query( 'beer', 'brewery_beers', { limit: javaCast("int", 100), includeDocs: true}, false );
-				debug( results );
+				var results = couchbase.query( 'beer', 'brewery_beers', { limit: 100, includeDocs: true}, false );
+				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 				expect(	results[ 1 ].document ).toBeString();

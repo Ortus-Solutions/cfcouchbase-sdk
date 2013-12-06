@@ -91,9 +91,23 @@ component{
 
 			it( "can do a paginated query with docs", function(){
 				var results = couchbase.query( 'beer', 'brewery_beers', { limit: 10, skip: 20, includeDocs: true}, false );
-				debug( results );
+				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBe( 10 );
+			});
+
+			it( "can do a query with a filter", function(){
+				// filter out beers
+				var results = couchbase.query( designDocument='beer', 
+											   view='brewery_beers', 
+											   options={ limit: 10, includeDocs: true},
+											   filter=function( row ){
+											   	return ( true );
+											   	} );
+				//debug( results );
+				expect(	results ).toBeArray();
+				expect(	arrayLen( results ) ).toBe( 0 );
+				//expect(	results[ 1 ].document ).toBeStruct();
 			});
 		
 		});

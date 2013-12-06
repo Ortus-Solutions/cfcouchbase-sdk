@@ -1032,7 +1032,7 @@ component serializable="false" accessors="true"{
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'getQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true does not add the row to the final results.
-	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row )
+	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
 	*/
 	any function query( 
 		required string designDocument, 
@@ -1065,10 +1065,17 @@ component serializable="false" accessors="true"{
 			while( iterator.hasNext() ){
 				var thisRow 	 = iterator.next();
 				var thisDocument = { id : thisRow.getId(), document : "" };
+
 				// Did we get a document or none?
 				if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
 					thisDocument.document = this.deserialize( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
 				}
+
+				// Do we have a transformer?
+				if( structKeyExists( arguments, "transform" ) AND isClosure( arguments.transform ) ){
+					arguments.transform( thisDocument );
+				}
+
 				// Do we have a filter?
 				if( !structKeyExists( arguments, "filter" ) OR 
 					( structKeyExists( arguments, "filter" ) AND isClosure( arguments.filter ) AND ! arguments.filter( thisDocument ) ) ){

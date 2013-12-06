@@ -109,6 +109,21 @@ component{
 				expect(	arrayLen( results ) ).toBe( 0 );
 				//expect(	results[ 1 ].document ).toBeStruct();
 			});
+
+			it( "can do a query with custom transformations", function(){
+				// filter out beers
+				var results = couchbase.query( designDocument='beer', 
+											   view='brewery_beers', 
+											   options={ limit: 100, includeDocs: true},
+											   deserialize=false,
+											   transform=function( row ){
+											   	arguments.row.document = deserializeJSON( arguments.row.document );
+											   	} );
+				//debug( results );
+				expect(	results ).toBeArray();
+				expect(	arrayLen( results ) ).toBeGT( 1 );
+				expect(	results[ 1 ].document ).notToBeString();
+			});
 		
 		});
 	}

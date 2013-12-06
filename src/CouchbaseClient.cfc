@@ -132,7 +132,7 @@ component serializable="false" accessors="true"{
 			// with replicate and persist
 			var future = variables.couchbaseClient.set( arguments.ID, 
 														javaCast( "int", arguments.timeout*60 ), 
-														arguments.value, 
+														serialize( arguments.value ), 
 														arguments.persistTo, 
 														arguments.replicateTo );
 
@@ -193,7 +193,7 @@ component serializable="false" accessors="true"{
 			var CASResponse = variables.couchbaseClient.cas( arguments.ID,
 														javaCast( "long", arguments.CAS ),			 											
 														javaCast( "int", arguments.timeout*60 ), 
-														arguments.value, 
+														serialize( arguments.value ), 
 														arguments.persistTo, 
 														arguments.replicateTo );
 														
@@ -295,7 +295,7 @@ component serializable="false" accessors="true"{
 			// Set each one
 			var future = set(
 				id=local.ID,
-				value=arguments.data[ local.ID ],
+				value= serialize( arguments.data[ local.ID ] ),
 				timeout=arguments.timeout,
 				persistTo=arguments.persistTo, 
 				replicateTo=arguments.replicateTo
@@ -1158,7 +1158,7 @@ component serializable="false" accessors="true"{
 		}
 	}
 
-	/************************* UTILITY INTEGRATION ***********************************/
+	/************************* SERIALIZE/DESERIALIZE INTEGRATION ***********************************/
 
 	/**
 	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
@@ -1171,12 +1171,33 @@ component serializable="false" accessors="true"{
 
 		// do custom deserializations here.
 		if( arguments.deserialize && isJSON( arguments.data ) ){
+			// Deserialize JSON
 			arguments.data = deserializeJSON( arguments.data );
-			// do inflations here
+			// Do inflations here
 
 		}
 		
 		return arguments.data;
+	}
+
+	/**
+	* This method serializes incoming data according to our rules and it returns a string representation usually JSON
+	* @data.hint The data to serialize
+	*/
+	string function serialize( required any data ){
+
+		// if json, or string, just return back
+		if( isJSON( arguments.data ) OR isSimpleValue( arguments.data ) ){ return arguments.data; }
+
+		// if objects?
+		if( isObject( arguments.data ) ){
+			// TODO
+		}
+		// if struct, query or array just serialize it back.
+		else{
+			return serializeJSON( arguments.data );
+		}
+
 	}
 
 

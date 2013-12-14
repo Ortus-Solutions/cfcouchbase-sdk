@@ -71,13 +71,15 @@ component{
 					2 | nolan
 					3 | brad");
 				var r = couchbase.serializeData( data );
-				debug( r );
-				expect(	r ).toBe( serializeJSON( data ) );
+				//debug( r );
+				var d = deserializeJSON( r );
+				expect(	d ).toHaveKey( "type" );
+				expect(	d ).toHaveKey( "binary" );
 			});
 		
 		});
 
-		describe( "Couchbase client serialized storage", function(){
+		describe( "Couchbase client serialize/deserialize storage", function(){
 		
 			it( "of query values", function(){
 				var data = querySim( "id, name

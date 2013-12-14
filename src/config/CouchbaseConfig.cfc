@@ -90,7 +90,12 @@ component accessors="true"{
 	* The default timeout of records sent to Couchbase for storage in minutes. 0 means persist forever.
 	*/
 	property name="defaultTimeout"				default="0"		type="numeric";
-
+	/**
+	* The data marshaller to use for serializations and deserializations, plese put the class path or the instance of the marshaller to use.
+	* Please remember that it must implement our interface: cfcouchbase.data.IDataMarshaller
+	*/
+	property name="dataMarshaller"				default="";
+	
 	// Default params, just in case using cf9
 	variables.servers 						= "http://127.0.0.1:8091";
 	variables.bucketname 					= "default";
@@ -107,6 +112,7 @@ component accessors="true"{
 	variables.ignoreTimeouts				= true;
 	variables.useClassLoader				= true;
 	variables.defaultTimeout				= 0;
+	variables.dataMarshaller				= "";
 
 	/**
 	* Constructor

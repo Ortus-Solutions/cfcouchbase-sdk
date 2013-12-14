@@ -53,6 +53,10 @@ component serializable="false" accessors="true"{
 	* The SDK utility class
 	*/
 	property name="util";
+	/**
+	* The data marshaller to use for serializations and deserializations
+	*/
+	property name="dataMarshaller" type="cfcouchbase.data.IDataMarshaller";
 	
 	/**
 	* Constructor
@@ -92,7 +96,9 @@ component serializable="false" accessors="true"{
 		
 		// Build the connection factory and client
 		variables.couchbaseClient = buildCouchbaseClient( variables.couchbaseConfig );
-
+		// Build the data marshaler
+		variables.dataMarshaller = buildDataMarshaller( variables.couchbaseConfig );
+		
 		return this;
 	}
 
@@ -1165,20 +1171,8 @@ component serializable="false" accessors="true"{
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
 	*/
 	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
-
-		// do custom deserializations here.
-		if( arguments.deserialize && isJSON( arguments.data ) ){
-			// Deserialize JSON
-			arguments.data = deserializeJSON( arguments.data );
-			// Do we have a cf query?
-			if( isStruct( arguments.data ) and structkeyExists( arguments.data, "type" ) and arguments.data.type eq "cfcouchbase-query" ){
-				arguments.data = objectLoad( toBinary( arguments.data.data  ) );
-			}
-
-			// Do inflations here
-		}
-		
-		return arguments.data;
+		// Data marshaler
+		return variables.dataMarshaller.deserializeData( arguments.data, arguments.inflateTo, arguments.deserialize );
 	}
 
 	/**
@@ -1186,29 +1180,8 @@ component serializable="false" accessors="true"{
 	* @data.hint The data to serialize
 	*/
 	string function serializeData( required any data ){
-
-		// if json, or string, just return back
-		if( isJSON( arguments.data ) OR isSimpleValue( arguments.data ) ){ return arguments.data; }
-
-		// if objects?
-		if( isObject( arguments.data ) ){
-			// TODO
-		}
-		// if query, then do native serialization
-		else if( isQuery( arguments.data ) ){
-			var native = { 
-				"data" : toBase64( objectSave( arguments.data ) ),
-				"type"="cfcouchbase-query", 
-				"recordcount"=arguments.data.recordcount, 
-				"columnlist"="#arguments.data.columnlist#" 
-			};
-			return serializeJSON( native );
-		}
-		// if struct, query or array just serialize it back.
-		else{
-			return serializeJSON( arguments.data );
-		}
-
+		// Go to data marshaler
+		return variables.dataMarshaller.serializeData( arguments.data );
 	}
 
 	/************************* JAVA INTEGRATION ***********************************/
@@ -1232,9 +1205,26 @@ component serializable="false" accessors="true"{
 	/************************* PRIVATE ***********************************/
 
 	/**
+	* Build the data marshaller
+	*/
+	private any function buildDataMarshaller( required any config ){
+		var marshaller = arguments.config.getDataMarshaller();
+
+		// Build the data marshaller
+		if( isSimpleValue( marshaller ) and len( marshaller ) ){
+			return new "#marshaller#"();
+		} else if( isObject( marshaller ) ){
+			return marshaller;
+		} else {
+			// build core marshaller.
+			return new data.CoreMarshaller();
+		}
+	}
+
+	/**
 	* Buid a couchbase connection client according to config and returns the raw java connection client object
 	*/
-	private any function buildCouchbaseClient( required cfcouchbase.config.CouchbaseConfig config ){
+	private any function buildCouchbaseClient( required any config ){
 		// get config options
 		var configData = arguments.config.getMemento();
 		// cleanup server URIs and build java URI classes
@@ -1265,7 +1255,7 @@ component serializable="false" accessors="true"{
 	* Standardize and validate configuration object
 	* @config.hint The config options as a struct, path or instance.
 	*/
-	private cfcouchbase.config.CouchbaseConfig function validateConfig( required any config ){
+	private any function validateConfig( required any config ){
 		// do we have a simple path to inflate
 		if( isSimpleValue( arguments.config ) ){
 			// build out cfc
@@ -1332,7 +1322,5 @@ component serializable="false" accessors="true"{
 
 		return this;
 	}
-	
-	
 
 }

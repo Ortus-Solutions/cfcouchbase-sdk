@@ -127,12 +127,11 @@ component serializable="false" accessors="true"{
 			// default persist and replicate
 			defaultPersistReplicate( arguments );
 			// default timeouts
-			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			
+			arguments.timeout 	= ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 			// with replicate and persist
 			var future = variables.couchbaseClient.set( arguments.ID, 
 														javaCast( "int", arguments.timeout*60 ), 
-														serialize( arguments.value ), 
+														serializeData( arguments.value ), 
 														arguments.persistTo, 
 														arguments.replicateTo );
 
@@ -175,8 +174,6 @@ component serializable="false" accessors="true"{
 		any replicateTo
 	){
 
-		// serialization determinations go here
-
 		// store it
 		try{
 
@@ -193,7 +190,7 @@ component serializable="false" accessors="true"{
 			var CASResponse = variables.couchbaseClient.cas( arguments.ID,
 														javaCast( "long", arguments.CAS ),			 											
 														javaCast( "int", arguments.timeout*60 ), 
-														serialize( arguments.value ), 
+														serializeData( arguments.value ), 
 														arguments.persistTo, 
 														arguments.replicateTo );
 														
@@ -295,7 +292,7 @@ component serializable="false" accessors="true"{
 			// Set each one
 			var future = set(
 				id=local.ID,
-				value= serialize( arguments.data[ local.ID ] ),
+				value= serializeData( arguments.data[ local.ID ] ),
 				timeout=arguments.timeout,
 				persistTo=arguments.persistTo, 
 				replicateTo=arguments.replicateTo
@@ -369,7 +366,7 @@ component serializable="false" accessors="true"{
 
 			if( !isNull( results ) ){
 				// deserializations go here.
-				return this.deserialize( results, arguments.inflateTo, arguments.deserialize );
+				return deserializeData( results, arguments.inflateTo, arguments.deserialize );
 			}
 		}
 		catch( any e ){
@@ -420,7 +417,7 @@ component serializable="false" accessors="true"{
 			for( var key in map ) {
 				var value = map[ key ];
 				// deserializations go here.
-				result[ key ] = this.deserialize( value, arguments.inflateTo, arguments.deserialize );	
+				result[ key ] = deserializeData( value, arguments.inflateTo, arguments.deserialize );	
 			}
 			return result;
 
@@ -477,7 +474,7 @@ component serializable="false" accessors="true"{
 				// build struct out.
 				var result = {
 					cas 	= resultsWithCAS.getCAS(),
-					value 	= this.deserialize( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
+					value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
 				};
 
 				return result;
@@ -544,7 +541,7 @@ component serializable="false" accessors="true"{
 				// build struct out.
 				var result = {
 					cas 	= resultsWithCAS.getCAS(),
-					value 	= this.deserialize( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
+					value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
 				};
 
 				return result;
@@ -1068,7 +1065,7 @@ component serializable="false" accessors="true"{
 
 				// Did we get a document or none?
 				if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
-					thisDocument.document = this.deserialize( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
+					thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
 				}
 
 				// Do we have a transformer?
@@ -1167,14 +1164,18 @@ component serializable="false" accessors="true"{
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
 	*/
-	any function deserialize( required string data, any inflateTo="", boolean deserialize=true ){
+	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
 
 		// do custom deserializations here.
 		if( arguments.deserialize && isJSON( arguments.data ) ){
 			// Deserialize JSON
 			arguments.data = deserializeJSON( arguments.data );
-			// Do inflations here
+			// Do we have a cf query?
+			if( isStruct( arguments.data ) and structkeyExists( arguments.data, "type" ) and arguments.data.type eq "cfcouchbase-query" ){
+				arguments.data = objectLoad( toBinary( arguments.data.data  ) );
+			}
 
+			// Do inflations here
 		}
 		
 		return arguments.data;
@@ -1184,7 +1185,7 @@ component serializable="false" accessors="true"{
 	* This method serializes incoming data according to our rules and it returns a string representation usually JSON
 	* @data.hint The data to serialize
 	*/
-	string function serialize( required any data ){
+	string function serializeData( required any data ){
 
 		// if json, or string, just return back
 		if( isJSON( arguments.data ) OR isSimpleValue( arguments.data ) ){ return arguments.data; }
@@ -1193,13 +1194,22 @@ component serializable="false" accessors="true"{
 		if( isObject( arguments.data ) ){
 			// TODO
 		}
+		// if query, then do native serialization
+		else if( isQuery( arguments.data ) ){
+			var native = { 
+				"data" : toBase64( objectSave( arguments.data ) ),
+				"type"="cfcouchbase-query", 
+				"recordcount"=arguments.data.recordcount, 
+				"columnlist"="#arguments.data.columnlist#" 
+			};
+			return serializeJSON( native );
+		}
 		// if struct, query or array just serialize it back.
 		else{
 			return serializeJSON( arguments.data );
 		}
 
 	}
-
 
 	/************************* JAVA INTEGRATION ***********************************/
 

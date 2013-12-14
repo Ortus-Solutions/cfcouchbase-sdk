@@ -41,25 +41,27 @@ component{
 		describe( "Couchbase Client Serializer", function(){
 		
 			it( "passes back simple values", function(){
-				var r = couchbase.serialize( "hello" );
+				var r = couchbase.serializeData( "hello" );
 				expect(	r ).toBe( "hello" );
 			});
 
 			it( "passes back json", function(){
 				var data = serializeJSON( { name = "luis", awesome = true } );
-				var r = couchbase.serialize( data );
+				var r = couchbase.serializeData( data );
 				expect(	r ).toBe( data );
 			});
 
 			it( "works with structs", function(){
 				var data = { name = "luis", awesome = true };
-				var r = couchbase.serialize( data );
+				var r = couchbase.serializeData( data );
+				debug( r );
 				expect(	r ).toBe( serializeJSON( data ) );
 			});
 
 			it( "works with arrays", function(){
 				var data = [ 1,2,3 ];
-				var r = couchbase.serialize( data );
+				var r = couchbase.serializeData( data );
+				debug( r );
 				expect(	r ).toBe( serializeJSON( data ) );
 			});
 
@@ -68,7 +70,8 @@ component{
 					1 | luis
 					2 | nolan
 					3 | brad");
-				var r = couchbase.serialize( data );
+				var r = couchbase.serializeData( data );
+				debug( r );
 				expect(	r ).toBe( serializeJSON( data ) );
 			});
 		

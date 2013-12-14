@@ -62,7 +62,6 @@ component{
 				var oQuery = couchbase.getQuery( { limit: 10, includeDocs:true } );
 				var oView  = couchbase.getView( "beer", "brewery_beers" );
 				var results = couchbase.rawquery( oView, oQuery );
-
 				expect(	results.getMap() ).toBeStruct();
 			});
 
@@ -83,7 +82,7 @@ component{
 
 			it( "can do a non-deserialized query with docs", function(){
 				var results = couchbase.query( 'beer', 'brewery_beers', { limit: 100, includeDocs: true}, false );
-				//debug( results );
+				debug( results );
 				expect(	results ).toBeArray();
 				expect(	arrayLen( results ) ).toBeGT( 1 );
 				expect(	results[ 1 ].document ).toBeString();

@@ -54,14 +54,14 @@ component{
 			it( "works with structs", function(){
 				var data = { name = "luis", awesome = true };
 				var r = couchbase.serializeData( data );
-				debug( r );
+				//debug( r );
 				expect(	r ).toBe( serializeJSON( data ) );
 			});
 
 			it( "works with arrays", function(){
 				var data = [ 1,2,3 ];
 				var r = couchbase.serializeData( data );
-				debug( r );
+				//debug( r );
 				expect(	r ).toBe( serializeJSON( data ) );
 			});
 
@@ -107,6 +107,38 @@ component{
 
 				var r = couchbase.get( id="complex-struct" );
 				expect(	r ).toBe( data );
+			});
+
+			it( "of objects with $serialize() methods", function(){
+				var data = new test.resources.User();
+				data.setName( "Luis Majano" );
+				data.setAge( 999 );
+
+				couchbase.set( id="object-with-serialize", value=data ).get();
+
+				var r = couchbase.get( id="object-with-serialize", deserialize=false );
+				r = deserializeJSON( r );
+
+				expect(	r ).toHaveKey( "type" );
+				expect(	r ).toHaveKey( "when" );
+				expect(	r.name ).toBe( "Luis Majano" );
+
+			});
+
+			it( "of objects with complex trees", function(){
+				var data = new test.resources.UserSimple();
+				data.setFirstName( "Luis" );
+				data.setLastName( "Majano" );
+				data.setAge( 999 );
+
+				couchbase.set( id="object-funky", value=data ).get();
+
+				var r = couchbase.get( id="object-funky", deserialize=false );
+				r = deserializeJSON( r );
+
+				writeDump( r );abort;
+				
+
 			});
 		
 		});

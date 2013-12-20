@@ -120,16 +120,10 @@ component{
 					expect(	futures ).toHaveKey( "id1" );
 					expect(	futures ).toHaveKey( "id2" );
 					expect(	futures ).toHaveKey( "id3" );
-					
-					// toBeInstanceOf() expectation doesn't work on natively created Java classes
-					expect(	futures.id1.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
-					expect(	futures.id2.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
-					expect(	futures.id3.getClass().getName() ).toBe( "net.spy.memcached.internal.OperationFuture" );
-					
+
 					expect(	couchbase.get( "id1" ) ).toBe( "value1" );
 					expect(	couchbase.get( "id2" ) ).toBe( "value2" );
 					expect(	couchbase.get( "id3" ) ).toBe( "value3" );
-										
 				});
 				
 								

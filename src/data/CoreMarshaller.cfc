@@ -61,8 +61,8 @@ component accessors="true"{
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
 	*/
 	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
-		var results = "";
-
+		var results = arguments.data;
+		
 		// no deserializations
 		if( !arguments.deserialize ){ return arguments.data; }
 

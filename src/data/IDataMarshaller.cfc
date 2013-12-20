@@ -26,6 +26,12 @@
 interface{
 
 	/**
+	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
+	* It must return back itself.
+	*/
+	any function setCouchbaseClient( required couchcbaseClient );
+
+	/**
 	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	* @data.hint A JSON document to deserialize according to our rules

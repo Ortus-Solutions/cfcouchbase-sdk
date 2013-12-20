@@ -97,7 +97,7 @@ component serializable="false" accessors="true"{
 		// Build the connection factory and client
 		variables.couchbaseClient = buildCouchbaseClient( variables.couchbaseConfig );
 		// Build the data marshaler
-		variables.dataMarshaller = buildDataMarshaller( variables.couchbaseConfig );
+		variables.dataMarshaller = buildDataMarshaller( variables.couchbaseConfig ).setCouchbaseClient( this );
 		
 		return this;
 	}

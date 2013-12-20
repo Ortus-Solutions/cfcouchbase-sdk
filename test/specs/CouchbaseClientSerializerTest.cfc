@@ -125,7 +125,7 @@ component{
 
 			});
 
-			it( "of objects with complex trees", function(){
+			it( "of objects with properties", function(){
 				var data = new test.resources.UserSimple();
 				data.setFirstName( "Luis" );
 				data.setLastName( "Majano" );
@@ -133,11 +133,26 @@ component{
 
 				couchbase.set( id="object-funky", value=data ).get();
 
-				var r = couchbase.get( id="object-funky", deserialize=false );
-				r = deserializeJSON( r );
-
-				writeDump( r );abort;
+				var r = couchbase.get( id="object-funky" );
 				
+				expect(	r ).toBeComponent();
+				expect(	r.getAge() ).toBe( 999 );
+				expect(	r.getLastName() ).toBe( "Majano" );
+				expect(	r.getFirstName() ).toBe( "Luis" );
+
+			});
+
+			it( "of objects with no properties", function(){
+				var data = new test.resources.Basic();
+				
+				couchbase.set( id="object-noproperties", value=data ).get();
+
+				var r = couchbase.get( id="object-noproperties" );
+				
+				expect(	r ).toBeComponent();
+				expect(	r.name ).toBe( data.name );
+				expect(	r.version ).toBe( data.version );
+				expect(	r.created ).toBe( data.created );
 
 			});
 		

@@ -132,4 +132,68 @@ component accessors="true"{
     	throw( message=arguments.message, detail=local.detail, type=arguments.type );
     }
 
+    /**
+	* Returns a single-level metadata struct that includes all items inhereited from extending classes.
+	*/
+	struct function getInheritedMetaData( required component, md={} ){
+		// get appropriate metadata
+		if( structIsEmpty( arguments.md ) ){
+			if( isObject( arguments.component ) ){
+				arguments.md = getMetaData( arguments.component );
+			} else {
+				arguments.md = getComponentMetaData( arguments.component );
+			}
+		}
+
+		// If it has a parent, stop and calculate it first
+			
+		if( structKeyExists( arguments.md, "extends" ) AND arguments.md.type eq "component" ){
+			local.parent = getInheritedMetaData( component=arguments.component, md=arguments.md.extends );
+		} else {
+			//If we're at the end of the line, it's time to start working backwards so start with an empty struct to hold our condensesd metadata.
+			local.parent = {};
+			local.parent.inheritancetrail = [];
+		}
+
+		for( local.key in arguments.md ){
+			//Functions and properties are an array of structs keyed on name, so I can treat them the same
+			if( listFindNoCase( "functions,properties", local.key ) ){
+				
+				// create reference
+				if( NOT structKeyExists( local.parent, local.key ) ){
+					local.parent[ local.key ] = [];
+				}
+				
+				// For each function/property in me...
+				for( local.item in arguments.md[ local.key ] ){
+					
+					local.parentItemCounter = 0;
+					local.foundInParent = false;
+
+					// ...Look for an item of the same name in my parent...
+					for( local.parentItem in local.parent[ local.key ] ){
+						local.parentItemCounter++;
+						// ...And override it
+						if( compareNoCase( local.item.name, local.parentItem.name ) eq 0 ){
+							local.parent[ local.key ][ local.parentItemCounter ] = local.item;
+							local.foundInParent = true;
+							break;
+						}
+					}
+
+					// ...Or just add it
+					if( not local.foundInParent ){
+						arrayAppend( local.parent[ local.key ], local.item );
+					}
+				}
+			} else if( NOT listFindNoCase( "extends,implements", local.key ) ){
+				local.parent[ local.key ] = arguments.md[ local.key ];
+			}
+		}
+
+		arrayPrePend( local.parent.inheritanceTrail, local.parent.name );
+		
+		return local.parent;
+	}
+
 }

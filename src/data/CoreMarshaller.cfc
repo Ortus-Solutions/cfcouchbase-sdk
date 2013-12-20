@@ -26,6 +26,34 @@
 component accessors="true"{
 
 	/**
+	* The link back to the couchbase client.
+	*/
+	property name="couchbaseClient";
+
+	/**
+	* A struct holding metadata cache for objects
+	*/
+	property name="objectMDCache" type="struct";
+
+	/**
+	* Constructor
+	*/
+	function init(){
+
+		variables.objectMDCache = createObject( "java", "java.util.HashMap" ).init();
+
+		return this;
+	}
+
+	/**
+	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
+	*/
+	any function setCouchbaseClient( required couchcbaseClient ){
+		variables.couchbaseClient = arguments.couchcbaseClient;
+		return this;
+	}
+
+	/**
 	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	* @data.hint A JSON document to deserialize according to our rules
@@ -43,8 +71,21 @@ component accessors="true"{
 			// Deserialize JSON
 			results = deserializeJSON( arguments.data );
 			
+			// Do we have a cfcouchbase CFC memento to inflate?
+			if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfcdata" ){
+				// try to inflate it back:
+				var oTarget = new "#results.classpath#"();
+				for( var thisProp in results.data ){
+					evaluate( "oTarget.set#thisProp#( results.data[ thisProp ] )" );
+				}
+				results = oTarget;
+			}
+			// Do we have a cfcouchbase native CFC?
+			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfc" ){
+				results = objectLoad( toBinary( results.binary  ) );
+			}
 			// Do we have a cfcouchbase query?
-			if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-query" ){
+			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-query" ){
 				results = objectLoad( toBinary( results.binary  ) );
 			}
 
@@ -71,8 +112,27 @@ component accessors="true"{
 				return arguments.data.$serialize();
 			}
 
-			// else let's get its metadata to get it's properties.
-			writeDump( getInheritedMetaData( arguments.data ) );abort;
+			// else let's get its metadata to get it's properties and build a memento out of it.
+			var mdCache = getObjectMD( arguments.data );
+			if( arrayLen( mdCache.properties ) ){
+				var nativeObject = { 
+					"type"		= "cfcouchbase-cfcdata",
+					"data" 		= {}, 
+					"classpath" = mdCache.name 
+				};
+				// build out a memento from the properties.
+				for( var thisProp in mdCache.properties ){
+					nativeObject.data[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
+				}
+				return serializeJSON( nativeObject );
+			}
+
+			// Do native serialization, by default
+			return serializeJSON( { 
+				"type" = "cfcouchbase-cfc",
+				"binary" = toBase64( objectSave( arguments.data ) ),
+				"classpath" = mdCache.name
+			} );
 
 		}
 		// if query, then do native serialization
@@ -92,67 +152,27 @@ component accessors="true"{
 	}
 
 	/**
-	* Returns a single-level metadata struct that includes all items inhereited from extending classes.
+	* Get the md of an object
 	*/
-	private function getInheritedMetaData( required component, md={} ){
-		// get appropriate metadata
-		if( structIsEmpty( arguments.md ) ){
-			if( isObject( arguments.component ) ){
-				arguments.md = getMetaData( arguments.component );
-			} else {
-				arguments.md = getComponentMetaData( arguments.component );
+	struct function getObjectMD( required target ){
+
+		if( !variables.objectMDCache.containsKey( arguments.target ) ){
+			lock name="cfcouchbase.marshallercache" type="exclusive" timeout="10" throwOnTimeout="true"{
+				if( !variables.objectMDCache.containsKey( arguments.target ) ){
+					variables.objectMDCache.put( arguments.target, variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.target ) );	
+				}
 			}
 		}
 
-		// If it has a parent, stop and calculate it first
-			
-		if( structKeyExists( arguments.md, "extends" ) AND arguments.md.type eq "component" ){
-			local.parent = getInheritedMetaData( component=arguments.component, md=arguments.md.extends );
-		} else {
-			//If we're at the end of the line, it's time to start working backwards so start with an empty struct to hold our condensesd metadata.
-			local.parent = {};
-			local.parent.inheritancetrail = [];
-		}
+		return variables.objectMDCache.get( arguments.target );
+	}
 
-		for( local.key in arguments.md ){
-			//Functions and properties are an array of structs keyed on name, so I can treat them the same
-			if( listFindNoCase( "functions,properties", local.key ) ){
-				
-				// create reference
-				if( NOT structKeyExists( local.parent, local.key ) ){
-					local.parent[ local.key ] = [];
-				}
-				
-				// For each function/property in me...
-				for( local.item in arguments.md[ local.key ] ){
-					
-					local.parentItemCounter = 0;
-					local.foundInParent = false;
-
-					// ...Look for an item of the same name in my parent...
-					for( local.parentItem in local.parent[ local.key ] ){
-						local.parentItemCounter++;
-						// ...And override it
-						if( compareNoCase( local.item.name, local.parentItem.name ) eq 0 ){
-							local.parent[ local.key ][ local.parentItemCounter ] = local.item;
-							local.foundInParent = true;
-							break;
-						}
-					}
-
-					// ...Or just add it
-					if( not local.foundInParent ){
-						arrayAppend( local.parent[ local.key ], local.item );
-					}
-				}
-			} else if( NOT listFindNoCase( "extends,implements", local.key ) ){
-				local.parent[ local.key ] = arguments.md[ local.key ];
-			}
-		}
-
-		arrayPrePend( local.parent.inheritanceTrail, local.parent.name );
-		
-		return local.parent;
+	/**
+	* Clear the metadata cache
+	*/
+	any function clearObjectCache(){
+		variables.objectMDCache.clear();
+		return this;
 	}
 
 }

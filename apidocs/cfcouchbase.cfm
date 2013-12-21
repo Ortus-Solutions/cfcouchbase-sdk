@@ -1,13 +1,23 @@
-<cfparam name="url.version" default="1.0.0">
+<cfparam name="url.version" default="0">
+<cfparam name="url.path" 	default="#expandPath( "./CFCouchbase-APIDocs" )#">
 <cfscript>
-	colddoc = new ColdDoc();
+	docName = "CFCouchbase-APIDocs";
+	base = expandPath( "/cfcouchbase" );
 
-	strategy = new colddoc.strategy.api.HTMLAPIStrategy( expandPath("./docs"), "CFCouchbase SDK #url.version#" );
+	colddoc 	= new ColdDoc();
+	strategy 	= new colddoc.strategy.api.HTMLAPIStrategy( url.path, "CFCouchbase v#url.version#" );
 	colddoc.setStrategy( strategy );
 
-	colddoc.generate( expandPath("/cfcouchbase"), "cfcouchbase" );
+	colddoc.generate( inputSource=base, outputDir=url.path, inputMapping="cfcouchbase" );
 </cfscript>
 
-<h1>Done!</h1>
+<!---
+<cfzip action="zip" file="#expandPath('.')#/#docname#.zip" source="#expandPath( docName )#" overwrite="true" recurse="yes">
+<cffile action="move" source="#expandPath('.')#/#docname#.zip" destination="#url.path#">
+--->
 
-<a href="docs">Documentation</a>
+<cfoutput>
+<h1>Done!</h1>
+<a href="#docName#/index.html">Go to Docs!</a>
+</cfoutput>
+

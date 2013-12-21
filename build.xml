@@ -1,68 +1,97 @@
 <?xml version="1.0"?>
 <!-- ====================================================================== 
-Build a new distribution of CFCouchbase SDK
-====================================================================== -->
-<project name="couchbase-sdk-build" default="deploy">
+    CFCouchbase SDK build (www.ortussolutions.com)                                                 
+     ====================================================================== -->
+<project name="logbox-build" default="build" basedir=".">
     <description>
-    	Build a new distribution of CFCouchbase SDK
+        Build a new distribution of the CFCouchbase SDK
     </description>
+    <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
+    <property name="cfcouchbase.version" value="1.0.0.Alpha"/>
+    <!-- Build Labels -->
+    <tstamp prefix="start"/>
     
-	<!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
-	<property name="sdk.version"	value="1.0.0"/>
-	    
-	<!-- Build Labels -->
-	<tstamp prefix="start"/>
-	
-	<!-- Init -->
-    <target name="init">	
-    	<!-- Default environment check, if not passed via -Denvironment -->
-    	<condition property="environment" value="local">
-    		<not><isset property="environment" /></not>
-    	</condition>
-    	<echo>Loading from environment: ${environment}</echo>
-    	
-    	<!-- Load env properties -->
-    	<loadproperties srcFile="build-${environment}.properties"/>
+    <!-- Init -->
+    <target name="init" description="Init">
+        <!-- Default environment check, if not passed via -Denvironment -->
+        <condition property="environment" value="local">
+            <not><isset property="environment" /></not>
+        </condition>
+        <echo>Loading from environment: ${environment}</echo>
+        <!-- Load env properties -->
+        <loadproperties srcFile="build-${environment}.properties"/>
 
-    	<!-- Build Number -->
-		<propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
-			<entry key="build.number" 
-					type="int" 
-			     	operation="+"
-					pattern="00000"
-			     	default="1" />
-		</propertyfile>
-		<property file="build.number"/>
-    	<property name="build.label" value="cfcouchbase-sdk-v${databoss.version}.${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
-    </target>  
-	
-	<!-- Deploy -->
-	<target name="deploy" depends="init">
-		<!-- Deploy Standalone Version -->
-		<antcall target="deployStandalone" />
-		<!--Cleanup -->
-		<antcall target="cleanup"></antcall>
-	</target>
-	
-	<!--deployStandalone-->
-    <target name="deployStandalone">
-        <echo>Starting to deploy Standalone</echo>
-    	
-    	<!-- Create Build -->
-    	<mkdir dir="${dir.build}"/>
-    	    	
-    	<!-- Deploy common -->
-    	<antcall target="deployCommon"></antcall>
-    	    	
-    	<!-- zip it -->
-    	<zip destfile="${dir.dist}/cfcouchbase_v{databoss.version}.zip" basedir="${dir.build}" />
-    	
-    </target>
-	
-    <!--Cleanup-->
-    <target name="cleanup">
+        <!-- Build Number -->
+        <propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
+            <entry key="build.number" 
+                    type="int" 
+                    operation="+"
+                    pattern="00000"
+                    default="1" />
+        </propertyfile>
+        <property file="build.number"/>
+        <!-- Build Label -->
+        <property name="build.label" value="cfcouchbase-${cfcouchbase.version}.${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
+        <!-- Cleanup + Init -->
         <delete dir="${dir.build}" />
-        <echo>Cleanup Complete.</echo>
+        <mkdir dir="${dir.build}"/>
     </target>
-	
+
+    <!-- Build test reports -->
+    <target name="build-tests">
+        <subant target="run-junit">
+          <fileset dir="test" includes="test.xml"/>
+        </subant>
+    </target>
+        
+    <!--build-->
+    <target name="build" description="Build a new CFCouchbase distribution" depends="init,build-tests">
+        
+        <!-- Copy build ID -->
+        <concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
+        
+        <!-- Copy src -->    
+        <copy todir="${dir.build}/sdk">
+            <fileset dir="src" />
+        </copy>
+
+        <!--Copy text files to root folder-->
+        <copy todir="${dir.build}/">
+            <fileset file="LICENSE" />
+            <fileset file="readme.txt" />                        
+        </copy>
+
+        <!-- Replace Build Numbers -->
+        <replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true">
+          <fileset dir="${dir.build}">
+          </fileset>
+        </replaceregexp>
+        
+        <!-- Execute APIDocs -->
+        <get dest="${dir.build}/colddoc.html" src="${url.api}${cfcouchbase.version}&amp;path=${dir.api}" verbose="true"/>
+        <delete file="${dir.build}/colddoc.html" />
+
+        <!-- Build Documentation -->
+        <mkdir dir="${dir.build}/documentation" />
+        <get dest="${dir.build}/documentation/index.html" src="${url.docs}" verbose="true"/>
+        <!-- Copy assets to docs -->
+        <copy todir="${dir.build}/documentation/includes" >
+            <fileset dir="${dir.docs}/includes" />
+        </copy>
+
+        <!-- Package Test Results -->
+        <copy todir="${dir.build}/test-results" >
+            <fileset dir="test/results/junitreport" />
+        </copy>
+        
+        <!-- Zip API Docs -->
+        <zip destfile="${dir.dist}/CFCouchbaseDocs-${cfcouchbase.version}.zip" basedir="${dir.build}/apidocs"></zip>
+                
+        <!-- Zip Distro -->
+        <zip destfile="${dir.dist}/CFCouchbase_${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>
+        
+        <!-- Cleanup -->
+        <delete dir="${dir.build}" />
+        
+    </target>
 </project>

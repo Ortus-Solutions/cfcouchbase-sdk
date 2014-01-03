@@ -1054,7 +1054,6 @@ component serializable="false" accessors="true"{
 
 			// Were there errors
 	    	if( arrayLen( results.getErrors() ) ){
-	    		// This will log only and not throw an exception
 	    		// PLEASE NOTE, the response received may not include all documents if one or more nodes are offline 
 		    	// and not yet failed over.  Couchbase basically sends back what docs it _can_ access and ignores the other nodes.
 	    		variables.util.handleRowErrors( message='There was an error executing the view: #arguments.view#',

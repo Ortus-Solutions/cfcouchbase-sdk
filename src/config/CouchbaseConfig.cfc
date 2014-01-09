@@ -79,10 +79,6 @@ component accessors="true"{
 	*/
 	property name="viewTimeout"					default="75000"		type="numeric";
 	/**
-	* Ignore Couchbase timeouts on operations, if false, then exceptions are thrown
-	*/
-	property name="ignoreTimeouts"				default="true"		type="boolean";
-	/**
 	* By default we class load all the Couchbase SDK, if false, then the SDK library must be in the servlet library path
 	*/
 	property name="useClassLoader"				default="true"		type="boolean";
@@ -109,7 +105,6 @@ component accessors="true"{
 	variables.obsPollInterval 				= 400;
 	variables.obsPollMax 					= 10;
 	variables.viewTimeout					= 75000;
-	variables.ignoreTimeouts				= true;
 	variables.useClassLoader				= true;
 	variables.defaultTimeout				= 0;
 	variables.dataMarshaller				= "";

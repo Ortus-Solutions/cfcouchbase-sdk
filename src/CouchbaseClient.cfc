@@ -127,30 +127,18 @@ component serializable="false" accessors="true"{
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		// serialization determinations go here
 
-		// store it
-		try{
+		// default persist and replicate
+		defaultPersistReplicate( arguments );
+		// default timeouts
+		arguments.timeout 	= ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		// with replicate and persist
+		var future = variables.couchbaseClient.set( arguments.ID, 
+													javaCast( "int", arguments.timeout*60 ), 
+													serializeData( arguments.value ), 
+													arguments.persistTo, 
+													arguments.replicateTo );
 
-			// default persist and replicate
-			defaultPersistReplicate( arguments );
-			// default timeouts
-			arguments.timeout 	= ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			// with replicate and persist
-			var future = variables.couchbaseClient.set( arguments.ID, 
-														javaCast( "int", arguments.timeout*60 ), 
-														serializeData( arguments.value ), 
-														arguments.persistTo, 
-														arguments.replicateTo );
-
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 	
 	/**
@@ -180,45 +168,35 @@ component serializable="false" accessors="true"{
 		any replicateTo
 	){
 
-		// store it
-		try{
 
-			// default persist and replicate
-			defaultPersistReplicate( arguments );
-			// default timeouts
-			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			
-			// with replicate and persist
-			var result = {};
-			// Hope for the best
-			result.status = true;
-			result.detail = "SUCCESS";
-			var CASResponse = variables.couchbaseClient.cas( arguments.ID,
-														javaCast( "long", arguments.CAS ),			 											
-														javaCast( "int", arguments.timeout*60 ), 
-														serializeData( arguments.value ), 
-														arguments.persistTo, 
-														arguments.replicateTo );
-														
-			// Account for the worst
-			if( CASResponse.equals(CASResponse.EXISTS) ) {
-				result.status = false;
-				result.detail = "CAS_CHANGED";				
-			} else if( CASResponse.equals(CASResponse.NOT_FOUND) ) {
-				result.status = false;
-				result.detail = "NOT_FOUND";
-			}
-			
-			return result;
+		// default persist and replicate
+		defaultPersistReplicate( arguments );
+		// default timeouts
+		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		
+		// with replicate and persist
+		var result = {};
+		// Hope for the best
+		result.status = true;
+		result.detail = "SUCCESS";
+		var CASResponse = variables.couchbaseClient.cas( arguments.ID,
+													javaCast( "long", arguments.CAS ),			 											
+													javaCast( "int", arguments.timeout*60 ), 
+													serializeData( arguments.value ), 
+													arguments.persistTo, 
+													arguments.replicateTo );
+													
+		// Account for the worst
+		if( CASResponse.equals(CASResponse.EXISTS) ) {
+			result.status = false;
+			result.detail = "CAS_CHANGED";				
+		} else if( CASResponse.equals(CASResponse.NOT_FOUND) ) {
+			result.status = false;
+			result.detail = "NOT_FOUND";
 		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		
+		return result;
+		
 	}
 	
 	/**
@@ -242,31 +220,19 @@ component serializable="false" accessors="true"{
 		
 		// serialization determinations go here
 
-		// store it
-		try{
+		// default persist and replicate
+		defaultPersistReplicate( arguments );
+		// default timeouts
+		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		
+		// with replicate and persist
+		var future = variables.couchbaseClient.add( arguments.ID, 
+													javaCast( "int", arguments.timeout*60 ), 
+													arguments.value, 
+													arguments.persistTo, 
+													arguments.replicateTo );
 
-			// default persist and replicate
-			defaultPersistReplicate( arguments );
-			// default timeouts
-			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			
-			// with replicate and persist
-			var future = variables.couchbaseClient.add( arguments.ID, 
-														javaCast( "int", arguments.timeout*60 ), 
-														arguments.value, 
-														arguments.persistTo, 
-														arguments.replicateTo );
-
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 	
 	/**
@@ -333,29 +299,18 @@ component serializable="false" accessors="true"{
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
+		// default persist and replicate
+		defaultPersistReplicate( arguments );
+		// default timeouts
+		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 		// store it
-		try{
-			// default persist and replicate
-			defaultPersistReplicate( arguments );
-			// default timeouts
-			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			// store it
-			var future = variables.couchbaseClient.replace( arguments.ID, 
-															javaCast( "int", arguments.timeout*60 ), 
-															arguments.value,
-															arguments.persistTo,
-															arguments.replicateTo );
+		var future = variables.couchbaseClient.replace( arguments.ID, 
+														javaCast( "int", arguments.timeout*60 ), 
+														arguments.value,
+														arguments.persistTo,
+														arguments.replicateTo );
 
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 	
 	/**
@@ -367,21 +322,11 @@ component serializable="false" accessors="true"{
 	any function get( required string ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
-		try {
-			var results = variables.couchbaseClient.get( arguments.ID );
+		var results = variables.couchbaseClient.get( arguments.ID );
 
-			if( !isNull( results ) ){
-				// deserializations go here.
-				return deserializeData( results, arguments.inflateTo, arguments.deserialize );
-			}
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
+		if( !isNull( results ) ){
+			// deserializations go here.
+			return deserializeData( results, arguments.inflateTo, arguments.deserialize );
 		}
 	}
 
@@ -391,20 +336,9 @@ component serializable="false" accessors="true"{
 	*/
 	any function asyncGet( required string ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
-		
-		try {
-			var future = variables.couchbaseClient.asyncGet( arguments.ID );
-			// no inflation or deserialization as it is async.
-			return future;
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		var future = variables.couchbaseClient.asyncGet( arguments.ID );
+		// no inflation or deserialization as it is async.
+		return future;
 	}
 	
 	/**
@@ -416,26 +350,15 @@ component serializable="false" accessors="true"{
 	any function getMulti( required array ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
-		try {
-			var result = {};
-			// Java method expects a java.util.Collection
-			var map = variables.couchbaseClient.getBulk( arguments.ID );
-			for( var key in map ) {
-				var value = map[ key ];
-				// deserializations go here.
-				result[ key ] = deserializeData( value, arguments.inflateTo, arguments.deserialize );	
-			}
-			return result;
-
+		var result = {};
+		// Java method expects a java.util.Collection
+		var map = variables.couchbaseClient.getBulk( arguments.ID );
+		for( var key in map ) {
+			var value = map[ key ];
+			// deserializations go here.
+			result[ key ] = deserializeData( value, arguments.inflateTo, arguments.deserialize );	
 		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return result;
 	}
 
 	/**
@@ -444,22 +367,10 @@ component serializable="false" accessors="true"{
 	*/
 	any function asyncGetMulti( required array ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
-		
-		try {
-			// Java method expects a java.util.Collection
-			var result = variables.couchbaseClient.asyncGetBulk( arguments.ID );
-			
-			return result;
+		// Java method expects a java.util.Collection
+		var result = variables.couchbaseClient.asyncGetBulk( arguments.ID );
 
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return result;
 	}
 	
 	/**
@@ -473,26 +384,16 @@ component serializable="false" accessors="true"{
 	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
-		try {
-			var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
+		var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
 
-			if( !isNull( resultsWithCAS ) ){
-				// build struct out.
-				var result = {
-					cas 	= resultsWithCAS.getCAS(),
-					value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
-				};
+		if( !isNull( resultsWithCAS ) ){
+			// build struct out.
+			var result = {
+				cas 	= resultsWithCAS.getCAS(),
+				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
+			};
 
-				return result;
-			}
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
+			return result;
 		}
 	}
 
@@ -505,19 +406,9 @@ component serializable="false" accessors="true"{
 	any function asyncGetWithCAS( required string ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
-		try {
-			var future = variables.couchbaseClient.asyncGets( arguments.ID );
+		var future = variables.couchbaseClient.asyncGets( arguments.ID );
 
-			return future;			
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;			
 	}
 	
 	/**
@@ -537,29 +428,19 @@ component serializable="false" accessors="true"{
 				 ){		 	 
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
-		try {
-			var resultsWithCAS = variables.couchbaseClient.getAndTouch(
-															arguments.ID,
-															javaCast( "int", arguments.timeout*60 )
-														   );
+		var resultsWithCAS = variables.couchbaseClient.getAndTouch(
+														arguments.ID,
+														javaCast( "int", arguments.timeout*60 )
+													   );
 
-			if( !isNull( resultsWithCAS ) ){
-				// build struct out.
-				var result = {
-					cas 	= resultsWithCAS.getCAS(),
-					value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
-				};
+		if( !isNull( resultsWithCAS ) ){
+			// build struct out.
+			var result = {
+				cas 	= resultsWithCAS.getCAS(),
+				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
+			};
 
-				return result;
-			}
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
+			return result;
 		}
 	}
 
@@ -576,20 +457,9 @@ component serializable="false" accessors="true"{
 	){		 	 
 		
 		arguments.ID = variables.util.normalizeID( arguments.ID );
-		
-		try {
-			var future = variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+		var future = variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
 
-			return future;
-		}
-		catch( any e ){
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 
 	/**
@@ -657,26 +527,15 @@ component serializable="false" accessors="true"{
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
+		// default timeouts
+		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 		// store it
-		try{
-			// default timeouts
-			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			// store it
-			var future = variables.couchbaseClient.decr( arguments.ID, 
-														 javaCast( "long", arguments.value ), 
-														 javaCast( "long", arguments.defaultValue ),
-														 javaCast( "int", arguments.timeout*60 ) );
+		var future = variables.couchbaseClient.decr( arguments.ID, 
+													 javaCast( "long", arguments.value ), 
+													 javaCast( "long", arguments.defaultValue ),
+													 javaCast( "int", arguments.timeout*60 ) );
 
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 
 	/**
@@ -690,20 +549,10 @@ component serializable="false" accessors="true"{
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
-		try{
-			// store it
-			var future = variables.couchbaseClient.asyncDecr( arguments.ID, javaCast( "long", arguments.value ) );
+		// store it
+		var future = variables.couchbaseClient.asyncDecr( arguments.ID, javaCast( "long", arguments.value ) );
 
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 
 	/**
@@ -721,26 +570,15 @@ component serializable="false" accessors="true"{
 		numeric timeout
 	){
 
+		// default timeouts
+		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
 		// store it
-		try{
-			// default timeouts
-			arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
-			// store it
-			var future = variables.couchbaseClient.incr( arguments.ID, 
-														 javaCast( "long", arguments.value ), 
-														 javaCast( "long", arguments.defaultValue ),
-														 javaCast( "int", arguments.timeout*60 ) );
+		var future = variables.couchbaseClient.incr( arguments.ID, 
+													 javaCast( "long", arguments.value ), 
+													 javaCast( "long", arguments.defaultValue ),
+													 javaCast( "int", arguments.timeout*60 ) );
 
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 
 	/**
@@ -754,20 +592,10 @@ component serializable="false" accessors="true"{
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
-		try{
-			// store it
-			var future = variables.couchbaseClient.asyncIncr( arguments.ID, javaCast( "long", arguments.value ) );
+		// store it
+		var future = variables.couchbaseClient.asyncIncr( arguments.ID, javaCast( "long", arguments.value ) );
 
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 
 	/**
@@ -782,20 +610,9 @@ component serializable="false" accessors="true"{
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// store it
-		try{
-			// store it
-			var future = variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+		var future = variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
 
-			return future;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return future;
 	}
 
 	/**
@@ -812,35 +629,24 @@ component serializable="false" accessors="true"{
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
-		// store it
-		try{
-			// default persist and replicate
-			defaultPersistReplicate( arguments );
+		// default persist and replicate
+		defaultPersistReplicate( arguments );
 
-			// simple or array
-			arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
-			
-			// iterate and prepare futures
-			var futures = {};
-			for( var thisKey in arguments.id ){
-				// store it
-				futures[ thisKey ] = variables.couchbaseClient.delete( thisKey, 
-																	   arguments.persistTo,
-																	   arguments.replicateTo );
+		// simple or array
+		arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
+		
+		// iterate and prepare futures
+		var futures = {};
+		for( var thisKey in arguments.id ){
+			// store it
+			futures[ thisKey ] = variables.couchbaseClient.delete( thisKey, 
+																   arguments.persistTo,
+																   arguments.replicateTo );
 
-			}
-
-			// if > 1 futures, return struct, else return the only one future
-			return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
 		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+
+		// if > 1 futures, return struct, else return the only one future
+		return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
 	}
 
 	/**
@@ -850,30 +656,19 @@ component serializable="false" accessors="true"{
 	any function getDocStats( required any ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
-		// store it
-		try{
-			// simple or array
-			arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
-			
-			// iterate and prepare futures
-			var futures = {};
-			for( var thisKey in arguments.id ){
-				// store it
-				futures[ thisKey ] = variables.couchbaseClient.getKeyStats( thisKey );
+		// simple or array
+		arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
+		
+		// iterate and prepare futures
+		var futures = {};
+		for( var thisKey in arguments.id ){
+			// store it
+			futures[ thisKey ] = variables.couchbaseClient.getKeyStats( thisKey );
 
-			}
+		}
 
-			// if > 1 futures, return struct, else return the only one future
-			return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		// if > 1 futures, return struct, else return the only one future
+		return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
 	}
 
 	/**
@@ -914,31 +709,21 @@ component serializable="false" accessors="true"{
 		numeric CAS
 	){
 
-		try{
-			// normalize ID
-			arguments.ID = variables.util.normalizeID( arguments.ID );
+		// normalize ID
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
-			// append with cas
-			var future = "";
-			if( structKeyExists( arguments, "CAS") ){
-				future = variables.couchbaseClient.append( javaCast( "long", arguments.CAS ),			 											
-														   arguments.ID,
-														   arguments.value );
-			}
-			// append with no CAS
-			else{
-				future = variables.couchbaseClient.append( arguments.ID, arguments.value );	
-			}							
-			return future;
+		// append with cas
+		var future = "";
+		if( structKeyExists( arguments, "CAS") ){
+			future = variables.couchbaseClient.append( javaCast( "long", arguments.CAS ),			 											
+													   arguments.ID,
+													   arguments.value );
 		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		// append with no CAS
+		else{
+			future = variables.couchbaseClient.append( arguments.ID, arguments.value );	
+		}							
+		return future;
 	}
 
 	/**
@@ -955,31 +740,21 @@ component serializable="false" accessors="true"{
 		numeric CAS
 	){
 
-		try{
-			// normalize ID
-			arguments.ID = variables.util.normalizeID( arguments.ID );
+		// normalize ID
+		arguments.ID = variables.util.normalizeID( arguments.ID );
 
-			// prepend with cas
-			var future = "";
-			if( structKeyExists( arguments, "CAS") ){
-				future = variables.couchbaseClient.prepend( javaCast( "long", arguments.CAS ),			 											
-														    arguments.ID,
-														    arguments.value );
-			}
-			// prepend with no CAS
-			else{
-				future = variables.couchbaseClient.prepend( arguments.ID, arguments.value );	
-			}							
-			return future;
+		// prepend with cas
+		var future = "";
+		if( structKeyExists( arguments, "CAS") ){
+			future = variables.couchbaseClient.prepend( javaCast( "long", arguments.CAS ),			 											
+													    arguments.ID,
+													    arguments.value );
 		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		// prepend with no CAS
+		else{
+			future = variables.couchbaseClient.prepend( arguments.ID, arguments.value );	
+		}							
+		return future;
 	}
 
 	/************************* VIEW INTEGRATION ***********************************/
@@ -992,37 +767,27 @@ component serializable="false" accessors="true"{
 	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. This only does the simple 1 value options
 	*/
 	any function getQuery( struct options={} ){
-		try{
-			var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
-			// options
-			for( var thisKey in arguments.options ){
-				var thisValue = "";
-				// provide some basic auto-casting.
-				switch( thisKey ){
-					case "groupLevel" : case "limit" : case "skip" : { 
-						thisValue = javaCast( "int", arguments.options[ thisKey ] );
-						break;
-					}
-					case "debug" : case "descending" : case "group" : case "inclusiveEnd" : case "includeDocs" : case "reduce" : { 
-						thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
-						break;
-					}
-					default : { thisValue = arguments.options[ thisKey ]; }
+		var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
+		// options
+		for( var thisKey in arguments.options ){
+			var thisValue = "";
+			// provide some basic auto-casting.
+			switch( thisKey ){
+				case "groupLevel" : case "limit" : case "skip" : { 
+					thisValue = javaCast( "int", arguments.options[ thisKey ] );
+					break;
 				}
-				// evaluate setting.
-				evaluate( "oQuery.set#thisKey#( thisValue )" );
+				case "debug" : case "descending" : case "group" : case "inclusiveEnd" : case "includeDocs" : case "reduce" : { 
+					thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
+					break;
+				}
+				default : { thisValue = arguments.options[ thisKey ]; }
 			}
+			// evaluate setting.
+			evaluate( "oQuery.set#thisKey#( thisValue )" );
+		}
 
-			return oQuery;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return oQuery;
 	}
 
 	/**
@@ -1046,57 +811,46 @@ component serializable="false" accessors="true"{
 		any filter,
 		any transform
 	){
-		try{
-			// if options is struct, then build out the query, else use it as an object.
-			var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
-			var oView  	= getView( arguments.designDocument, arguments.view );
-			var results = rawQuery( oView, oQuery );
+		// if options is struct, then build out the query, else use it as an object.
+		var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
+		var oView  	= getView( arguments.designDocument, arguments.view );
+		var results = rawQuery( oView, oQuery );
 
-			// Were there errors
-	    	if( arrayLen( results.getErrors() ) ){
-	    		// This will log only and not throw an exception
-	    		// PLEASE NOTE, the response received may not include all documents if one or more nodes are offline 
-		    	// and not yet failed over.  Couchbase basically sends back what docs it _can_ access and ignores the other nodes.
-	    		variables.util.handleRowErrors( message='There was an error executing the view: #arguments.view#',
-	    										rowErrors=results.getErrors(),
-	    										type='CouchbaseClient.ViewException' );
-	    	}
+		// Were there errors
+    	if( arrayLen( results.getErrors() ) ){
+    		// This will log only and not throw an exception
+    		// PLEASE NOTE, the response received may not include all documents if one or more nodes are offline 
+	    	// and not yet failed over.  Couchbase basically sends back what docs it _can_ access and ignores the other nodes.
+    		variables.util.handleRowErrors( message='There was an error executing the view: #arguments.view#',
+    										rowErrors=results.getErrors(),
+    										type='CouchbaseClient.ViewException' );
+    	}
 
-	    	// iterate and build it out with or without desrializations
-			var iterator 	= results.iterator();
-			var cfresults 	= [];
-			while( iterator.hasNext() ){
-				var thisRow 	 = iterator.next();
-				var thisDocument = { id : thisRow.getId(), document : "" };
+    	// iterate and build it out with or without desrializations
+		var iterator 	= results.iterator();
+		var cfresults 	= [];
+		while( iterator.hasNext() ){
+			var thisRow 	 = iterator.next();
+			var thisDocument = { id : thisRow.getId(), document : "" };
 
-				// Did we get a document or none?
-				if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
-					thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
-				}
-
-				// Do we have a transformer?
-				if( structKeyExists( arguments, "transform" ) AND isClosure( arguments.transform ) ){
-					arguments.transform( thisDocument );
-				}
-
-				// Do we have a filter?
-				if( !structKeyExists( arguments, "filter" ) OR 
-					( structKeyExists( arguments, "filter" ) AND isClosure( arguments.filter ) AND ! arguments.filter( thisDocument ) ) ){
-					arrayAppend( cfresults, thisDocument );
-				}
+			// Did we get a document or none?
+			if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
+				thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
 			}
 
-			return cfresults;
-
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
+			// Do we have a transformer?
+			if( structKeyExists( arguments, "transform" ) AND isClosure( arguments.transform ) ){
+				arguments.transform( thisDocument );
 			}
-			// For any other type of exception, rethrow.
-			rethrow;
+
+			// Do we have a filter?
+			if( !structKeyExists( arguments, "filter" ) OR 
+				( structKeyExists( arguments, "filter" ) AND isClosure( arguments.filter ) AND ! arguments.filter( thisDocument ) ) ){
+				arrayAppend( cfresults, thisDocument );
+			}
 		}
+
+		return cfresults;
 	}
 
 	/**
@@ -1106,19 +860,9 @@ component serializable="false" accessors="true"{
 	* @query.hint A couchbase query object (com.couchbase.client.protocol.views.Query)
 	*/
 	any function rawQuery( required any view, required any query ){
-		try{
-			var results = variables.couchbaseClient.query( arguments.view, arguments.query );
+		var results = variables.couchbaseClient.query( arguments.view, arguments.query );
 
-			return results;
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return results;
 	}
 
 	/**
@@ -1128,17 +872,7 @@ component serializable="false" accessors="true"{
 	* @name.hint The name of the view to get
 	*/
 	any function getView( required string designDocument, required string name ){
-		try{
-			return variables.couchbaseClient.getView( arguments.designDocument, arguments.name );	
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return variables.couchbaseClient.getView( arguments.designDocument, arguments.name );	
 	}
 
 	/**
@@ -1148,17 +882,7 @@ component serializable="false" accessors="true"{
 	* @name.hint The name of the view to get
 	*/
 	any function getSpatialView( required string designDocument, required string name ){
-		try{
-			return variables.couchbaseClient.getSpatialView( arguments.designDocument, arguments.name );	
-		}
-		catch( any e ) {
-			if( variables.util.isTimeoutException( e ) && variables.couchbaseConfig.getIgnoreTimeouts() ) {
-				// returns void
-				return;
-			}
-			// For any other type of exception, rethrow.
-			rethrow;
-		}
+		return variables.couchbaseClient.getSpatialView( arguments.designDocument, arguments.name );	
 	}
 
 	/************************* SERIALIZE/DESERIALIZE INTEGRATION ***********************************/

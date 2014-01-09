@@ -135,10 +135,10 @@ component{
 
 				var r = couchbase.get( id="object-funky" );
 				
-				expect(	r ).toBeComponent();
-				expect(	r.getAge() ).toBe( 999 );
-				expect(	r.getLastName() ).toBe( "Majano" );
-				expect(	r.getFirstName() ).toBe( "Luis" );
+				expect(	r ).toBeStruct();
+				expect(	r.age ).toBe( 999 );
+				expect(	r.lastName ).toBe( "Majano" );
+				expect(	r.firstName ).toBe( "Luis" );
 
 			});
 
@@ -153,6 +153,23 @@ component{
 				expect(	r.name ).toBe( data.name );
 				expect(	r.version ).toBe( data.version );
 				expect(	r.created ).toBe( data.created );
+
+			});
+
+			it( "of objects with autoinflate and properties", function(){
+				var data = new test.resources.UserSimpleAuto();
+				data.setFirstName( "Luis" );
+				data.setLastName( "Majano" );
+				data.setAge( 999 );
+
+				couchbase.set( id="object-auto", value=data ).get();
+
+				var r = couchbase.get( id="object-auto" );
+				
+				expect(	r ).toBeComponent();
+				expect(	r.getAge() ).toBe( 999 );
+				expect(	r.getLastName() ).toBe( "Majano" );
+				expect(	r.getFirstName() ).toBe( "Luis" );
 
 			});
 		

@@ -112,9 +112,11 @@ component accessors="true"{
 				return arguments.data.$serialize();
 			}
 
-			// else let's get its metadata to get it's properties and build a memento out of it.
+			// Get object info
 			var mdCache = getObjectMD( arguments.data );
-			if( arrayLen( mdCache.properties ) ){
+
+			// Auto Inflate Mode, store with class information
+			if( structKeyExists( mdCache, "autoInflate" ) AND arrayLen( mdCache.properties ) ){
 				var nativeObject = { 
 					"type"		= "cfcouchbase-cfcdata",
 					"data" 		= {}, 
@@ -125,6 +127,15 @@ component accessors="true"{
 					nativeObject.data[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
 				}
 				return serializeJSON( nativeObject );
+			} 
+			// else just store properties as data
+			else if( arrayLen( mdCache.properties ) ){
+				var nativeData = {};
+				// build out a memento from the properties.
+				for( var thisProp in mdCache.properties ){
+					nativeData[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
+				}
+				return serializeJSON( nativeData );
 			}
 
 			// Do native serialization, by default

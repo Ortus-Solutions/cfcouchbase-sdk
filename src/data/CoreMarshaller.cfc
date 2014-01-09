@@ -106,45 +106,7 @@ component accessors="true"{
 
 		// if objects?
 		if( isObject( arguments.data ) ){
-			
-			// Check if the object has a method called "$serialize", if it does, call it and return
-			if( structKeyExists( arguments.data, "$serialize" ) ){
-				return arguments.data.$serialize();
-			}
-
-			// Get object info
-			var mdCache = getObjectMD( arguments.data );
-
-			// Auto Inflate Mode, store with class information
-			if( structKeyExists( mdCache, "autoInflate" ) AND arrayLen( mdCache.properties ) ){
-				var nativeObject = { 
-					"type"		= "cfcouchbase-cfcdata",
-					"data" 		= {}, 
-					"classpath" = mdCache.name 
-				};
-				// build out a memento from the properties.
-				for( var thisProp in mdCache.properties ){
-					nativeObject.data[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
-				}
-				return serializeJSON( nativeObject );
-			} 
-			// else just store properties as data
-			else if( arrayLen( mdCache.properties ) ){
-				var nativeData = {};
-				// build out a memento from the properties.
-				for( var thisProp in mdCache.properties ){
-					nativeData[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
-				}
-				return serializeJSON( nativeData );
-			}
-
-			// Do native serialization, by default
-			return serializeJSON( { 
-				"type" = "cfcouchbase-cfc",
-				"binary" = toBase64( objectSave( arguments.data ) ),
-				"classpath" = mdCache.name
-			} );
-
+			return serializeObjects( arguments.data );
 		}
 		// if query, then do native serialization
 		else if( isQuery( arguments.data ) ){
@@ -184,6 +146,49 @@ component accessors="true"{
 	any function clearObjectCache(){
 		variables.objectMDCache.clear();
 		return this;
+	}
+
+	/**
+	* Does object data serializations
+	*/
+	private function serializeObjects( required any data ){
+		// Check if the object has a method called "$serialize", if it does, call it and return
+		if( structKeyExists( arguments.data, "$serialize" ) ){
+			return arguments.data.$serialize();
+		}
+
+		// Get object info
+		var mdCache = getObjectMD( arguments.data );
+
+		// Auto Inflate Mode, store with class information
+		if( structKeyExists( mdCache, "autoInflate" ) AND arrayLen( mdCache.properties ) ){
+			var nativeObject = { 
+				"type"		= "cfcouchbase-cfcdata",
+				"data" 		= {}, 
+				"classpath" = mdCache.name 
+			};
+			// build out a memento from the properties.
+			for( var thisProp in mdCache.properties ){
+				nativeObject.data[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
+			}
+			return serializeJSON( nativeObject );
+		} 
+		// else just store properties as data
+		else if( arrayLen( mdCache.properties ) ){
+			var nativeData = {};
+			// build out a memento from the properties.
+			for( var thisProp in mdCache.properties ){
+				nativeData[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
+			}
+			return serializeJSON( nativeData );
+		}
+
+		// Do native serialization, by default
+		return serializeJSON( { 
+			"type" = "cfcouchbase-cfc",
+			"binary" = toBase64( objectSave( arguments.data ) ),
+			"classpath" = mdCache.name
+		} );
 	}
 
 }

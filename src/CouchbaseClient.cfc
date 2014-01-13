@@ -845,7 +845,8 @@ component serializable="false" accessors="true"{
 
 			// Do we have a filter?
 			if( !structKeyExists( arguments, "filter" ) OR 
-				( structKeyExists( arguments, "filter" ) AND isClosure( arguments.filter ) AND ! arguments.filter( thisDocument ) ) ){
+				( isClosure( arguments.filter ) AND !arguments.filter( thisDocument ) ) 
+			){
 				arrayAppend( cfresults, thisDocument );
 			}
 		}

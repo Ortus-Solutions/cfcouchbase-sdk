@@ -799,6 +799,7 @@ component serializable="false" accessors="true"{
 	* @view.hint The name of the view to get
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'getQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
+	* @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
 	*/
@@ -831,13 +832,29 @@ component serializable="false" accessors="true"{
 		var cfresults 	= [];
 		while( iterator.hasNext() ){
 			var thisRow 	 = iterator.next();
-			var thisDocument = { id : thisRow.getId(), document : "" };
-
+			var isReduced	 = ( results.getClass().getName() eq "com.couchbase.client.protocol.views.ViewResponseReduced"  ? true : false );
+			var hasDocs		 = ( results.getClass().getName() eq "com.couchbase.client.protocol.views.ViewResponseWithDocs" ? true : false );
+			/**
+			* ID: The id of the document in Couchbase, but only available if the query is NOT reduced
+			* Document: Only available if the query is NOT reduced
+			* Key: This is always available, but null if the query has been reduced, If un-redunced it is the first value passed into emit()
+			* Value: This is always available. If reduced, this is the value returned by the reduce(), if not reduced it is the second value passed into emit()
+			**/
+			var thisDocument = { id : "", document : "", key="", value="" };
+			
 			// Did we get a document or none?
-			if( results.getClass().getName() neq "com.couchbase.client.protocol.views.ViewResponseNoDocs" ){
+			if( hasDocs ){
 				thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
 			}
+			// check for reduced
+			if( isReduced ){
+				thisDocument.key = thisRow.getKey();
+				thisDocument.value = thisRow.getValue();
+			} else {
+				thisDocument.id = thisRow.getID();
+			}
 
+			
 			// Do we have a transformer?
 			if( structKeyExists( arguments, "transform" ) AND isClosure( arguments.transform ) ){
 				arguments.transform( thisDocument );

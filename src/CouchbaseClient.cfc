@@ -799,7 +799,7 @@ component serializable="false" accessors="true"{
 	* @view.hint The name of the view to get
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'getQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
-	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true does not add the row to the final results.
+	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
 	*/
 	any function query( 
@@ -845,7 +845,7 @@ component serializable="false" accessors="true"{
 
 			// Do we have a filter?
 			if( !structKeyExists( arguments, "filter" ) OR 
-				( isClosure( arguments.filter ) AND !arguments.filter( thisDocument ) ) 
+				( isClosure( arguments.filter ) AND arguments.filter( thisDocument ) ) 
 			){
 				arrayAppend( cfresults, thisDocument );
 			}

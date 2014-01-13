@@ -101,7 +101,7 @@ component{
 											   view='brewery_beers', 
 											   options={ limit: 10, includeDocs: true},
 											   filter=function( row ){
-											   	return ( true );
+											   	return ( false );
 											   	} );
 				//debug( results );
 				expect(	results ).toBeArray();

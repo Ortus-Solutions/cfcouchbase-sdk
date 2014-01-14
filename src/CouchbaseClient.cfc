@@ -769,7 +769,7 @@ component serializable="false" accessors="true"{
 					} else if( sortOrder == 'DESC' ) {
 						thisValue = javaCast( "boolean", true );
 					} else {
-						throw( message='Invalid sortOrder value of [#sortOrder#]', detail='Valid values are ASC and DESC.', type='invalidSortOrder' );
+						throw( message='Invalid sortOrder value of [#sortOrder#]', detail='Valid values are ASC and DESC.', type='InvalidSortOrder' );
 					}
 					thisKey = 'descending';
 					break;
@@ -780,9 +780,33 @@ component serializable="false" accessors="true"{
 					thisKey = 'skip';
 					break;
 				}
-				// Massage key input
+				// Massage key and keys options
 				case "key" : case "keys" : { 
 					thisValue = serializeJSON( arguments.options[ thisKey ] );
+					break;
+				}
+				// handle stale option
+				case "stale" : { 
+					var oStale = getJava( "com.couchbase.client.protocol.views.Stale" );
+					var stale = arguments.options[ 'stale' ];
+					
+		            switch (stale) {
+		                // Force index rebuild (slowest)
+		                case "FALSE":
+		                    thisValue = oStale.FALSE;
+		                    break;
+		                // Stale data is ok (fastest)
+		                case "OK":
+		                    thisValue = oStale.OK;
+		                    break;
+		                // Stale is ok, but start asynch re-indexing now.
+		                case "UPDATE_AFTER":
+		                    thisValue = oStale.UPDATE_AFTER;
+		                    break;
+		                default:
+		                    throw (message="The stale value of [#stale#] is invalid.", detail="Possible values are [FALSE, OK, UPDATE_AFTER].  Default behavior is 'OK' meaning stale data is acceptable.", type="InvalidStale");
+		            }
+
 					break;
 				}
 				default : { thisValue = arguments.options[ thisKey ]; }

@@ -162,7 +162,7 @@ component{
 			
 				expect( function(){
 	               couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'invalid' } );
-          		}).toThrow( type="invalidSortOrder" );
+          		}).toThrow( type="InvalidSortOrder" );
           				
 			});
 		
@@ -201,6 +201,29 @@ component{
 				expect( results[1].id ).toBe( '21st_amendment_brewery_cafe' );
 				expect( results[2].id ).toBe( '357' );
 				expect( results[3].id ).toBe( '512_brewing_company-512_alt' );
+			});
+		
+			it( "can get possibly stale data", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 20, stale: 'OK' } );
+				expect( results ).toBeArray();
+			});
+		
+			it( "can get fresh data", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 20, stale: 'FALSE' } );
+				expect( results ).toBeArray();
+			});
+		
+			it( "can get possibly stale data but request a refresh to happen after", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 20, stale: 'UPDATE_AFTER' } );
+				expect( results ).toBeArray();
+			});
+		
+			it( "can throw error on invalid stale option", function(){
+									
+				expect( function(){
+					couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 20, stale: 'invalid' } );
+          		}).toThrow( type="InvalidStale" );
+          		
 			});
 
 		

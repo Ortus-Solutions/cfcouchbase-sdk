@@ -132,6 +132,19 @@ component{
 				expect(	len( results[ 1 ].key ) ).toBeGT( 0 );
 			});
 
+			it( "can do a non-grouped query when group is turned of regardless of grouplevel", function(){
+				var results = couchbase.query( 'beer', 'by_location', { limit: 10, group:false, groupLevel:1 }, false );
+				expect(	results ).toBeArray();
+				expect(	results ).toHaveLength( 1 );
+			});
+
+			it( "can ignore grouping if reduce is turned off", function(){
+				var results = couchbase.query( 'beer', 'by_location', { limit: 10, reduce:false, group:true, groupLevel:1 }, false );
+				// The fact that this doesn't error is a test in itself since setting group options when reduce is false will normally blow stuff up.
+				expect(	results ).toBeArray();
+				expect(	results[1].value ).toHaveLength( 0 );
+			});
+
 			it( "can return native results", function(){
 				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="native" );
 				expect(	results.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.ViewResponseWithDocs" );

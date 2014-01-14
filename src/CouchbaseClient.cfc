@@ -753,12 +753,35 @@ component serializable="false" accessors="true"{
 			var thisValue = "";
 			// provide some basic auto-casting.
 			switch( thisKey ){
-				case "groupLevel" : case "limit" : case "skip" : { 
+				case "limit" : case "skip" : { 
 					thisValue = javaCast( "int", arguments.options[ thisKey ] );
 					break;
 				}
-				case "debug" : case "descending" : case "group" : case "inclusiveEnd" : case "includeDocs" : case "reduce" : { 
+				case "debug" : case "descending" : case "inclusiveEnd" : case "includeDocs" : case "reduce" : { 
 					thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
+					break;
+				}
+				// handle grouping
+				case "groupLevel" : case "group" : {
+					// If reducing has been turned off for this query, then we can't group.  
+					// This will prevent errors if you've temporarily disabled reducing on a grouped query.
+					if( structKeyexists( arguments.options, "reduce" ) && !arguments.options.reduce ) {
+						continue;
+					}
+					
+					if( thisKey == 'group' ) { 
+						thisValue = javaCast( "boolean", arguments.options[ 'group' ] );
+					} else {
+						
+						// If grouping has been turned off for this query, then skip grouplevel
+						// This is prevent undesired results if you've temporarily disabled grouping on a query with a group level  
+						if( structKeyexists( arguments.options, "group" ) && !arguments.options.group ) {
+							continue;
+						}
+						
+						thisValue = javaCast( "int", arguments.options[ 'groupLevel' ] );
+						
+					}
 					break;
 				}
 				// Allow sortOrder as a convenient facade for decending

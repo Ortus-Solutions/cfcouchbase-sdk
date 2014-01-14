@@ -761,12 +761,24 @@ component serializable="false" accessors="true"{
 					thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
 					break;
 				}
+				case "sortOrder" : {
+					var sortOrder = arguments.options[ 'sortOrder' ]; 
+					if( sortOrder == 'ASC' ) {
+						thisValue = javaCast( "boolean", false );
+					} else if( sortOrder == 'DESC' ) {
+						thisValue = javaCast( "boolean", true );
+					} else {
+						throw( message='Invalid sortOrder value of [#sortOrder#]', detail='Valid values are ASC and DESC.', type='invalidSortOrder' );
+					}
+					thisKey = 'descending';
+					break;
+				}
 				default : { thisValue = arguments.options[ thisKey ]; }
 			}
 			// evaluate setting.
 			evaluate( "oQuery.set#thisKey#( thisValue )" );
 		}
-
+		
 		return oQuery;
 	}
 

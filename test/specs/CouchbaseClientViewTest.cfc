@@ -142,6 +142,29 @@ component{
 				// ensure obj behaves as an iterator
 				results.next();
 			});
+
+			it( "can return results explicitly ordered ascending", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'ASC' } );
+				expect( results[1].id ).toBeLT( results[2].id );
+			});
+
+			it( "can return results explicitly ordered descending", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'DESC' } );
+				expect( results[1].id ).toBeGT( results[2].id );
+			});
+
+			it( "can return results ordered descending by default", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20 } );
+				expect( results[1].id ).toBeLT( results[2].id );
+			});
+
+			it( "can throw on invalid sortOrder", function(){
+			
+				expect( function(){
+	               couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'invalid' } );
+          		}).toThrow( type="invalidSortOrder" );
+          				
+			});
 		
 		});
 	}

@@ -780,12 +780,18 @@ component serializable="false" accessors="true"{
 					thisKey = 'skip';
 					break;
 				}
+				// Massage key input
+				case "key" : case "keys" : { 
+					thisValue = serializeJSON( arguments.options[ thisKey ] );
+					break;
+				}
 				default : { thisValue = arguments.options[ thisKey ]; }
 			}
 			// evaluate setting.
 			evaluate( "oQuery.set#thisKey#( thisValue )" );
 		}
 		
+		//writeDump(oQuery.toString());
 		return oQuery;
 	}
 

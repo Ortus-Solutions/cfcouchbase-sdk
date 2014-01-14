@@ -182,6 +182,28 @@ component{
 				expect( results[1].id ).toBe( id11 );
 			});
 		
+			it( "can filter results by a single key", function(){
+				// In this case, key is an array. It can also be simple string depending on the view
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ reduce: false, key: ["21st_amendment_brewery_cafe"] } );
+				expect( results ).toHaveLength( 1 );
+				expect( results[1].id ).toBe( '21st_amendment_brewery_cafe' );
+				
+			});
+		
+			it( "can filter results by array of keys", function(){
+				// For readability, define keys here. These can also be simple strings depending on the view
+				var key1 = ["21st_amendment_brewery_cafe"];
+				var key2 = ["357"];
+				var key3 = ["512_brewing_company","512_brewing_company-512_alt"];
+				
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ reduce: false, keys: [key1, key2, key3] } );
+				expect( results ).toHaveLength( 3 );
+				expect( results[1].id ).toBe( '21st_amendment_brewery_cafe' );
+				expect( results[2].id ).toBe( '357' );
+				expect( results[3].id ).toBe( '512_brewing_company-512_alt' );
+			});
+
+		
 		});
 	}
 	

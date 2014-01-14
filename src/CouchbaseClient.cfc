@@ -761,6 +761,7 @@ component serializable="false" accessors="true"{
 					thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
 					break;
 				}
+				// Allow sortOrder as a convenient facade for decending
 				case "sortOrder" : {
 					var sortOrder = arguments.options[ 'sortOrder' ]; 
 					if( sortOrder == 'ASC' ) {
@@ -771,6 +772,12 @@ component serializable="false" accessors="true"{
 						throw( message='Invalid sortOrder value of [#sortOrder#]', detail='Valid values are ASC and DESC.', type='invalidSortOrder' );
 					}
 					thisKey = 'descending';
+					break;
+				}
+				// Allow offset as a convenient facade for skip
+				case "offset" : { 
+					thisValue = javaCast( "int", arguments.options[ 'offset' ] );
+					thisKey = 'skip';
 					break;
 				}
 				default : { thisValue = arguments.options[ thisKey ]; }

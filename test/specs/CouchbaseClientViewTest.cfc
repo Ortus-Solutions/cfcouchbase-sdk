@@ -166,6 +166,22 @@ component{
           				
 			});
 		
+			it( "can limit number of results", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10 } );
+				expect( results ).toHaveLength( 10 );
+			});
+
+		
+			it( "can return results at an offset", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 20 } );
+				// ID of the 11th result
+				var id11 = results[11].id;
+				// Offset of 10 should return 11th record as the first item in the array
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ offset: 10 } );
+				
+				expect( results[1].id ).toBe( id11 );
+			});
+		
 		});
 	}
 	

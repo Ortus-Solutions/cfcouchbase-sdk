@@ -125,7 +125,8 @@ component{
 			});
 
 			it( "can do a grouped query", function(){
-				var results = couchbase.query( 'beer', 'by_location', { limit: 10, reduce:true, groupLevel:1 }, false );
+				var results = couchbase.query( 'beer', 'by_location', { limit: 10, groupLevel:1 }, false );
+				//debug( results );
 				expect(	results ).toBeArray();
 				expect(	results[ 1 ].value ).toBeNumeric();
 				expect(	len( results[ 1 ].key ) ).toBeGT( 0 );

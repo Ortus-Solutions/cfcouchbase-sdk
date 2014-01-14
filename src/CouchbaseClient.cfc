@@ -802,6 +802,7 @@ component serializable="false" accessors="true"{
 	* @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
+	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, cf. By default we use the cf type which uses transformations, automatic deserializations and inflations.
 	*/
 	any function query( 
 		required string designDocument, 
@@ -810,12 +811,16 @@ component serializable="false" accessors="true"{
 		boolean deserialize=true,
 		any inflateTo="",
 		any filter,
-		any transform
+		any transform,
+		string returnType="cf"
 	){
 		// if options is struct, then build out the query, else use it as an object.
 		var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
 		var oView  	= getView( arguments.designDocument, arguments.view );
 		var results = rawQuery( oView, oQuery );
+
+		// Native return type?
+		if( arguments.returnType eq "native" ){ return results; }
 
 		// Were there errors
     	if( arrayLen( results.getErrors() ) ){
@@ -826,6 +831,9 @@ component serializable="false" accessors="true"{
     										rowErrors=results.getErrors(),
     										type='CouchbaseClient.ViewException' );
     	}
+
+    	// Iterator results?
+    	if( arguments.returnType eq "iterator" ){ return results.iterator(); }
 
     	// iterate and build it out with or without desrializations
 		var iterator 	= results.iterator();
@@ -853,7 +861,6 @@ component serializable="false" accessors="true"{
 			} else {
 				thisDocument.id = thisRow.getID();
 			}
-
 			
 			// Do we have a transformer?
 			if( structKeyExists( arguments, "transform" ) AND isClosure( arguments.transform ) ){
@@ -867,6 +874,8 @@ component serializable="false" accessors="true"{
 				arrayAppend( cfresults, thisDocument );
 			}
 		}
+
+		writeDump( cfresults );abort;
 
 		return cfresults;
 	}

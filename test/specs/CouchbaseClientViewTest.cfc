@@ -113,7 +113,7 @@ component{
 				// filter out beers
 				var results = couchbase.query( designDocument='beer', 
 											   view='brewery_beers', 
-											   options={ limit: 100, includeDocs: true},
+											   options={ limit: 100, includeDocs: true },
 											   deserialize=false,
 											   transform=function( row ){
 											   	arguments.row.document = deserializeJSON( arguments.row.document );

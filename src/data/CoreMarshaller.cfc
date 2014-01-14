@@ -78,11 +78,13 @@ component accessors="true"{
 				for( var thisProp in results.data ){
 					evaluate( "oTarget.set#thisProp#( results.data[ thisProp ] )" );
 				}
-				results = oTarget;
+				// this is an object already, just return, no inflations necessary
+				return oTarget;
 			}
 			// Do we have a cfcouchbase native CFC?
 			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfc" ){
-				results = objectLoad( toBinary( results.binary  ) );
+				// this is an object already, just return, no inflations necessary
+				return objectLoad( toBinary( results.binary  ) );
 			}
 			// Do we have a cfcouchbase query?
 			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-query" ){
@@ -90,6 +92,15 @@ component accessors="true"{
 			}
 
 			// Do inflations here
+			if( len( arguments.inflateTo ) ){
+				// inflate from struct
+				if( isStruct( results ) ){
+
+				} else if ( isQuery( results ) ){
+					
+				}
+
+			}
 		}
 		
 		return results;

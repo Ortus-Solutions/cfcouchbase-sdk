@@ -47,7 +47,7 @@ component {
 	*/
 	function onLoad(){
 		binder.map( "CouchbaseClient" )
-			.toPath( "#moduleMapping#.model.CouchbaseClient" )
+			.to( "#moduleMapping#.model.CouchbaseClient" )
 			.asSingleton();
 	}
 	

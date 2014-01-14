@@ -959,6 +959,16 @@ component serializable="false" accessors="true"{
 		return variables.couchbaseClient.getSpatialView( arguments.designDocument, arguments.name );	
 	}
 
+	/**
+	* Gets a design document by returning a DesignDocument Java object (com.couchbase.client.protocol.views.DesignDocument).
+	* This method will throw an error if the design document name doesn't exist.  Names are case-sensitive.
+	* @designDocumentName.hint The name of the design document
+	*/
+	any function getDesignDocument( required string designDocumentName ){
+		return variables.couchbaseClient.getDesignDoc( arguments.designDocumentName );	
+	}
+
+
 	/************************* SERIALIZE/DESERIALIZE INTEGRATION ***********************************/
 
 	/**

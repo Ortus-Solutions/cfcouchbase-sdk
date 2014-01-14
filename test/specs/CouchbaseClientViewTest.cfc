@@ -239,6 +239,19 @@ component{
           		
 			});
 
+			it( "can get a design document", function(){
+				designDocument = couchbase.getDesignDocument( 'beer' );
+          		expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.DesignDocument" );
+			});
+
+			it( "can error if getting a design document that doesn't exist", function(){
+									
+				expect( function(){
+					couchbase.getDesignDocument( 'invalid' );
+          		}).toThrow( message="Could not load design document" );
+          		
+			});
+
 		
 		});
 	}

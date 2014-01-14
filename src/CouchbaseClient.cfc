@@ -968,6 +968,58 @@ component serializable="false" accessors="true"{
 		return variables.couchbaseClient.getDesignDoc( arguments.designDocumentName );	
 	}
 
+	/**
+	* Deletes a design document
+	* @designDocumentName.hint The name of the design document
+	*/
+	any function deleteDesignDocument( required string designDocumentName ){
+		return variables.couchbaseClient.deleteDesignDoc( arguments.designDocumentName );	
+	}
+
+	/**
+	* Creates a View.  Will create the view and or designDocument if they don't exist.  Nothing will happen if they already exist.
+	* @designDocumentName.hint The name of the design document for the view to be created under.  The design document will be created if neccessary
+	* @viewName.hint The name of the view to be created
+	* @mapFunction.hint The map function for the view represented as a string
+	* @reduceFunction.hint The reduce function for the view represented as a string
+	*/
+	void function createView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
+		
+    	// Couchbase doesn't provide a way to check for DesignDocuments, so try to retrieve it and catch the error.
+    	// This should only error the first time and will run successfully every time after.
+    	try {
+    		var designDocument = getDesignDocument( arguments.designDocumentName );	
+    	}
+    	catch(Any e) {	
+    		// Create it
+			var designDocument = getJava( "com.couchbase.client.protocol.views.DesignDocument" ).init( arguments.designDocumentName );
+		}
+		
+		if( structKeyExists( arguments, 'reduceFunction' ) && len(trim( arguments.reduceFunction ))) {
+			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );	
+		} else {
+			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction );			
+		}
+		
+		designDocument.getViews().add( viewDesign );	
+		variables.couchbaseClient.createDesignDoc( designDocument );
+		
+	  	// View creation and population is asynchronous so we'll wait a while until it's ready
+		var attempts = 0;
+		while(++attempts <= 5) {
+			try {
+				// Access the view
+				this.query( designDocument=arguments.designDocumentName, view=arguments.viewName, options={ limit: 20, stale: 'FALSE' } );
+				return;
+			}
+			catch(Any e) {
+				// Wait a bit before trying again
+				sleep(1000);
+			}
+		}
+			
+	}
+
 
 	/************************* SERIALIZE/DESERIALIZE INTEGRATION ***********************************/
 

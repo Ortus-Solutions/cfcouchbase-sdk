@@ -252,7 +252,40 @@ component{
           		
 			});
 
+			// Skipping this one since it slows the next test down
+			xit( "can delete a design document", function(){
+				result = couchbase.deleteDesignDocument( 'myDoc' );
+				expect( result ).toBeTrue();
+			});
+
+			it( "can create a view with map function", function(){
+				var CRLF = chr(13)&chr(10);
+				var mapFunction = 
+					'function (doc, meta) {#CRLF#' & 
+					'  emit(meta.id, null);#CRLF#' &
+					'}';
+														
+				couchbase.createView( 'myDoc', 'myView', mapFunction );
+          		
+			});
+
+			it( "can create a view with map and reduce function", function(){
+				var CRLF = chr(13)&chr(10);
+				var mapFunction = 
+					'function (doc, meta) {#CRLF#' & 
+					'  emit(meta.id, null);#CRLF#' &
+					'}';
+					
+				var reduceFunction = '_count';
+									
+				couchbase.createView( 'myDoc', 'myView2', mapFunction, reduceFunction );
+          		
+			});
 		
+			it( "can execute brand new view", function(){
+				var results = couchbase.query( designDocument='myDoc', view='myView', options={ limit: 20, stale: 'FALSE' } );
+				//writeDump(results);abort;
+			});
 		});
 	}
 	

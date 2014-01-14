@@ -131,6 +131,17 @@ component{
 				expect(	results[ 1 ].value ).toBeNumeric();
 				expect(	len( results[ 1 ].key ) ).toBeGT( 0 );
 			});
+
+			it( "can return native results", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="native" );
+				expect(	results.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.ViewResponseWithDocs" );
+			});
+
+			it( "can return a native iterator", function(){
+				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="iterator" );
+				// ensure obj behaves as an iterator
+				results.next();
+			});
 		
 		});
 	}

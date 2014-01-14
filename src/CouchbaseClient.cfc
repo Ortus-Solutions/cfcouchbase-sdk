@@ -802,7 +802,7 @@ component serializable="false" accessors="true"{
 	* @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
-	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, cf. By default we use the cf type which uses transformations, automatic deserializations and inflations.
+	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
 	*/
 	any function query( 
 		required string designDocument, 
@@ -812,7 +812,7 @@ component serializable="false" accessors="true"{
 		any inflateTo="",
 		any filter,
 		any transform,
-		string returnType="cf"
+		string returnType="array"
 	){
 		// if options is struct, then build out the query, else use it as an object.
 		var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
@@ -874,8 +874,6 @@ component serializable="false" accessors="true"{
 				arrayAppend( cfresults, thisDocument );
 			}
 		}
-
-		writeDump( cfresults );abort;
 
 		return cfresults;
 	}

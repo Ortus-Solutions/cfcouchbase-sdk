@@ -977,13 +977,13 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Creates a View.  Will create the view and or designDocument if they don't exist.  Nothing will happen if they already exist.
-	* @designDocumentName.hint The name of the design document for the view to be created under.  The design document will be created if neccessary
-	* @viewName.hint The name of the view to be created
+	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.
+	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
+	* @viewName.hint The name of the view to be saved
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	*/
-	void function createView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
+	void function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
 		
     	// Couchbase doesn't provide a way to check for DesignDocuments, so try to retrieve it and catch the error.
     	// This should only error the first time and will run successfully every time after.
@@ -1001,7 +1001,29 @@ component serializable="false" accessors="true"{
 			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction );			
 		}
 		
-		designDocument.getViews().add( viewDesign );	
+		var views = designDocument.getViews();
+		
+		var i = 0;
+		var found = false;
+		// Search to see if this view is already in the design document
+		for( var view in views ) {
+			i++;
+			// If we find it (by name)
+			if( view.getName() == arguments.viewName ) {
+				// Overwrite it
+				views[i] = viewDesign;
+				found = true;
+				break;
+			}
+		}
+		// If the view wasn't found
+		if( !found ) {
+			// Add it to the list
+			designDocument.getViews().add( viewDesign );			
+		}
+		
+		// Even though this method is called "create", it will turn the design document into JSON
+		// and PUT it into the REST API which will also update existing design docs
 		variables.couchbaseClient.createDesignDoc( designDocument );
 		
 	  	// View creation and population is asynchronous so we'll wait a while until it's ready
@@ -1018,6 +1040,36 @@ component serializable="false" accessors="true"{
 			}
 		}
 			
+	}
+
+
+
+	/**
+	* Deletes a View.  Will delete the view from the designDocument if it exists.  
+	* @designDocumentName.hint The name of the design document for the view to be deleted from
+	* @viewName.hint The name of the view to be created
+	*/
+	void function deleteView( required string designDocumentName, required string viewName ){
+		
+    	var designDocument = getDesignDocument( arguments.designDocumentName );	
+    	var views = designDocument.getViews();
+		
+		var i = 0;
+		// Search to see if this view is already in the design document
+		for( var view in views ) {
+			i++;
+			// If we find it (by name)
+			if( view.getName() == arguments.viewName ) {
+				// remove it
+				ArrayDeleteAt( views, i );
+				break;
+			}
+		}
+		
+		// Even though this method is called "create", it will turn the design document into JSON
+		// and PUT it into the REST API which will also update existing design docs
+		variables.couchbaseClient.createDesignDoc( designDocument );
+					
 	}
 
 

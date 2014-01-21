@@ -260,14 +260,25 @@ component{
 					expect( result ).toBeTrue();
 				});
 	
-				it( "can save a view with map function", function(){
+				it( "can save a view synchronously with map function", function(){
 					var CRLF = chr(13)&chr(10);
 					var mapFunction = 
 						'function (doc, meta) {#CRLF#' & 
 						'  emit(meta.id, null);#CRLF#' &
 						'}';
 															
-					couchbase.saveView( 'myDoc', 'myView', mapFunction );
+					couchbase.saveView( designDocumentName = 'myDoc', viewName = 'myView', mapFunction = mapFunction, waitFor = 60 );
+	          		
+				});
+	
+				it( "can save a view asynchronously with map function", function(){
+					var CRLF = chr(13)&chr(10);
+					var mapFunction = 
+						'function (doc, meta) {#CRLF#' & 
+						'  emit(meta.id, null);#CRLF#' &
+						'}';
+															
+					couchbase.asynchSaveView( 'myDoc', 'myView2', mapFunction );
 	          		
 				});
 	
@@ -280,12 +291,12 @@ component{
 						
 					var reduceFunction = '_count';
 										
-					couchbase.saveView( 'myDoc', 'myView2', mapFunction, reduceFunction );
+					couchbase.saveView( 'myDoc', 'myView3', mapFunction, reduceFunction );
 	          		
 				});		
 	
 				it( "can delete a view", function(){
-					couchbase.deleteView( 'myDoc', 'myView2' );          		
+					couchbase.deleteView( 'myDoc', 'myView3' );          		
 				});
 			
 				it( "can execute brand new view", function(){

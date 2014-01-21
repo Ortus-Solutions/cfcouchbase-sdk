@@ -977,13 +977,14 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.
+	* Asynchronously Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  This method
+	* will return immediatley, but the view probalby won't be available to query for a few seconds. 
 	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
 	* @viewName.hint The name of the view to be saved
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	*/
-	void function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
+	void function asynchSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
 		
     	// Couchbase doesn't provide a way to check for DesignDocuments, so try to retrieve it and catch the error.
     	// This should only error the first time and will run successfully every time after.
@@ -1025,21 +1026,43 @@ component serializable="false" accessors="true"{
 		// Even though this method is called "create", it will turn the design document into JSON
 		// and PUT it into the REST API which will also update existing design docs
 		variables.couchbaseClient.createDesignDoc( designDocument );
+			
+	}
+
+
+	/**
+	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  The method will return true when the 
+	* view is ready.  If the view is still not accessable after the number of seconds specified in the "waitFor" parameter, the method will return false.
+	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
+	* @viewName.hint The name of the view to be saved
+	* @mapFunction.hint The map function for the view represented as a string
+	* @reduceFunction.hint The reduce function for the view represented as a string
+	* @waitFor.hint How many seconds to wait for the view to save before giving up.  Defaults to 20, but may need to be higher for larger buckets.
+	*/
+	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction, waitFor = 20 ){
 		
-	  	// View creation and population is asynchronous so we'll wait a while until it's ready
+    	asynchSaveView( argumentCollection=arguments );
+		
+	  	// View creation and population is asynchronous so we'll wait a while until it's ready.  
 		var attempts = 0;
-		while(++attempts <= 5) {
+		while(++attempts <= arguments.waitFor) {
 			try {
 				// Access the view
 				this.query( designDocument=arguments.designDocumentName, view=arguments.viewName, options={ limit: 20, stale: 'FALSE' } );
-				return;
+				
+				// The view is ready to be used!
+				return true;
 			}
 			catch(Any e) {
-				// Wait a bit before trying again
+				// Wait 1 second before trying again
 				sleep(1000);
 			}
 		}
-			
+		
+		// We've given up and the view never worked. There could be a problem, but most 
+		// likely the bucket just isn't finished indexing
+		return false;
+
 	}
 
 

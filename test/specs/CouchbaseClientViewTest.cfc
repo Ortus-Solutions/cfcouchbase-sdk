@@ -166,7 +166,7 @@ component{
 				expect( results[1].id ).toBeGT( results[2].id );
 			});
 
-			it( "can return results ordered descending by default", function(){
+			it( "can return results ordered ascending by default", function(){
 				var results = couchbase.query( designDocument='beer', view='brewery_beers', options={ limit: 10, skip: 20 } );
 				expect( results[1].id ).toBeLT( results[2].id );
 			});

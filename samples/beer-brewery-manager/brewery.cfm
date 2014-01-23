@@ -7,12 +7,14 @@
 	
 	<cfset cbClient = application.couchbase>
 	<cfset brewery = cbClient.get("#url.breweryID#")>
-	
+		
 	<cfif isnull(brewery)>
 		
 		Invalid BreweryID "#HTMLEditFormat(url.breweryID)#"
 	
 	<cfelse>
+		
+		<cfset breweryBeers = cbClient.query("manager", "listBeersByBrewery", { reduce = false, key = url.breweryID, includeDocs = true })>
 		
 		<a href="breweryEdit.cfm?breweryID=#HTMLEditFormat(url.breweryID)#">Edit this Brewery's Details</a><br><br>
 
@@ -62,7 +64,42 @@
 				<td>#dateFormat(brewery.updated,"full")#</td>
 			</tr>
 		</table>
-			
+		
+		<h2>#HTMLEditFormat(brewery.name)#'s Beers</h2>
+		<table border="1" cellpadding=5 cellspacing=0>
+			<tr>
+				<td></td>
+				<td>Name</td>
+				<td>Category</td>
+				<td>Style</td>
+				<td>Description</td>
+			</tr>
+			<cfloop array="#breweryBeers#" index="beer">
+				<cfset bDoc = beer.document>
+				<tr>
+					<td>View</td>
+					<td>#HTMLEditFormat(bDoc.name)#</td>
+					<td>
+						<cfif structKeyExists(bDoc,'category')>
+							#HTMLEditFormat(bDoc.category)#
+						</cfif>
+					</td>
+					<td>
+						<cfif structKeyExists(bDoc,'style')>
+							#HTMLEditFormat(bDoc.style)#
+						</cfif>
+					</td>
+					<td>
+						<cfif len(bDoc.description) GT 50>
+							<span title="#HTMLEditFormat(bDoc.description)#">#HTMLEditFormat(left(bDoc.description,50))#...</span>
+						<cfelse>
+							#HTMLEditFormat(bDoc.description)#
+						</cfif>
+					</td>
+				</tr>
+			</cfloop>
+		</table>
+					
 	</cfif>
 	
 </cfoutput>

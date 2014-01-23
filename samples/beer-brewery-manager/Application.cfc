@@ -36,7 +36,7 @@ component{
 			'listBeersByBrewery',
 			'function (doc, meta) {
 			  if ( doc.type == ''beer'' ) {
-			    emit([doc.brewery_id,meta.id], null);
+			    emit(doc.brewery_id, null);
 			  }
 			}',
 			'_count'

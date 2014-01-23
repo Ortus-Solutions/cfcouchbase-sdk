@@ -1050,8 +1050,11 @@ component serializable="false" accessors="true"{
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	*/
-	void function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
-				
+	void function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '' ){
+		
+		arguments.mapFunction = variables.util.normalizeViewFunction(arguments.mapFunction);
+		arguments.reduceFunction = variables.util.normalizeViewFunction(arguments.reduceFunction);
+		
 		// If this exact view already exists, we've nothing to do here
 		if( viewExists( argumentCollection=arguments ) ) {
 			return;
@@ -1067,7 +1070,7 @@ component serializable="false" accessors="true"{
 		}
 		
 		// Overloaded Java constructor based on whether there's a reduceFunction
-		if( structKeyExists( arguments, 'reduceFunction' ) && len(trim( arguments.reduceFunction ))) {
+		if( len(trim( arguments.reduceFunction ))) {
 			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );	
 		} else {
 			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction );			
@@ -1100,7 +1103,7 @@ component serializable="false" accessors="true"{
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	* @waitFor.hint How many seconds to wait for the view to save before giving up.  Defaults to 20, but may need to be higher for larger buckets.
 	*/
-	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction, waitFor = 20 ){
+	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '', waitFor = 20 ){
 		
     	asyncSaveView( argumentCollection=arguments );
 		

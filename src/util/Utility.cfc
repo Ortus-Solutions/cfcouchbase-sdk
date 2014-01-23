@@ -116,6 +116,33 @@ component accessors="true"{
     	}
 	}
 
+
+	/**
+    * Normalize view functions to not have any carridge returns.
+    * The presence of ASCII code 13 in map or reduce functions will prevent you from 
+    * being able to execute them from the Couchbase web admin.
+    * @viewFunction.hint The function string to normalize
+    */
+    string function normalizeViewFunction( required string viewFunction ) {
+		var CR = chr(13);
+		var LF = chr(10);
+		var CRLF = CR & LF;
+		var CRLFPlaceholder = '__CRLF__';
+		
+		// I'm doing this in two steps since if I just remove CR's that have no LF, that would completely remove line breaks and cause syntax issues
+		// but if I just replaced all CR's with LF's that would double all line breaks.  Therefore, all CR's and CRLF's will be converted to an LF.
+		// Standalone LF's won't be touched.
+		
+		// Set CRLF's aside for a moment
+		arguments.viewFunction = replace(arguments.viewFunction,CRLF,CRLFPlaceholder,'all');
+		// Replace single CR's with LF's  
+		arguments.viewFunction = replace(arguments.viewFunction,CR,LF,'all');
+		// Put the CRLF's back as just LF's  
+		arguments.viewFunction = replace(arguments.viewFunction,CRLFPlaceholder,LF,'all');
+		
+		return arguments.viewFunction;
+	}
+
 	/**
     * Deal with errors that came back from the cluster
     * rowErrors is an array of com.couchbase.client.protocol.views.RowError

@@ -239,23 +239,37 @@ component{
           		
 			});
 
-			it( "can get a design document", function(){
-				designDocument = couchbase.getDesignDocument( 'beer' );
-          		expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.DesignDocument" );
-			});
-
-			it( "can error if getting a design document that doesn't exist", function(){
-									
-				expect( function(){
-					couchbase.getDesignDocument( 'invalid' );
-          		}).toThrow( message="Could not load design document" );
-          		
-			});
-
-			// Skipping these since they slows the tests down
-			xdescribe( "View Administration", function(){
-					
-				it( "can delete a design document", function(){
+			describe( "View Administration", function(){
+												
+				it( "can initialize new design document", function(){
+					designDocument = couchbase.newDesignDocument( 'brandNew' );
+	          		expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.DesignDocument" );
+				});
+						
+				it( "can get a design document", function(){
+					designDocument = couchbase.getDesignDocument( 'beer' );
+	          		expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.DesignDocument" );
+				});
+	
+				it( "can error if getting a design document that doesn't exist", function(){
+										
+					expect( function(){
+						couchbase.getDesignDocument( 'invalid' );
+	          		}).toThrow( message="Could not load design document" );
+	          		
+				});
+	
+				it( "can check for existing design document", function(){										
+					expect( couchbase.designDocumentExists( 'beer' ) ).toBeTrue();	          		
+				});
+				
+	
+				it( "can check for non-existing design document", function(){										
+					expect( couchbase.designDocumentExists( 'invalid' ) ).toBeFalse();	          		
+				});
+				
+				// Skipping since it slows the tests down
+				xit( "can delete a design document", function(){
 					result = couchbase.deleteDesignDocument( 'myDoc' );
 					expect( result ).toBeTrue();
 				});
@@ -291,12 +305,48 @@ component{
 						
 					var reduceFunction = '_count';
 										
-					couchbase.saveView( 'myDoc', 'myView3', mapFunction, reduceFunction );
+					couchbase.saveView( 'myDoc2', 'myView3', mapFunction, reduceFunction );
 	          		
 				});		
 	
-				it( "can delete a view", function(){
-					couchbase.deleteView( 'myDoc', 'myView3' );          		
+				it( "can check for non-existant view", function(){
+					
+					var CRLF = chr(13)&chr(10);
+					var mapFunction = 
+						'function (doc, meta) {#CRLF#' & 
+						'  emit(meta.id, null);#CRLF#' &
+						'}';
+					
+					// Invalid design document
+					expect( couchbase.viewExists( 'invalid', 'invalid' ) ).toBeFalse();
+					// Invalid new name
+					expect( couchbase.viewExists( 'myDoc2', 'invalid' ) ).toBeFalse();
+					// Invalid map function
+					expect( couchbase.viewExists( 'myDoc2', 'myView3', 'invalid' ) ).toBeFalse();
+					// Invalid reduce function
+					expect( couchbase.viewExists( 'myDoc2', 'myView3', mapFunction, "invalid" ) ).toBeFalse();
+				});		
+	
+				it( "can check for existing view", function(){
+					
+					var CRLF = chr(13)&chr(10);
+					var mapFunction = 
+						'function (doc, meta) {#CRLF#' & 
+						'  emit(meta.id, null);#CRLF#' &
+						'}';
+					var reduceFunction = '_count';
+					
+					// Name only
+					expect( couchbase.viewExists( 'myDoc2', 'myView3') ).toBeTrue();
+					// Name, and map function
+					expect( couchbase.viewExists( 'myDoc2', 'myView3', mapFunction ) ).toBeTrue();
+					// Name, map function, and reduce function
+					expect( couchbase.viewExists( 'myDoc2', 'myView3', mapFunction, reduceFunction ) ).toBeTrue();
+				});
+	
+				// Skipping since it slows the tests down
+				xit( "can delete a view", function(){
+					couchbase.deleteView( 'myDoc2', 'myView3' );          		
 				});
 			
 				it( "can execute brand new view", function(){

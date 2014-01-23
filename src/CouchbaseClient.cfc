@@ -977,6 +977,72 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
+	* Initializes a new design document Java object.  The design doc will have no views and will not be saved yet. 
+	* @designDocumentName.hint The name of the design document to initialize
+	*/
+	any function newDesignDocument( required string designDocumentName ){
+		return getJava( "com.couchbase.client.protocol.views.DesignDocument" ).init( arguments.designDocumentName );	
+	}
+
+	/**
+	* Checks to see if a design document exists.	
+	* @designDocumentName.hint The name of the design document to check for
+	* Returns true if the design document is found and false if it is not found.
+	*/
+	boolean function designDocumentExists( required string designDocumentName ){
+		
+		// Couchbase doesn't provide a way to check for DesignDocuments, so try to retrieve it and catch the error.
+    	try {
+    		var designDocument = getDesignDocument( arguments.designDocumentName );
+    		return true;	
+    	}
+    	catch(Any e) {	
+			return false;
+		}
+	}
+
+	/**
+	* Checks to see if a view exists.  
+	* Will return 0 if the design document doesn't exist as well as if the design document exists, but there is no view by that name.
+	* If the view does exist, it will return the index of the views array where the matching view is 
+	* You can check for a view by name, but if you supply a map or reduce function, they will be checked as well.
+	* @designDocumentName.hint The name of the design document to check for
+	* @viewName.hint The name of the view to check for
+	* @mapFunction.hint The map function to check for.  Must be an exact match.
+	* @reduceFunction.hint The reduce function to check for.  Must be an exact match.
+	*/
+	any function viewExists( required string designDocumentName, required string viewName, string mapFunction, string reduceFunction ){
+		// If the design doc doesn't exist, bail.
+		if( !designDocumentExists( arguments.designDocumentName ) ) {
+			return 0;
+		}
+    	var designDocument = getDesignDocument( arguments.designDocumentName );
+		var views = designDocument.getViews();
+		
+		var i = 0;
+		// Search to see if this view is already in the design document
+		for( var view in views ) {
+			i++;
+			// If we find it (by name)
+			if( view.getName() == arguments.viewName ) {
+				// If there was a mapFunction specified, enforce the match
+				if( structKeyExists(arguments, 'mapFunction') && arguments.mapFunction != view.getMap()) {
+					return 0;
+				}
+				// If there was a reduceFunction specified, enforce the match
+				if( structKeyExists(arguments, 'reduceFunction') && arguments.reduceFunction != view.getReduce()) {
+					return 0;
+				}
+				// Passed all the tests
+				return i;
+			}
+		}
+		
+		// Exhausted the array with no match
+		return 0;
+	}
+
+	/**
 	* Asynchronously Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  This method
 	* will return immediatley, but the view probalby won't be available to query for a few seconds. 
 	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
@@ -985,17 +1051,22 @@ component serializable="false" accessors="true"{
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	*/
 	void function asynchSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
-		
-    	// Couchbase doesn't provide a way to check for DesignDocuments, so try to retrieve it and catch the error.
-    	// This should only error the first time and will run successfully every time after.
-    	try {
+				
+		// If this exact view already exists, we've nothing to do here
+		if( viewExists( argumentCollection=arguments ) ) {
+			return;
+		}
+	
+		// Does the design doc exist?
+    	if( designDocumentExists( arguments.designDocumentName ) ) {
+    		// Get it
     		var designDocument = getDesignDocument( arguments.designDocumentName );	
-    	}
-    	catch(Any e) {	
+    	} else {	
     		// Create it
-			var designDocument = getJava( "com.couchbase.client.protocol.views.DesignDocument" ).init( arguments.designDocumentName );
+			var designDocument = newDesignDocument( arguments.designDocumentName );
 		}
 		
+		// Overloaded Java constructor based on whether there's a reduceFunction
 		if( structKeyExists( arguments, 'reduceFunction' ) && len(trim( arguments.reduceFunction ))) {
 			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );	
 		} else {
@@ -1003,30 +1074,20 @@ component serializable="false" accessors="true"{
 		}
 		
 		var views = designDocument.getViews();
-		
-		var i = 0;
-		var found = false;
-		// Search to see if this view is already in the design document
-		for( var view in views ) {
-			i++;
-			// If we find it (by name)
-			if( view.getName() == arguments.viewName ) {
-				// Overwrite it
-				views[i] = viewDesign;
-				found = true;
-				break;
-			}
-		}
-		// If the view wasn't found
-		if( !found ) {
-			// Add it to the list
-			designDocument.getViews().add( viewDesign );			
+		// Check for this view by name
+		var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
+		// And update or add it into the array as neccessary
+		if( matchIndex ) {
+			// Update existing
+			views[matchIndex] = viewDesign;	
+		} else {
+			// Insert new
+			views.add( viewDesign );
 		}
 		
 		// Even though this method is called "create", it will turn the design document into JSON
 		// and PUT it into the REST API which will also update existing design docs
-		variables.couchbaseClient.createDesignDoc( designDocument );
-			
+		variables.couchbaseClient.createDesignDoc( designDocument );			
 	}
 
 
@@ -1074,25 +1135,31 @@ component serializable="false" accessors="true"{
 	*/
 	void function deleteView( required string designDocumentName, required string viewName ){
 		
-    	var designDocument = getDesignDocument( arguments.designDocumentName );	
-    	var views = designDocument.getViews();
+		// Check for this view by name
+		var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
 		
-		var i = 0;
-		// Search to see if this view is already in the design document
-		for( var view in views ) {
-			i++;
-			// If we find it (by name)
-			if( view.getName() == arguments.viewName ) {
-				// remove it
-				ArrayDeleteAt( views, i );
-				break;
+		// Only bother continuing if it exists
+		if( matchIndex ) {
+			
+	    	var designDocument = getDesignDocument( arguments.designDocumentName );	
+	    	var views = designDocument.getViews();
+			
+			// Remove the view from the array
+			ArrayDeleteAt( views, matchIndex );
+
+			// If there are other views left, then save
+			if( arrayLen(views) ) {
+				// Even though this method is called "create", it will turn the design document into JSON
+				// and PUT it into the REST API which will also update existing design docs
+				variables.couchbaseClient.createDesignDoc( designDocument );				
+			} else {
+				// If this was the last view, nuke the entire design document.  
+				// This is a limitation of the Java client as it will refuse to save a design doc with no views.
+				deleteDesignDocument( arguments.designDocumentName );
 			}
-		}
-		
-		// Even though this method is called "create", it will turn the design document into JSON
-		// and PUT it into the REST API which will also update existing design docs
-		variables.couchbaseClient.createDesignDoc( designDocument );
-					
+
+			
+		} // end view exists?		
 	}
 
 

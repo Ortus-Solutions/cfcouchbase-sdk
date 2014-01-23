@@ -18,23 +18,33 @@ PLEASE NOTE THAT YOU MUST ALTER THE RUNNER'S URL ACCORDING TO YOUR ENVIRONMENT.
 -->
 <project name="testbox-ant-runner" default="run" basedir=".">
 	
-	<!-- THE URL TO THE RUNNER, PLEASE CHANGE ACCORDINGLY-->
-	<property name="url.runner"			value="http://railocboxdev.jfetmac/cfcouchbase-sdk/test/index.cfm?"/>
-	<!-- FILL OUT THE BUNDLES TO TEST, CAN BE A LIST OF CFC PATHS -->
-	<property name="test.bundles"		value="" />
-	<!-- FILL OUT THE DIRECTORY MAPPING TO TEST -->
-	<property name="test.directory"		value="test.specs" />
-	<!-- FILL OUT IF YOU WANT THE DIRECTORY RUNNER TO RECURSE OR NOT -->
-	<property name="test.recurse"		value="true" />
-	<!-- FILL OUT THE LABELS YOU WANT TO APPLY TO THE TESTS -->
-	<property name="test.labels"		value="" />
-	<!-- FILL OUT THE TEST REPORTER YOU WANT, AVAILABLE REPORTERS ARE: ANTJunit, Codexwiki, console, dot, doc, json, junit, min, raw, simple, tap, text, xml -->
-	<property name="test.reporter"		value="simple" />
-	<!-- FILL OUT WHERE REPORTING RESULTS ARE STORED --> 
-	<property name="report.dir"  		value="${basedir}/results" />
-	<property name="junitreport.dir"  	value="${report.dir}/junitreport" />
 
 	<target name="init" description="Init the tests">
+
+        <!-- Default environment check, if not passed via -Denvironment -->
+        <condition property="environment" value="local">
+            <not><isset property="environment" /></not>
+        </condition>
+        <echo>Loading from environment: ${environment}</echo>
+        <!-- Load env properties.  The properties file will take precedence over the properties below. -->
+        <loadproperties srcFile="test-${environment}.properties"/>
+		
+		<!-- THE URL TO THE RUNNER, PLEASE CHANGE ACCORDINGLY-->
+		<property name="url.runner"			value=""/>
+		<!-- FILL OUT THE BUNDLES TO TEST, CAN BE A LIST OF CFC PATHS -->
+		<property name="test.bundles"		value="" />
+		<!-- FILL OUT THE DIRECTORY MAPPING TO TEST -->
+		<property name="test.directory"		value="test.specs" />
+		<!-- FILL OUT IF YOU WANT THE DIRECTORY RUNNER TO RECURSE OR NOT -->
+		<property name="test.recurse"		value="true" />
+		<!-- FILL OUT THE LABELS YOU WANT TO APPLY TO THE TESTS -->
+		<property name="test.labels"		value="" />
+		<!-- FILL OUT THE TEST REPORTER YOU WANT, AVAILABLE REPORTERS ARE: ANTJunit, Codexwiki, console, dot, doc, json, junit, min, raw, simple, tap, text, xml -->
+		<property name="test.reporter"		value="simple" />
+		<!-- FILL OUT WHERE REPORTING RESULTS ARE STORED --> 
+		<property name="report.dir"  		value="${basedir}/results" />
+		<property name="junitreport.dir"  	value="${report.dir}/junitreport" />
+
 		<delete>
 			<fileset dir="${report.dir}">  
 				<include name="TEST-*.xml"/>  

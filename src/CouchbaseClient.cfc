@@ -1050,7 +1050,7 @@ component serializable="false" accessors="true"{
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	*/
-	void function asynchSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
+	void function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction ){
 				
 		// If this exact view already exists, we've nothing to do here
 		if( viewExists( argumentCollection=arguments ) ) {
@@ -1102,7 +1102,7 @@ component serializable="false" accessors="true"{
 	*/
 	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction, waitFor = 20 ){
 		
-    	asynchSaveView( argumentCollection=arguments );
+    	asyncSaveView( argumentCollection=arguments );
 		
 	  	// View creation and population is asynchronous so we'll wait a while until it's ready.  
 		var attempts = 0;

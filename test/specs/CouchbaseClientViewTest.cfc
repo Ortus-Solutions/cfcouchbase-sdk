@@ -292,7 +292,7 @@ component{
 						'  emit(meta.id, null);#CRLF#' &
 						'}';
 															
-					couchbase.asynchSaveView( 'myDoc', 'myView2', mapFunction );
+					couchbase.asyncSaveView( 'myDoc', 'myView2', mapFunction );
 	          		
 				});
 	

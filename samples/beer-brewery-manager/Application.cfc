@@ -6,20 +6,46 @@ www.coldboxframework.com | www.luismajano.com | www.ortussolutions.com
 */
 component{
 	// Application properties
-	this.name = hash(getCurrentTemplatePath());
+	this.name = "beer-brewery-manager";
 	this.sessionManagement = true;
 	this.sessionTimeout = createTimeSpan(0,0,30,0);
 	this.setClientCookies = true;
 	
+	this.mappings[ "/cfcouchbase" ] = "../../src";
+	
 	// application start
 	public boolean function onApplicationStart(){
+		application.couchbase = new cfcouchbase.CouchbaseClient( { bucketName="beer-sample" } );
+		
+		application.couchbase.asyncSaveView(
+			'manager',
+			'listBreweries',
+			'function (doc, meta) {
+			  if ( doc.type == ''brewery'' ) {
+			    emit(doc.name, null);
+			  }
+			}'
+		);
+				
 		return true;
 	}
+	
+	// application stop
+	public boolean function onApplicationStop(){		
+		application.couchbase.shutdown( 10 );
+		return true;
+	}
+	
+	
 
 	// request start
 	public boolean function onRequestStart(String targetPage){
+		if( structKeyExists(url,'reinit') ) {
+			applicationStop();
+			onApplicationStart();
+		}		
 		return true;
-
+		
 	}
 	
 }

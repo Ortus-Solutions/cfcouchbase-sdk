@@ -748,6 +748,7 @@ component serializable="false" accessors="true"{
 	*/
 	any function getQuery( struct options={} ){
 		var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
+		
 		// options
 		for( var thisKey in arguments.options ){
 			var thisValue = "";
@@ -770,11 +771,19 @@ component serializable="false" accessors="true"{
 					}
 					
 					if( thisKey == 'group' ) { 
+						
+						// If group is true and there is also a group level, skip the group option.  In addition to being redundant,
+						// there is a nasty bug where if group=true comes after group_level on the REST URL, the group_level will be ignored:
+						// http://www.couchbase.com/issues/browse/JCBC-386
+						if( arguments.options[ 'group' ] && structKeyExists(arguments.options, 'groupLevel') ) {
+							continue;
+						}
+						
 						thisValue = javaCast( "boolean", arguments.options[ 'group' ] );
 					} else {
 						
 						// If grouping has been turned off for this query, then skip grouplevel
-						// This is prevent undesired results if you've temporarily disabled grouping on a query with a group level  
+						// This is to prevent undesired results if you've temporarily disabled grouping on a query with a group level  
 						if( structKeyexists( arguments.options, "group" ) && !arguments.options.group ) {
 							continue;
 						}
@@ -801,6 +810,18 @@ component serializable="false" accessors="true"{
 				case "offset" : { 
 					thisValue = javaCast( "int", arguments.options[ 'offset' ] );
 					thisKey = 'skip';
+					break;
+				}
+				// startKey & rangeStart
+				case "startKey" : case "rangeStart" : {
+					thisValue = serializeJSON( arguments.options[thisKey] );
+					thisKey = 'rangeStart';
+					break;
+				}
+				// endKey as rangeEnd
+				case "endKey" : case "rangeEnd" : {
+					thisValue = serializeJSON( arguments.options[thisKey] );
+					thisKey = 'rangeEnd';
 					break;
 				}
 				// Massage key and keys options
@@ -836,9 +857,9 @@ component serializable="false" accessors="true"{
 			}
 			// evaluate setting.
 			evaluate( "oQuery.set#thisKey#( thisValue )" );
-		}
+		} // end for loop
 		
-		//writeDump(oQuery.toString());
+		//writeDump(oQuery.toString()); abort;
 		return oQuery;
 	}
 

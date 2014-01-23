@@ -17,6 +17,9 @@ component{
 	public boolean function onApplicationStart(){
 		application.couchbase = new cfcouchbase.CouchbaseClient( { bucketName="beer-sample" } );
 		
+		// Specify the views the applications needs here.  They will be created/updated
+		// when the client is initialized if they don't already exist.
+		
 		application.couchbase.asyncSaveView(
 			'manager',
 			'listBreweries',
@@ -24,7 +27,19 @@ component{
 			  if ( doc.type == ''brewery'' ) {
 			    emit(doc.name, null);
 			  }
-			}'
+			}',
+			'_count'
+		);
+				
+		application.couchbase.asyncSaveView(
+			'manager',
+			'listBeersByBrewery',
+			'function (doc, meta) {
+			  if ( doc.type == ''beer'' ) {
+			    emit([doc.brewery_id,meta.id], null);
+			  }
+			}',
+			'_count'
 		);
 				
 		return true;

@@ -9,7 +9,7 @@
 
 <cfelse>
 
-	<cfloop list="name,website,phone,description,city,state,code,country" item="field">
+	<cfloop list="name,website,phone,description,city,state,code,country" index="field">
 		<cfset brewery[field] = form[field]>
 	</cfloop>
 		

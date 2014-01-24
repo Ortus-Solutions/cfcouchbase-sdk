@@ -25,7 +25,7 @@
 					<td><input type="text" value="#HTMLEditFormat(brewery.name)#" name="name" id="name" size=50></td>
 				</tr>
 				<tr>
-					<td>website:</td>
+					<td>Website:</td>
 					<td><input type="text" value="#HTMLEditFormat(brewery.website)#" name="website" id="website" size=50></td>
 				</tr>
 				<tr>

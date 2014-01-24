@@ -77,7 +77,7 @@
 			<cfloop array="#breweryBeers#" index="beer">
 				<cfset bDoc = beer.document>
 				<tr>
-					<td>View</td>
+					<td><a href="beer.cfm?beerID=#beer.ID#">View</a></td>
 					<td>#HTMLEditFormat(bDoc.name)#</td>
 					<td>
 						<cfif structKeyExists(bDoc,'category')>

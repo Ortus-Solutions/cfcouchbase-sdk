@@ -310,38 +310,32 @@ component{
 				});		
 	
 				it( "can check for non-existant view", function(){
-					
-					var CRLF = chr(13)&chr(10);
-					var mapFunction = 
-						'function (doc, meta) {#CRLF#' & 
-						'  emit(meta.id, null);#CRLF#' &
-						'}';
-					
+					var viewDesign = couchbase.getDesignDocument('myDoc2').getViews()[1];
+					var viewName = viewDesign.getName();
+					var mapFunction = viewDesign.getMap();
+										
 					// Invalid design document
 					expect( couchbase.viewExists( 'invalid', 'invalid' ) ).toBeFalse();
 					// Invalid new name
 					expect( couchbase.viewExists( 'myDoc2', 'invalid' ) ).toBeFalse();
 					// Invalid map function
-					expect( couchbase.viewExists( 'myDoc2', 'myView3', 'invalid' ) ).toBeFalse();
+					expect( couchbase.viewExists( 'myDoc2', viewName, 'invalid' ) ).toBeFalse();
 					// Invalid reduce function
-					expect( couchbase.viewExists( 'myDoc2', 'myView3', mapFunction, "invalid" ) ).toBeFalse();
+					expect( couchbase.viewExists( 'myDoc2', viewName, mapFunction, "invalid" ) ).toBeFalse();
 				});		
 	
 				it( "can check for existing view", function(){
-					
-					var CRLF = chr(13)&chr(10);
-					var mapFunction = 
-						'function (doc, meta) {#CRLF#' & 
-						'  emit(meta.id, null);#CRLF#' &
-						'}';
-					var reduceFunction = '_count';
-					
+					var viewDesign = couchbase.getDesignDocument('myDoc2').getViews()[1];
+					var viewName = viewDesign.getName();
+					var mapFunction = viewDesign.getMap();
+					var reduceFunction = viewDesign.getReduce();
+										
 					// Name only
-					expect( couchbase.viewExists( 'myDoc2', 'myView3') ).toBeTrue();
+					expect( couchbase.viewExists( 'myDoc2', viewName) ).toBeTrue();
 					// Name, and map function
-					expect( couchbase.viewExists( 'myDoc2', 'myView3', mapFunction ) ).toBeTrue();
+					expect( couchbase.viewExists( 'myDoc2', viewName, mapFunction ) ).toBeTrue();
 					// Name, map function, and reduce function
-					expect( couchbase.viewExists( 'myDoc2', 'myView3', mapFunction, reduceFunction ) ).toBeTrue();
+					expect( couchbase.viewExists( 'myDoc2', viewName, mapFunction, reduceFunction ) ).toBeTrue();
 				});
 	
 				// Skipping since it slows the tests down

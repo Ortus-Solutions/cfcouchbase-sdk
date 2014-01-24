@@ -868,7 +868,7 @@ component serializable="false" accessors="true"{
 	* The options struct maps to the set of options found
 	* in the native Couchbase query object (com.couchbase.client.protocol.views.Query) 
 	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
-	* @designDocument.hint The name of the design document
+	* @designDocumentName.hint The name of the design document
 	* @view.hint The name of the view to get
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'getQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
@@ -878,7 +878,7 @@ component serializable="false" accessors="true"{
 	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
 	*/
 	any function query( 
-		required string designDocument, 
+		required string designDocumentName, 
 		required string view,
 		any options={},
 		boolean deserialize=true,
@@ -889,7 +889,7 @@ component serializable="false" accessors="true"{
 	){
 		// if options is struct, then build out the query, else use it as an object.
 		var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
-		var oView  	= getView( arguments.designDocument, arguments.view );
+		var oView  	= getView( arguments.designDocumentName, arguments.view );
 		var results = rawQuery( oView, oQuery );
 
 		// Native return type?
@@ -963,21 +963,21 @@ component serializable="false" accessors="true"{
 	/**
 	* Gets access to a view contained in a design document from the cluster by returning a View Java object (com.couchbase.client.protocol.views.View). 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
-	* @designDocument.hint The name of the design document
-	* @name.hint The name of the view to get
+	* @designDocumentName.hint The name of the design document
+	* @viewName.hint The name of the view to get
 	*/
-	any function getView( required string designDocument, required string name ){
-		return variables.couchbaseClient.getView( arguments.designDocument, arguments.name );	
+	any function getView( required string designDocumentName, required string viewName ){
+		return variables.couchbaseClient.getView( arguments.designDocumentName, arguments.viewName );	
 	}
 
 	/**
 	* Gets access to a spatial view contained in a design document from the cluster by returning a View Java object (com.couchbase.client.protocol.views.SpatialView). 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
-	* @designDocument.hint The name of the design document
+	* @designDocumentName.hint The name of the design document
 	* @name.hint The name of the view to get
 	*/
-	any function getSpatialView( required string designDocument, required string name ){
-		return variables.couchbaseClient.getSpatialView( arguments.designDocument, arguments.name );	
+	any function getSpatialView( required string designDocumentName, required string name ){
+		return variables.couchbaseClient.getSpatialView( arguments.designDocumentName, arguments.name );	
 	}
 
 	/**

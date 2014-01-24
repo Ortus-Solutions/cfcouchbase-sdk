@@ -31,7 +31,7 @@ component{
 			'_count'
 		);
 				
-		application.couchbase.asyncSaveView(
+		application.couchbase.saveView(
 			'manager',
 			'listBeersByBrewery',
 			'function (doc, meta) {

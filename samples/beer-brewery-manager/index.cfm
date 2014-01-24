@@ -26,8 +26,13 @@
 		
 		<cfset bDoc = brewery.document>
 		<h4><a href="brewery.cfm?breweryID=#brewery.id#">#HTMLEditFormat(bDoc.name)#</a> (#numBreweryBeers# Beers)</h4>
-		#bDoc.state#, #bDoc.country#<br>
-		<a href="#bDoc.website#">website</a><br>
+		<cfif len(bDoc.website)>
+		#bDoc.state#, 
+		</cfif>
+		#bDoc.country#<br>
+		<cfif len(bDoc.website)>
+			<a href="#bDoc.website#">website</a><br>
+		</cfif>
 		
 		<small>#HTMLEditFormat(bDoc.description)#</small>
 		

@@ -26,17 +26,13 @@
 				<tr>
 					<td>Category:</td>
 					<td>
-						<cfif structkeyExists(beer,"category")>
-							<input type="text" value="#HTMLEditFormat(beer.category)#" name="category" id="category" size=50>
-						</cfif>
+						<input type="text" value="<cfif structkeyExists(beer,"category")>#HTMLEditFormat(beer.category)#</cfif>" name="category" id="category" size=50>
 					</td>
 				</tr>
 				<tr>
 					<td>Style:</td>
 					<td>
-						<cfif structkeyExists(beer,"category")>
-							<input type="text" value="#HTMLEditFormat(beer.style)#" name="style" id="style" size=50>
-						</cfif>
+						<input type="text" value="<cfif structkeyExists(beer,"category")>#HTMLEditFormat(beer.style)#</cfif>" name="style" id="style" size=50>
 					</td>
 				</tr>
 				<tr>

@@ -23,6 +23,9 @@ component{
 	// COLDBOX APPLICATION KEY OVERRIDE
 	COLDBOX_APP_KEY 		 = "";
 
+	// Couchbase SDK Location
+	this.mappings[ "/cfcouchbase" ] = expandPath( "../../src" );
+
 	// application start
 	public boolean function onApplicationStart(){
 		application.cbBootstrap = new Coldbox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY);
@@ -32,7 +35,6 @@ component{
 
 	// request start
 	public boolean function onRequestStart(String targetPage){
-
 		// Bootstrap Reinit
 		if( not structKeyExists(application,"cbBootstrap") or application.cbBootStrap.isfwReinit() ){
 			lock name="coldbox.bootstrap_#this.name#" type="exclusive" timeout="5" throwonTimeout=true{

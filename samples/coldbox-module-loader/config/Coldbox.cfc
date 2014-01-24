@@ -55,7 +55,7 @@
 		// create a function with the name of the environment so it can be executed if that environment is detected
 		// the value of the environment is a list of regex patterns to match the cgi.http_host.
 		environments = {
-			//development = "^cf8.,^railo."
+			development = "^cf.,^railo.,local"
 		};
 
 		// Module Directives
@@ -109,112 +109,6 @@
 				// myForm = { name={required=true}, age={type="numeric",min="18"} }
 			}
 		};
-
-
-		/*
-
-		// ORM services, injection, etc
-		orm = {
-			// entity injection
-			injection = {
-				// enable it
-				enabled = true,
-				// the include list for injection
-				include = "",
-				// the exclude list for injection
-				exclude = ""
-			}
-		};
-
-		// flash scope configuration
-		flash = {
-			scope = "session,client,cluster,ColdboxCache,or full path",
-			properties = {}, // constructor properties for the flash scope implementation
-			inflateToRC = true, // automatically inflate flash data into the RC scope
-			inflateToPRC = false, // automatically inflate flash data into the PRC scope
-			autoPurge = true, // automatically purge flash data for you
-			autoSave = true // automatically save flash scopes at end of a request and on relocations.
-		};
-
-		//Register Layouts
-		layouts = [
-			{ name = "login",
-		 	  file = "Layout.tester.cfm",
-			  views = "vwLogin,test",
-			  folders = "tags,pdf/single"
-			}
-		];
-
-		//Conventions
-		conventions = {
-			handlersLocation = "handlers",
-			pluginsLocation  = "plugins",
-			viewsLocation 	 = "views",
-			layoutsLocation  = "layouts",
-			modelsLocation 	 = "model",
-			eventAction 	 = "index"
-		};
-
-		//IOC Integration
-		ioc = {
-			framework 		= "lightwire",
-			reload 	  	  	= true,
-			objectCaching 	= false,
-			definitionFile  = "config/coldspring.xml.cfm",
-			parentFactory 	= {
-				framework = "coldspring",
-				definitionFile = "config/parent.xml.cfm"
-			}
-		};
-
-		//Debugger Settings
-		debugger = {
-			enableDumpVar = false,
-			persistentRequestProfilers = true,
-			maxPersistentRequestProfilers = 10,
-			maxRCPanelQueryRows = 50,
-			showRCSnapshots = false,
-			//Panels
-			showTracerPanel = true,
-			expandedTracerPanel = true,
-			showInfoPanel = true,
-			expandedInfoPanel = true,
-			showCachePanel = true,
-			expandedCachePanel = true,
-			showRCPanel = true,
-			expandedRCPanel = true,
-			showModulesPanel = true,
-			expandedModulesPanel = false
-		};
-
-		//Mailsettings
-		mailSettings = {
-			server = "",
-			username = "",
-			password = "",
-			port = 25
-		};
-
-		//i18n & Localization
-		i18n = {
-			defaultResourceBundle = "includes/i18n/main",
-			defaultLocale = "en_US",
-			localeStorage = "session",
-			unknownTranslation = "**NOT FOUND**"
-		};
-
-		//webservices
-		webservices = {
-			testWS = "http://www.test.com/test.cfc?wsdl",
-			AnotherTestWS = "http://www.coldbox.org/distribution/updatews.cfc?wsdl"
-		};
-
-		//Datasources
-		datasources = {
-			mysite   = {name="mySite", dbType="mysql", username="root", password="pass"},
-			blog_dsn = {name="myBlog", dbType="oracle", username="root", password="pass"}
-		};
-		*/
 
 	}
 

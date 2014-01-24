@@ -20,13 +20,13 @@ component {
 		
 		// module settings - stored in modules.name.settings
 		settings = {
-		
+			couchbase = { servers="http://127.0.0.1:8091", bucketname="default", viewTimeout="1000"  }
 		};
 		
 		// SES Routes
 		routes = [
 			// Module Entry Point
-			{pattern="/", handler="home",action="index"},
+			{pattern="/", handler="main",action="index"},
 			// Convention Route
 			{pattern="/:handler/:action?"}		
 		];		
@@ -41,13 +41,20 @@ component {
 		];
 		
 	}
+
+	function development(){
+		// fired if in development
+		settings.couchbase = { servers="http://127.0.0.1:8091", bucketname="beer-sample" }
+	}
 	
 	/**
 	* Fired when the module is registered and activated.
 	*/
 	function onLoad(){
-		binder.map( "CouchbaseClient" )
-			.to( "#moduleMapping#.model.CouchbaseClient" )
+		// Map our Couchbase Client using per-environment settings.
+		binder.map( "Client@couchbase" )
+			.to( "cfcouchbase.CouchbaseClient" )
+			.initArg( name="config", value=settings.couchbase )
 			.asSingleton();
 	}
 	
@@ -55,7 +62,8 @@ component {
 	* Fired when the module is unregistered and unloaded
 	*/
 	function onUnload(){
-		
+		// safely destroy connection
+		wirebox.getInstance( "Client@couchbase" ).shutdown();
 	}
 	
 }

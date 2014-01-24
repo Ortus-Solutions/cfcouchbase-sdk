@@ -11,7 +11,7 @@ component{
 	this.sessionTimeout = createTimeSpan(0,0,30,0);
 	this.setClientCookies = true;
 	
-	this.mappings[ "/cfcouchbase" ] = "../../src";
+	this.mappings[ "/cfcouchbase" ] = "../../cfcouchbase";
 	
 	// application start
 	public boolean function onApplicationStart(){

@@ -24,7 +24,7 @@ component{
 	COLDBOX_APP_KEY 		 = "";
 
 	// Couchbase SDK Location
-	this.mappings[ "/cfcouchbase" ] = expandPath( "../../src" );
+	this.mappings[ "/cfcouchbase" ] = expandPath( "../../cfcouchbase" );
 
 	// application start
 	public boolean function onApplicationStart(){

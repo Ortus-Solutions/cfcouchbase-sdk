@@ -51,7 +51,9 @@ Interactive applications have changed dramatically over the last 15 years, and s
 
 * Lightweight, standalone library can be used with any application
 * High performance
-* Asynchronous calls   
+* Asynchronous calls 
+* Auto-sharding of documents evenly across cluster
+* 24/7 uptime via on-the-fly node removal and rebalance operations   
 * Easily configurable
 * Fully-featured API includes view management and execution
 * Built on the official Java SDK, but customized to take advantage of CFML
@@ -188,15 +190,122 @@ couchbase = new cfcouchbase.CouchbaseClient( 'path.to.config' );
 </source>
 
 
-
-
 == Usage ==
 
-=== Basic operations ===
+Whether you are using Couchbase for simple caching or as the NoSQL database for an application, your most common operations are going to be getting and setting data.  
+Data is most commonly a JSON document, but can really be any string you want including binary representations of serialized objects.
 
-=== Data marshalling ===
+For the comprehensive list of SDK methods, parameters, descriptions, and code samples, please look in the '''API docs''' (in the download).  Click on the <span class="label">cfcouchbase</span> package and then the <span class="label">CouchbaseClient</span> class.  
+ 
+=== Storing Documents ===
+
+The easiest way to store a document in your Couchbase cluster is by calling the '''set()''' method.  In this example we are passing a struct directly in as the value to be stored.  The SDK will automatically serialize the struct into a JSON document for storage in the cluster.    
+
+<source lang="javascript">
+client.set(
+	ID = 'brad',
+	value = { name: "Brad", age: 33, hair: "red" } 
+);
+</source>
+
+The '''ID''' of the document is 'brad' and it will live in the cluster forever until it is deleted.  If I want my document to expire and be automatically removed from the cluster after a certain amount of time, I can specify the '''timeout''' argument.
+This document will be cached for 20 minutes before expiring.  Couchbase will automatically remove it for you once it has expired.
+
+<source lang="javascript">
+client.set(
+	ID = 'cached-site-menus',
+	value = menuHTML,
+	timeout = 20
+);
+</source>
+
+=== Storage Durability === 
+
+Couchbase autos-shareds master and replica documents across your cluster out-of-the-box.  Documents are stored both in RAM for fast access and persisted to disk for long term storage.  
+By default, all storage operations are asynchrnous which means the '''set()''' call returns potentially before the document is fully stored and replicated.  
+This is a break from the consistency offered by a typical RDBMS, but it is key to the high-performance and scalable architecture. See the [http://en.wikipedia.org/wiki/CAP_theorem CAP Theorem]
+
+If your application requires you to confirm that a document has been persisted to disk, use the '''persistTo''' argument.  
+
+If you need to confirm that the document has been copied to a given number replica nodes, use the '''replicateTo''' argument.
+
+The call is still async but returns a Java future object.  Calling the '''get()''' method on the future will wait until the operation is complete.
+
+<source lang="javascript">
+// This document will be persisted to disk on at least two nodes
+future = client.set(
+	ID = 'brad',
+	value = { name: "Brad", age: 33, hair: "red" },
+	persistTo = client.persistTo.TWO, 
+	replicateTo = client.persistTo.TWO
+);
+		 
+// IMPORTANT: Wait for the operation to actually complete
+future.get()
+</source>
+
+<span class="alert alert-info">
+'''Note''' : All documents will eventually replicate and persist by themselves.  You only need these options if the application cannot continue without it.
+</span>
+
+<p>&nbsp;</p>
+
+There are many other methods for storing data.  Please check the API docs (in the download) to see full descriptions and code samples for all of them.  Here are a few to whet your appetite:
+
+* '''setMulti()''' -  Set multiple documents in the cache with a single operation.
+* '''setWithCAS()''' - Update a document only if no one else has changed it since you last retreived it using Compare And Swap (CAS).
+* '''touch()''' - "Touch" a document to reset its expiration time.
+* '''incr()''' / '''decr()''' -  Increment or Decrement a numeric value
+* '''prepend()''' / '''append()''' - add content to the beginning or end of an existing document
+
+=== Retrieving Documents ===
+
+The easiest way to retrieve a specific document by ID from your Couchbase cluster is by calling the '''get()''' method.  
+
+<source lang="javascript">
+person = client.get( ID = 'brad' );
+</source>
+
+There are many other methods for getting data.  Please check the API docs (in the download) to see full descriptions and code samples for all of them.
+
+* '''asyncGet()''' - Get an object from couchbase asynchronously.
+* '''getMulti()''' - Get multiple objects from couchbase with a single call.
+* '''getWithCAS()''' - Get an object from couchbase with a special Compare And Swap (CAS) version (for use wit '''setWithCAS()''')
+* '''getStats()''' -  Get all of the stats from all of the servers in the cluster.
+* '''getDocStats()''' -  Get stats for a specific document ID.
+
+=== Data Serialization ===
 
 === Working with Views ===
+
+=== Working with Futures ===
+
+You have probably noticed that all the asyncronous operations in the SDK return a Java [http://www.couchbase.com/autodocs/couchbase-java-client-1.0.3/net/spy/memcached/internal/OperationFuture.html OperationFuture] object.
+This allows control of your application to return immediately to your code without waiting for the remote calls to complete.  The '''future''' object gives you a window into whats going on and you can elect to monitor the progress on your terms-- deciding how long you're willing to wait-- or ignore it entirely in order to complete the request as quickly as possible.
+
+The most common method is '''get()'''.  Calling this will instruct your code to wait until th eoperation is complete before continuing.  Calling future.get() essentially makes an ''ansynchronou'' call ''syncronous''.   
+
+<source lang="javascript">
+future = client.asyncGet( ID = 'brad' );
+person = future.get();
+</source>
+
+OperationFutures are parameterized which means they can each return a different data type from their get().  Check the API docs to see what each asynchronous future returns.
+
+<span class="alert alert-info">
+'''Note''' : Operations are always subject to the timeouts configured for the client regardless of how you interact with the future.
+</span>
+
+<p>&nbsp;</p>
+
+Here are some other methods you can call on a future to handle the response on your terms:
+
+* '''cancel()''' - Cancel this operation, if possible.
+* '''getStatus()''' - Get the current status of this operation.
+* '''isDone()''' - Whether or not the Operation is done and result can be retrieved with get().
+* '''get(duration, units)''' - Get the results of the given operation, but specify how long you're willing to wait.
+
+More information on Futures is available here in the Java Docs: [http://www.couchbase.com/autodocs/couchbase-java-client-1.0.3/net/spy/memcached/internal/OperationFuture.html OperationFuture]
 
 == Help & Support ==
 

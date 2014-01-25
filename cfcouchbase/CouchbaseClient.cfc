@@ -62,7 +62,9 @@ component serializable="false" accessors="true"{
 	* Constructor
 	* This creates a connection to a Couchbase server using the passed in config argument, which can be a struct literal of options, a path to a config object
 	* or an instance of a cfcouchbase.config.CouchbaseConfig object.  For all the possible config settings, look at the CouchbaseConfig object.
+	* 
 	* @config.hint The configuration structure, config object or path to a config object.
+	* 
 	* @return A reference to "this" CFC
 	*/
 	CouchbaseClient function init( any config={} ){
@@ -111,11 +113,18 @@ component serializable="false" accessors="true"{
 	* to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  (This assumes you have replicas enabled)   
 	* To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc. 
 	* A PersistTo.TWO durability setting implies a replication to at least one node.
+	* 
+	* <pre>
+	* person = { name: "Brad", age: 33, hair: "red" };
+	* future = client.set( 'brad', person );
+	* </pre>
+	* 
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
 	*/ 
 	any function set( 
@@ -146,18 +155,20 @@ component serializable="false" accessors="true"{
 	* you will be able to tell if another process has modified the document between the time you retrieved it and updated it.  This method will only complete
 	* successfully if the original document value is unchanged.  This method is not asyncronous and therefore does not return a future since your application code
 	* will need to check the return and handle it appropriatley.
-	*
+	* 
+	* <pre>
+	* person = { name: "Brad", age: 33, hair: "red" };
+	* result = client.setWithCAS( 'brad', person, CAS );
+	* </pre>
+	* 
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @CAS.hint CAS value retrieved via getWithCAS()
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
-	* @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means   
-	* nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED"
-	* indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and
-	* attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or
-	* a regular set() commend to store the document. 
+	* 
+	* @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED" indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or a regular set() commend to store the document. 
 	*/ 
 	any function setWithCAS( 
 		required string ID, 
@@ -202,11 +213,18 @@ component serializable="false" accessors="true"{
 	/**
 	* This method is the same as set(), except the future that is returned will return true if the ID being set doesn't already exist.  
 	* The future will return false if the item being set does already exist.  It will not throw an error if the ID already exists, you must check the future.
+	* 
+	* <pre>
+	* person = { name: "Brad", age: 33, hair: "red" };
+	* future = client.add( 'brad', person );
+	* </pre>
+	* 
 	* @ID.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
 	*/ 
 	any function add( 
@@ -237,10 +255,21 @@ component serializable="false" accessors="true"{
 	/**
 	* Set multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
 	* The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
+	* 
+	* <pre>
+	* data = {
+	* &nbsp;&nbsp;brad = { name: "Brad", age: 33, hair: "red" },
+	* &nbsp;&nbsp;luis = { name: "Luis", age: 35, hair: "black" },
+	* &nbsp;&nbsp;bill = { name: "Bill", age: 21, hair: "blond" }
+	* };
+	* future = client.setMulti( data );
+	* </pre>
+	* 
 	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
 	* @timeout.hint The expiration of the documents in minutes.
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* 
 	* @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	*/ 
 	any function setMulti( 
@@ -281,14 +310,20 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* This method will set a value only if that ID already exists in Couchbase.  If the document ID doesn't exist, it will do nothing.
-	*   
+	* 
+	* <pre>
+	* person = { name: "Brad", age: 33, hair: "red" };
+	* future = client.replace( 'brad', person );
+	* future.get();
+	* </pre>
+	* 
 	* @ID The ID of the document to replace.
 	* @value.hint The value of the document to replace
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
-	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
-	* future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
+	* 
+	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
 	*/ 
 	any function replace( 
 		required string ID, 
@@ -314,9 +349,15 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* Get an object from couchbase by the ID.  This method will deserialize object automatically and optionally inflate the data into a CFC.
+	* 
+	* <pre>
+	* person = client.get( 'brad' );
+	* </pre>
+	* 
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* 
 	* @return The object if found, null otherwise.
 	*/
 	any function get( required string ID, boolean deserialize=true, any inflateTo="" ){
@@ -332,7 +373,14 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Get an object from couchbase asynchronously.
+	* 
+	* <pre>
+	* future = client.asyncGet( 'brad' );
+	* future.get();
+	* </pre>
+	* 
 	* @ID.hint The ID of the document to retrieve.
+	* 
 	* @return A Java Future object. (net.spy.memcached.internal.GetFuture)
 	*/
 	any function asyncGet( required string ID ){
@@ -343,9 +391,15 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* Get multiple objects from couchbase.
+	* 
+	* <pre>
+	* results = client.getMulti( ['brad', 'luis', 'bill'] );
+	* </pre>
+	* 
 	* @ID.hint An array of document IDs to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* 
 	* @return A struct of values.  Any document IDs not found will not exist in the struct.
 	*/
 	any function getMulti( required array ID, boolean deserialize=true, any inflateTo="" ){
@@ -364,7 +418,13 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Get multiple objects from couchbase asynchronously.  
+	* 
+	* <pre>
+	* buldFuture = client.asyncGetMulti( ['brad', 'luis', 'bill'] );
+	* </pre>
+	* 
 	* @ID.hint An array of document IDs to retrieve.
+	* 
 	* @return A bulk Java Future. (net.spy.memcached.internal.BulkFuture)  Any document IDs not found will not exist in the future object.
 	*/
 	any function asyncGetMulti( required array ID ){
@@ -376,9 +436,17 @@ component serializable="false" accessors="true"{
 	/**
 	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated. 
+	* 
+	* <pre>
+	* result = client.getWithCAS( 'brad' );
+	* writeOutput(result.cas);
+	* writeOutput(result.value);
+	* </pre>
+	* 
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* 
 	* @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
 	*/
 	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo="" ){
@@ -400,7 +468,13 @@ component serializable="false" accessors="true"{
 	/**
 	* Gets (with CAS support) the given key asynchronously.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
+	* 
+	* <pre>
+	* future = client.asyncGetWithCAS( 'brad' );
+	* </pre>
+	* 
 	* @ID.hint The ID of the document to retrieve.
+	* 
 	* @return A Java Future. (net.spy.memcached.internal.OperationFuture) The future has methods that will return the "CAS" and "value" keys.
 	*/
 	any function asyncGetWithCAS( required string ID ){
@@ -412,10 +486,18 @@ component serializable="false" accessors="true"{
 	/**
 	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
 	* functionality where you don't want a document to timeout while it is still being accessed.
+	* 
+	* <pre>
+	* result = client.getAndTouch( 'brad' );
+	* writeOutput(result.cas);
+	* writeOutput(result.value);
+	* </pre>
+	* 
 	* @ID.hint The ID of the document to retrieve.
 	* @timeout.hint The expiration of the document in minutes
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* 
 	* @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
 	*/
 	any function getAndTouch(
@@ -445,8 +527,14 @@ component serializable="false" accessors="true"{
 	/**
 	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
 	* functionality where you don't want a document to timeout while it is still being accessed.
+	* 
+	* <pre>
+	* future = client.asyncGetAndTouch( 'brad' );
+	* </pre>
+	* 
 	* @ID.hint The ID of the document to retrieve.
 	* @timeout.hint The expiration of the document in minutes
+	* 
 	* @return A Future object (net.spy.memcached.internal.OperationFuture) that retrieves a CASValue class that you can use to get the value and cas of the object.
 	*/
 	any function asyncGetAndTouch(
@@ -460,7 +548,13 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Shutdown the native client connection
+	* 
+	* <pre>
+	* client.shutdown( 10 );
+	* </pre>
+	* 
 	* @timeout.hint The timeout in seconds, we default to 10 seconds
+	* 
 	* @return A refernce to "this" CFC
 	*/
 	CouchbaseClient function shutdown( numeric timeout=10 ){
@@ -470,7 +564,13 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Flush all caches from all servers with a delay of application.
+	* 
+	* <pre>
+	* client.flush( 5 );
+	* </pre>
+	* 
 	* @delay.hint The period of time to delay, in seconds
+	* 
 	* @return A Java future object. (net.spy.memcached.internal.OperationFuture)
 	*/
 	any function flush( numeric delay=0 ){
@@ -480,6 +580,11 @@ component serializable="false" accessors="true"{
 	/**
 	* Get all of the stats from all of the servers in the cluster.
 	* Information on stats available here: http://www.couchbase.com/docs/couchbase-manual-1.8/cbstats-all-bucket-info.html
+	* 
+	* <pre>
+	* clusterStats = client.getStats();
+	* </pre>
+	* 
 	* @return A struct containing a key for each server in the cluster.  The value for each server is a Java Map of stats.  
 	*/
 	any function getStats(){
@@ -505,8 +610,15 @@ component serializable="false" accessors="true"{
 	* looping over each server to add up the totals.  val() is called on each value, so stats which are not numeric will simply return 0.
 	* This only works for numeric stats that are additive across the cluster such as "get_misses" or "curr_items".  A stat such as "time" would
 	* not make sense even though it is numeric, since adding epoch dates serves no purpose.  
+	* <p>
 	* Information on stats available here: http://www.couchbase.com/docs/couchbase-manual-1.8/cbstats-all-bucket-info.html
+	* 
+	* <pre>
+	* stats = client.getAggregateStat( 'curr_items' );
+	* </pre>
+	* 
 	* @stat.hint The key of an individual stat to return
+	* 
 	* @return An integer representing the aggregation of the stat specified acrossed the cluster.
 	*/
 	any function getAggregateStat( required string stat ){
@@ -527,10 +639,16 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Decrement the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value.
+	* 
+	* <pre>
+	* newValue = client.decr( 'passesLeft', 1 );
+	* </pre>
+	* 
 	* @ID.hint The id of the document to decrement
 	* @value.hint The amount to decrement
 	* @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* 
 	* @return The new value, or -1 if we were unable to decrement or add
 	*/ 
 	any function decr( 
@@ -552,8 +670,14 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Decrement the given counter asynchronously.
+	* 
+	* <pre>
+	* future = client.asyncDecr( 'passesLeft', 1 );
+	* </pre>
+	* 
 	* @ID.hint The id of the document to decrement
 	* @value.hint The amount to decrement
+	* 
 	* @return A future with the decremented value, or -1 if the decrement failed.
 	*/ 
 	any function asyncDecr( 
@@ -568,10 +692,16 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Increment the given counter.  
+	* 
+	* <pre>
+	* newValue = client.incr( 'numErrors', 1 );
+	* </pre>
+	* 
 	* @ID.hint The id of the document to increment
 	* @value.hint The amount to increment
 	* @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* 
 	* @return The new value, or -1 if we were unable to increment 
 	*/ 
 	any function incr( 
@@ -594,8 +724,14 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Increment the given counter asynchronously 
+	* 
+	* <pre>
+	* future = client.asyncIncr( 'numErrors', 1 );
+	* </pre>
+	* 
 	* @ID.hint The id of the document to decrement
 	* @value.hint The amount to decrement
+	* 
 	* @return A future with the incremented value, or -1 if the increment failed.
 	*/ 
 	any function asyncIncr( 
@@ -610,8 +746,14 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Touch the given key to reset its expiration time.
+	* 
+	* <pre>
+	* future = client.touch( 'sessionData', 30 );
+	* </pre>
+	* 
 	* @ID.hint The id of the document to increment
 	* @timeout.hint The expiration of the document in minutes
+	* 
 	* @return A future object (net.spy.memcached.internal.OperationFuture)
 	*/ 
 	any function touch( 
@@ -626,9 +768,15 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Delete a value with durability options. The durability options here operate similarly to those documented in the set method.
+	* 
+	* <pre>
+	* future = client.delete( 'brad' );
+	* </pre>
+	* 
 	* @ID The ID of the document to delete, or an array of ID's to delete
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or a struct of futures depending on whether a single ID or an array of IDs are passed, 
 	*/ 
 	any function delete( 
@@ -660,7 +808,14 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Get stats for a specific document ID.
+	* 
+	* <pre>
+	* docStats = client.getDocStats( 'brad' );
+	* docStatArray = client.getDocStats( ['brad', 'luis', 'bill'] );
+	* </pre>
+	* 
 	* @ID.hint The id of the document to get the stats for or a list or an array
+	* 
 	* @return A future or a struct of futures depending on whether a single ID or an array of IDs are passed,
 	*/ 
 	any function getDocStats( required any ID ){
@@ -683,6 +838,11 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Get the addresses of available servers.
+	* 
+	* <pre>
+	* serverArray = client.getAvailableServers();
+	* </pre>
+	* 
 	* @return An array containing an item for each server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() 
 	*/ 
 	array function getAvailableServers(){
@@ -696,8 +856,12 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Get the addresses of unavailable servers
-	* @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString()
-	* If all servers are online, the array with be empty.	
+	* 
+	* <pre>
+	* serverArray = client.getUnAvailableServers();
+	* </pre>
+	* 
+	* @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() <br>If all servers are online, the array with be empty.	
 	*/ 
 	array function getUnAvailableServers(){
 		var servers = variables.couchbaseClient.getUnAvailableServers();
@@ -711,9 +875,15 @@ component serializable="false" accessors="true"{
 	/**
 	* Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
 	* This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
+	* 
+	* <pre>
+	* future = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
+	* </pre>
+	* 
 	* @ID.hint The unique id of the document whose value will be appended
 	* @value.hint The value to append
 	* @CAS.hint CAS identifier (ignored in the ascii protocol)
+	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) Note that the return will be false any time a mutation has not occurred. 
 	*/ 
 	any function append( 
@@ -740,11 +910,17 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Prepend to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
-	* Note that the return will be false any time a mutation has not occurred from the Future returned object.
 	* This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents
+	* 
+	* <pre>
+	* future = client.prepend( 'hierachyList', parent );
+	* </pre>
+	* 
 	* @ID.hint The unique id of the document whose value will be prepended
 	* @value.hint The value to prepend
 	* @CAS.hint CAS identifier (ignored in the ascii protocol)
+	* 
+	* @Return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) Note that the return will be false any time a mutation has not occurred.
 	*/ 
 	any function prepend( 
 		required string ID, 
@@ -772,10 +948,16 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Creates a new Java query object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries. 
-	* You can pass an optional options struct with name-value pairs of simple query options like:
-	* debug:boolean, descending:boolean, endKeyDocID:string, group:boolean, groupLevel:numeric, etc.
+	* You can pass an optional options struct with name-value pairs of simple query options.
+	* <p>
 	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
+	* 
+	* <pre>
+	* oQuery = client.newQuery( { offset:10, limit:20, group:true, groupLevel:2 } );
+	* </pre>
+	* 
 	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. This only does the simple 1 value options
+	* 
 	* @return A Java query object (com.couchbase.client.protocol.views.Query)
 	*/
 	any function newQuery( struct options={} ){
@@ -896,9 +1078,43 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Queries a Couchbase view using the options supplied.  The options struct maps to the set of options found
+	* Queries a Couchbase view using the options supplied.  
+	*<p>
+	* Valid options are:
+	*<p>
+	* <ul>
+	* <li><b>sortOrder</b> - Specifies the direction to sort the results based on the map function's "key" value.  Valid values are ASC and DESC.</li>
+	* <li><b>limit</b> - Number of records to return</li>
+	* <li><b>offset</b> - Number of records to skip when returning</li>
+	* <li><b>reduce</b> - Flag to control whether the reduce portion of the view is run. If false, only the results of the map function are returned.</li>
+	* <li><b>includeDocs</b> - Specifies whether or not to include the entire document in the results or just the key names. Default is false.</li>
+	* <li><b>startkey</b> - Specify the start of a range of keys to return.  This value needs to be the same data type as the key in your view's map function.  If your view has a string for the key, pass in a string here.  If your key is an array of values, pass in an array of values.</li>
+	* <li><b>endkey</b> - Specify the end of a range of keys to return.  This value needs to be the same data type as the key in your view's map function.  If your view has a string for the key, pass in a string here.  If your key is an array of values, pass in an array of values.</li>
+	* <li><b>inclusiveEnd</b> - Use this when specifying an endKey parameter. Flag to control whether the endKey is inclusive or not.</li>
+	* <li><b>startkeyDocID</b> - If you have specified a startKey AND there is more than one record in the view results that share that key, this will specify what ID to start at when returning records.  This input is ignored when not using startKey.</li>
+	* <li><b>endKeyDocID</b> - If you have specified an endKey AND there is more than one record in the view results that share that key, this will specify what ID to end at when returning records.  This input is ignored when not using endKey.</li>
+	* <li><b>group</b> - Flag to control whether the results of the reduce function are grouped.  If no groupLevel is specified, only one row will be returned.</li>
+	* <li><b>groupLevel</b> - Number representing what level of the map key to group at (Keys can be complex).  If the key is simple, this parameter does nothing.</li>
+	* <li><b>key</b> - The key of a single record to return.  For complex keys, pass the key as an array.</li>
+	* <li><b>keys</b> - An array of keys to return.  For complex keys, pass each key as an array.</li>
+	* <li><b>stale</b> - Specifies if stale data can be returned with the view.  Possible values are:
+	* 	<ul>
+	*  		<li><b>"OK"</b> (default) - stale data is ok
+	*  		<li><b>"FALSE"</b> - force index of view
+	*  		<li><b>"UPDATE_AFTER"</b> - potentially returns stale data, but starts an asynch re-index.</li>
+	* 	</ul>
+	*   </li>
+	* <li><b>debug</b> - Java SDK will log debugging information about the query</li>
+	* </ul> 
+	* <p>
+	* The options struct maps to the set of options found
 	* in the native Couchbase query object (com.couchbase.client.protocol.views.Query) 
 	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
+	* 
+	* <pre>
+	* results = client.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'OK' } );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document
 	* @viewName.hint The name of the view to get
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
@@ -907,10 +1123,8 @@ component serializable="false" accessors="true"{
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
 	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
-	* @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.  
-	* Each struct contains the following items: id, document, key, value
-	* If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)
-	* If returnType is iterator, a Java iterator object will be returned
+	* 
+	* @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.	<br>Each struct contains the following items: id, document, key, value	<br>If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)	<br>If returnType is iterator, a Java iterator object will be returned
 	*/
 	any function query( 
 		required string designDocumentName, 
@@ -988,19 +1202,33 @@ component serializable="false" accessors="true"{
 	/**
 	* Queries a Couchbase view. 
 	* See: http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/ViewResponse.html
+	*	 
+	* <pre>
+	* query = client.newQuery( { limit: 20, stale: 'OK' } );
+	* view = client.getView( 'beer', 'brewery_beers' );
+	* results = client.rawQuery( view, query );
+	* </pre>
+	* 
 	* @viewName.hint A couchbase view object (com.couchbase.client.protocol.views.View)
 	* @query.hint A couchbase query object (com.couchbase.client.protocol.views.Query)
+	*
 	* @return A raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse).
 	*/
-	any function rawQuery( required any viewName, required any query ){
-		return variables.couchbaseClient.query( arguments.viewName, arguments.query );
+	any function rawQuery( required any view, required any query ){
+		return variables.couchbaseClient.query( arguments.view, arguments.query );
 	}
 
 	/**
 	* Gets access to a view contained in a design document from the cluster 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
+	*	 
+	* <pre>
+	* view = client.getView( 'beer', 'brewery_beers' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document
 	* @viewName.hint The name of the view to get
+	*
 	* @return A View Java object (com.couchbase.client.protocol.views.View).
 	*/
 	any function getView( required string designDocumentName, required string viewName ){
@@ -1010,8 +1238,14 @@ component serializable="false" accessors="true"{
 	/**
 	* Gets access to a spatial view contained in a design document from the cluster. 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
+	*	 
+	* <pre>
+	* spatialView = client.getSpatialView( 'myDoc', 'mySpatialView' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document
 	* @viewName.hint The name of the view to get
+	*
 	* @return A View Java object (com.couchbase.client.protocol.views.SpatialView).
 	*/
 	any function getSpatialView( required string designDocumentName, required string viewName ){
@@ -1021,7 +1255,13 @@ component serializable="false" accessors="true"{
 	/**
 	* Gets a design document.
 	* This method will throw an error if the design document name doesn't exist.  Names are case-sensitive.
+	*	 
+	* <pre>
+	* designDocument = client.getDesignDocument( 'beer' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document
+	*
 	* @return A DesignDocument Java object (com.couchbase.client.protocol.views.DesignDocument).
 	*/
 	any function getDesignDocument( required string designDocumentName ){
@@ -1030,7 +1270,13 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Deletes a design document from the server
+	*	 
+	* <pre>
+	* client.deleteDesignDocument( 'beer' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document
+	*
 	* @return True if successsful, false if unsuccessful
 	*/
 	any function deleteDesignDocument( required string designDocumentName ){
@@ -1039,7 +1285,13 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Initializes a new design document Java object.  The design doc will have no views and will not be saved yet. 
+	*	 
+	* <pre>
+	* designDocument = client.newDesignDocument( 'mynewDoc' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document to initialize
+	*
 	* @return An instance of com.couchbase.client.protocol.views.DesignDocument.
 	*/
 	any function newDesignDocument( required string designDocumentName ){
@@ -1047,8 +1299,14 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Checks to see if a design document exists.	
+	* Checks to see if a design document exists.
+	*	 
+	* <pre>
+	* result = client.designDocumentExists( 'beer' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document to check for
+	*
 	* @Return True if the design document is found and false if it is not found.
 	*/
 	boolean function designDocumentExists( required string designDocumentName ){
@@ -1066,12 +1324,17 @@ component serializable="false" accessors="true"{
 	/**
 	* Checks to see if a view exists.
 	* You can check for a view by name, but if you supply a map or reduce function, they will be checked as well.
+	*	 
+	* <pre>
+	* result = client.viewExists( 'beer', 'brewery_beers' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document to check for
 	* @viewName.hint The name of the view to check for
 	* @mapFunction.hint The map function to check for.  Must be an exact match.
 	* @reduceFunction.hint The reduce function to check for.  Must be an exact match.
-	* @Return 0 if the design document doesn't exist as well as if the design document exists, but there is no view by that name.
-	* If the view does exist, it will return the index of the view in the designDocument's view array.
+	*
+	* @Return 0 if the design document doesn't exist as well as if the design document exists, but there is no view by that name.<br> If the view does exist, it will return the index of the view in the designDocument's view array.
 	*/
 	any function viewExists( required string designDocumentName, required string viewName, string mapFunction, string reduceFunction ){
 		// If the design doc doesn't exist, bail.
@@ -1107,9 +1370,15 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Creates a new instance of a viewDesign Java object (com.couchbase.client.protocol.views.ViewDesign)
+	*	 
+	* <pre>
+	* viewDesign = client.newViewDesign( viewName, mapFunction, reduceFunction );
+	* </pre>
+	* 
 	* @viewName.hint The name of the view to be created 
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
+	*
 	* @Return An instance of the Java class com.couchbase.client.protocol.views.ViewDesign
 	*/
 	any function newViewDesign( required string viewName, required string mapFunction, string reduceFunction = ''  ){
@@ -1119,10 +1388,25 @@ component serializable="false" accessors="true"{
 	/**
 	* Asynchronously Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  This method
 	* will return immediatley, but the view probalby won't be available to query for a few seconds. 
+	*	 
+	* <pre>
+	* client.asyncSaveView(
+	* &nbsp;&nbsp;'manager',
+	* &nbsp;&nbsp;'listBreweries',
+	* &nbsp;&nbsp;'function (doc, meta) {
+	* &nbsp;&nbsp;if ( doc.type == ''brewery'' ) {
+	* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;emit(doc.name, null);
+	* &nbsp;&nbsp;&nbsp;&nbsp;}
+	* &nbsp;&nbsp;}',
+	* &nbsp;&nbsp;'_count'
+	* );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
 	* @viewName.hint The name of the view to be saved
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
+	*
 	* @Return True if the view was saved, false if no save occurred due to the view already existing.
 	*/
 	boolean function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '' ){
@@ -1170,11 +1454,27 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  
+	*	 
+	* <pre>
+	* client.saveView(
+	* &nbsp;&nbsp;'manager',
+	* &nbsp;&nbsp;'listBreweries',
+	* &nbsp;&nbsp;'function (doc, meta) {
+	* &nbsp;&nbsp;if ( doc.type == ''brewery'' ) {
+	* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;emit(doc.name, null);
+	* &nbsp;&nbsp;&nbsp;&nbsp;}
+	* &nbsp;&nbsp;}',
+	* &nbsp;&nbsp;'_count'
+	* &nbsp;&nbsp;20
+	* );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
 	* @viewName.hint The name of the view to be saved
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	* @waitFor.hint How many seconds to wait for the view to save before giving up.  Defaults to 20, but may need to be higher for larger buckets.
+	*
 	* @Return True when the view is ready.  If the view is still not accessable after the number of seconds specified in the "waitFor" parameter, the method will return false.
 	*/
 	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '', waitFor = 20 ){
@@ -1212,7 +1512,13 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Deletes a View.  Will delete the view from the designDocument if it exists.  
+	*	 
+	* <pre>
+	* client.deleteView( 'myDoc', 'myView' );
+	* </pre>
+	* 
 	* @designDocumentName.hint The name of the design document for the view to be deleted from
+	*
 	* @viewName.hint The name of the view to be created
 	*/
 	void function deleteView( required string designDocumentName, required string viewName ){
@@ -1250,9 +1556,11 @@ component serializable="false" accessors="true"{
 	/**
 	* Deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
+	*
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
+	*
 	* @Return The deserialized data
 	*/
 	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
@@ -1262,7 +1570,9 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Serializes incoming data according to our rules.
+	*
 	* @data.hint The data to serialize
+	*
 	* @Return A string representation, usually JSON.
 	*/
 	string function serializeData( required any data ){
@@ -1274,6 +1584,7 @@ component serializable="false" accessors="true"{
 
 	/**
     * Get the java loader instance
+	*
     * @Return The javaLoader CFC.
     */
     any function getJavaLoader() {
@@ -1284,7 +1595,9 @@ component serializable="false" accessors="true"{
 	/**
     * Get a java class using either the JavaLoader or createOject() based on the "useClassloader" config value.
     * You will need to call init() if you want to run the class constructor and get an instance of it.  
+	*
     * @className.hint The class to get
+	*
     * @Return The java class specified. 
     */
     any function newJava( required className ) {
@@ -1295,7 +1608,9 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Build the data marshaller
+	*
 	* @config.hint The CFCouchbase config object
+	*
 	* @Return The data marshaller 
 	*/
 	private any function buildDataMarshaller( required any config ){
@@ -1314,7 +1629,9 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Build a couchbase connection client according to config and returns the raw java connection client object
+	*
 	* @config.hint The CFCouchbase config object
+	*
 	* @Return The java CouchbaseClient class (com.couchbase.client.CouchbaseClient).
 	*/
 	private any function buildCouchbaseClient( required any config ){
@@ -1346,7 +1663,9 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Standardize and validate configuration object
+	*
 	* @config.hint The config options as a struct, path or instance.
+	*
 	* @Return The CFCouchbase config CFC
 	*/
 	private any function validateConfig( required any config ){
@@ -1378,6 +1697,7 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Get a list of all the jars in the lib directory
+	*
 	* @Return An array of jar file names
 	*/
 	private array function getLibJars(){
@@ -1410,7 +1730,9 @@ component serializable="false" accessors="true"{
 	/**
 	* Default persist and replicate from arguments.  Will create "persistTo" with a default value of ZERO and "replicateTo" with a 
 	* default value of ZERO if they don't exist.
+	*
 	* @args.hint The argument collection to process
+	*
 	* @Return The argument collection with the defaulted values. 
 	*/
 	private CouchbaseClient function defaultPersistReplicate( required args ) {

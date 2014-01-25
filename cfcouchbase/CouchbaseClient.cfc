@@ -63,6 +63,7 @@ component serializable="false" accessors="true"{
 	* This creates a connection to a Couchbase server using the passed in config argument, which can be a struct literal of options, a path to a config object
 	* or an instance of a cfcouchbase.config.CouchbaseConfig object.  For all the possible config settings, look at the CouchbaseConfig object.
 	* @config.hint The configuration structure, config object or path to a config object.
+	* @return A reference to "this" CFC
 	*/
 	CouchbaseClient function init( any config={} ){
 
@@ -91,8 +92,8 @@ component serializable="false" accessors="true"{
 			loadSDK();
 
 		// LOAD ENUMS
-		this.persistTo 		= getJava( "net.spy.memcached.PersistTo" );
-		this.replicateTo 	= getJava( "net.spy.memcached.ReplicateTo" );
+		this.persistTo 		= newJava( "net.spy.memcached.PersistTo" );
+		this.replicateTo 	= newJava( "net.spy.memcached.ReplicateTo" );
 		
 		// Build the connection factory and client
 		variables.couchbaseClient = buildCouchbaseClient( variables.couchbaseConfig );
@@ -110,12 +111,12 @@ component serializable="false" accessors="true"{
 	* to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  (This assumes you have replicas enabled)   
 	* To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc. 
 	* A PersistTo.TWO durability setting implies a replication to at least one node.
-	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
 	*/ 
 	any function set( 
 		required string ID, 
@@ -146,17 +147,17 @@ component serializable="false" accessors="true"{
 	* successfully if the original document value is unchanged.  This method is not asyncronous and therefore does not return a future since your application code
 	* will need to check the return and handle it appropriatley.
 	*
-	* This method returns a struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means   
-	* nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED"
-	* indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and
-	* attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or
-	* a regular set() commend to store the document. 
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @CAS.hint CAS value retrieved via getWithCAS()
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means   
+	* nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED"
+	* indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and
+	* attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or
+	* a regular set() commend to store the document. 
 	*/ 
 	any function setWithCAS( 
 		required string ID, 
@@ -200,13 +201,13 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* This method is the same as set(), except the future that is returned will return true if the ID being set doesn't already exist.  
-	* The future will return false if the item being set does already exist.  It will not throw an error if the ID already exists, you must check the future. 
-	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
+	* The future will return false if the item being set does already exist.  It will not throw an error if the ID already exists, you must check the future.
 	* @ID.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
 	*/ 
 	any function add( 
 		required string ID, 
@@ -236,11 +237,11 @@ component serializable="false" accessors="true"{
 	/**
 	* Set multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
 	* The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
-	* This function returns a struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
 	* @timeout.hint The expiration of the documents in minutes.
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	*/ 
 	any function setMulti( 
 		required struct data,
@@ -280,13 +281,14 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* This method will set a value only if that ID already exists in Couchbase.  If the document ID doesn't exist, it will do nothing.
-	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
-	* future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.  
+	*   
 	* @ID The ID of the document to replace.
 	* @value.hint The value of the document to replace
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
+	* future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
 	*/ 
 	any function replace( 
 		required string ID, 
@@ -311,10 +313,11 @@ component serializable="false" accessors="true"{
 	}
 	
 	/**
-	* Get an object from couchbase, returns null if not found.
+	* Get an object from couchbase by the ID.  This method will deserialize object automatically and optionally inflate the data into a CFC.
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @return The object if found, null otherwise.
 	*/
 	any function get( required string ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -328,8 +331,9 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Get an object from couchbase asynchronously, returns a Java Future object
+	* Get an object from couchbase asynchronously.
 	* @ID.hint The ID of the document to retrieve.
+	* @return A Java Future object. (net.spy.memcached.internal.GetFuture)
 	*/
 	any function asyncGet( required string ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -338,10 +342,11 @@ component serializable="false" accessors="true"{
 	}
 	
 	/**
-	* Get multiple objects from couchbase.  Returns a struct of values.  Any document IDs not found will not exist in the struct.
+	* Get multiple objects from couchbase.
 	* @ID.hint An array of document IDs to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @return A struct of values.  Any document IDs not found will not exist in the struct.
 	*/
 	any function getMulti( required array ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -358,8 +363,9 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Get multiple objects from couchbase asynchronously.  Returns a bulk Java Future.  Any document IDs not found will not exist in the struct.
+	* Get multiple objects from couchbase asynchronously.  
 	* @ID.hint An array of document IDs to retrieve.
+	* @return A bulk Java Future. (net.spy.memcached.internal.BulkFuture)  Any document IDs not found will not exist in the future object.
 	*/
 	any function asyncGetMulti( required array ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -369,11 +375,11 @@ component serializable="false" accessors="true"{
 	
 	/**
 	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 
-	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
-	* This method will return a struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null. 
+	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated. 
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
 	*/
 	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -392,10 +398,10 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Gets (with CAS support) the given key asynchronously. Returns a Java Future.  This method is meant to be used in conjunction with setWithCAS to be able to 
+	* Gets (with CAS support) the given key asynchronously.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
-	* The future has methods that will return the "CAS" and "value" keys.
 	* @ID.hint The ID of the document to retrieve.
+	* @return A Java Future. (net.spy.memcached.internal.OperationFuture) The future has methods that will return the "CAS" and "value" keys.
 	*/
 	any function asyncGetWithCAS( required string ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -406,11 +412,11 @@ component serializable="false" accessors="true"{
 	/**
 	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
 	* functionality where you don't want a document to timeout while it is still being accessed.
-	* This method will return a struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
 	* @ID.hint The ID of the document to retrieve.
 	* @timeout.hint The expiration of the document in minutes
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
 	*/
 	any function getAndTouch(
 					required string ID,
@@ -439,9 +445,9 @@ component serializable="false" accessors="true"{
 	/**
 	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
 	* functionality where you don't want a document to timeout while it is still being accessed.
-	* This method will return a Future object that retrieves a CASValue class that you can use to get the value and cas of the object.
 	* @ID.hint The ID of the document to retrieve.
 	* @timeout.hint The expiration of the document in minutes
+	* @return A Future object (net.spy.memcached.internal.OperationFuture) that retrieves a CASValue class that you can use to get the value and cas of the object.
 	*/
 	any function asyncGetAndTouch(
 					required string ID,
@@ -455,6 +461,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Shutdown the native client connection
 	* @timeout.hint The timeout in seconds, we default to 10 seconds
+	* @return A refernce to "this" CFC
 	*/
 	CouchbaseClient function shutdown( numeric timeout=10 ){
 		variables.couchbaseClient.shutdown( javaCast( "int", arguments.timeout ), variables.timeUnit.SECONDS );
@@ -462,52 +469,69 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Flush all caches from all servers with a delay of application. Returns a future object
+	* Flush all caches from all servers with a delay of application.
 	* @delay.hint The period of time to delay, in seconds
+	* @return A Java future object. (net.spy.memcached.internal.OperationFuture)
 	*/
 	any function flush( numeric delay=0 ){
 		return variables.couchbaseClient.flush( javaCast( "int", arguments.delay ) );
 	}
 
 	/**
-	* Get all of the stats from all of the connections, each key of the returned struct is a java java.net.InetSocketAddress object
-	* @stat.hint The key of an individual stat to return
+	* Get all of the stats from all of the servers in the cluster.
+	* Information on stats available here: http://www.couchbase.com/docs/couchbase-manual-1.8/cbstats-all-bucket-info.html
+	* @return A struct containing a key for each server in the cluster.  The value for each server is a Java Map of stats.  
 	*/
-	any function getStats( string stat ){
-		// cleanup and build friendlier stats
-		var stats 		= variables.couchbaseClient.getStats();
-		var statsArray 	= stats.values().toArray();
-
+	any function getStats(){
+		var stats = variables.couchbaseClient.getStats();
+		var entrySetIterator = stats.entrySet().iterator();		
 		var results = {};
-		var index 	= 1;
-		for( var thiskey in stats ){
-			results[ ( isSimpleValue( thisKey ) ? thisKey : thisKey.toString() ) ] = statsArray[ index++ ];
+		var entrySet = '';
+				
+		// Convert from a Map keyed by java.net.InetSocketAddress objects, 
+		// to a CFML struct keyed by the string representation of each server
+		// For some reason Map.get() is returning null, so using an entrySet iterator instead.
+		while( entrySetIterator.hasNext() ){
+			entrySet = entrySetIterator.next();
+			results[ entrySet.getKey().toString() ] = entrySet.getValue();
 		}
-
-		// get aggregate stat
-		if( structKeyExists( arguments, "stat" ) ){
-			var statValue = 0;
-			for( var thisKey in statsArray ){
-				// make sure the stat exists
-				if( structKeyExists( thisKey, arguments.stat ) ){
-					statValue += val( thisKey[ arguments.stat ] );	
-				}
-			}
-			return statValue;
-		}
-		else{
-			return results;
-		}
+		
+		return results;
 
 	}
 
 	/**
-	* Decrement the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value. 
-	* This function returns the new value, or -1 if we were unable to decrement or add
+	* Get an aggregate of a single stat aggregated across all servers in the cluster.  This method saves you the trouble of calling getStats() and manually 
+	* looping over each server to add up the totals.  val() is called on each value, so stats which are not numeric will simply return 0.
+	* This only works for numeric stats that are additive across the cluster such as "get_misses" or "curr_items".  A stat such as "time" would
+	* not make sense even though it is numeric, since adding epoch dates serves no purpose.  
+	* Information on stats available here: http://www.couchbase.com/docs/couchbase-manual-1.8/cbstats-all-bucket-info.html
+	* @stat.hint The key of an individual stat to return
+	* @return An integer representing the aggregation of the stat specified acrossed the cluster.
+	*/
+	any function getAggregateStat( required string stat ){
+		var stats = getStats();	
+		var statValue = 0;
+		
+		// Loop over all the servers...
+		for( var thisServer in stats ){
+			var serverStats = stats[ thisServer ];
+			
+			// ... and add up the values if they exist for that server
+			if( structKeyExists( serverStats, arguments.stat ) ){
+				statValue += val( serverStats[ arguments.stat ] );	
+			}
+		}
+		return statValue;
+	}
+
+	/**
+	* Decrement the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value.
 	* @ID.hint The id of the document to decrement
 	* @value.hint The amount to decrement
 	* @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @return The new value, or -1 if we were unable to decrement or add
 	*/ 
 	any function decr( 
 		required string ID, 
@@ -527,9 +551,10 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Decrement the given counter asynchronously,a future with the decremented value, or -1 if the decrement failed.
+	* Decrement the given counter asynchronously.
 	* @ID.hint The id of the document to decrement
 	* @value.hint The amount to decrement
+	* @return A future with the decremented value, or -1 if the decrement failed.
 	*/ 
 	any function asyncDecr( 
 		required string ID, 
@@ -542,12 +567,12 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Increment the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value. 
-	* This function returns the new value, or -1 if we were unable to increment or add
+	* Increment the given counter.  
 	* @ID.hint The id of the document to increment
 	* @value.hint The amount to increment
 	* @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+	* @return The new value, or -1 if we were unable to increment 
 	*/ 
 	any function incr( 
 		required string ID, 
@@ -568,9 +593,10 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Increment the given counter asynchronously,a future with the incremented value, or -1 if the increment failed.
+	* Increment the given counter asynchronously 
 	* @ID.hint The id of the document to decrement
 	* @value.hint The amount to decrement
+	* @return A future with the incremented value, or -1 if the increment failed.
 	*/ 
 	any function asyncIncr( 
 		required string ID, 
@@ -583,9 +609,10 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Touch the given key to reset its expiration time. This method returns a future
+	* Touch the given key to reset its expiration time.
 	* @ID.hint The id of the document to increment
 	* @timeout.hint The expiration of the document in minutes
+	* @return A future object (net.spy.memcached.internal.OperationFuture)
 	*/ 
 	any function touch( 
 		required string ID, 
@@ -599,10 +626,10 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Delete a value with durability options. The durability options here operate similarly to those documented in the set method.
-	* This function returns a Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or a struct of futures
 	* @ID The ID of the document to delete, or an array of ID's to delete
 	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
 	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or a struct of futures depending on whether a single ID or an array of IDs are passed, 
 	*/ 
 	any function delete( 
 		required any ID, 
@@ -632,8 +659,9 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Get stats from a document and return a future or a struct of futures.
+	* Get stats for a specific document ID.
 	* @ID.hint The id of the document to get the stats for or a list or an array
+	* @return A future or a struct of futures depending on whether a single ID or an array of IDs are passed,
 	*/ 
 	any function getDocStats( required any ID ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -654,7 +682,8 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Get the addresses of available servers
+	* Get the addresses of available servers.
+	* @return An array containing an item for each server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() 
 	*/ 
 	array function getAvailableServers(){
 		var servers = variables.couchbaseClient.getAvailableServers();
@@ -666,7 +695,9 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Get the addresses of available servers
+	* Get the addresses of unavailable servers
+	* @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString()
+	* If all servers are online, the array with be empty.	
 	*/ 
 	array function getUnAvailableServers(){
 		var servers = variables.couchbaseClient.getUnAvailableServers();
@@ -679,11 +710,11 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
-	* Note that the return will be false any time a mutation has not occurred from the Future returned object.
-	* This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents
+	* This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
 	* @ID.hint The unique id of the document whose value will be appended
 	* @value.hint The value to append
 	* @CAS.hint CAS identifier (ignored in the ascii protocol)
+	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) Note that the return will be false any time a mutation has not occurred. 
 	*/ 
 	any function append( 
 		required string ID, 
@@ -740,14 +771,15 @@ component serializable="false" accessors="true"{
 	/************************* VIEW INTEGRATION ***********************************/
 
 	/**
-	* Gets a new Java Couchbase query class object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries. 
+	* Creates a new Java query object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries. 
 	* You can pass an optional options struct with name-value pairs of simple query options like:
 	* debug:boolean, descending:boolean, endKeyDocID:string, group:boolean, groupLevel:numeric, etc.
 	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. This only does the simple 1 value options
+	* @return A Java query object (com.couchbase.client.protocol.views.Query)
 	*/
-	any function getQuery( struct options={} ){
-		var oQuery = getJava( "com.couchbase.client.protocol.views.Query" ).init();
+	any function newQuery( struct options={} ){
+		var oQuery = newJava( "com.couchbase.client.protocol.views.Query" ).init();
 		
 		// options
 		for( var thisKey in arguments.options ){
@@ -831,7 +863,7 @@ component serializable="false" accessors="true"{
 				}
 				// handle stale option
 				case "stale" : { 
-					var oStale = getJava( "com.couchbase.client.protocol.views.Stale" );
+					var oStale = newJava( "com.couchbase.client.protocol.views.Stale" );
 					var stale = arguments.options[ 'stale' ];
 					
 		            switch (stale) {
@@ -864,22 +896,25 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Queries a Couchbase view and returns a CFML struct of structs representation. Each row contains the following items: id, document
-	* The options struct maps to the set of options found
+	* Queries a Couchbase view using the options supplied.  The options struct maps to the set of options found
 	* in the native Couchbase query object (com.couchbase.client.protocol.views.Query) 
 	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* @designDocumentName.hint The name of the design document
-	* @view.hint The name of the view to get
-	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'getQuery()' method.
+	* @viewName.hint The name of the view to get
+	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
 	* @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
 	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
+	* @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.  
+	* Each struct contains the following items: id, document, key, value
+	* If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)
+	* If returnType is iterator, a Java iterator object will be returned
 	*/
 	any function query( 
 		required string designDocumentName, 
-		required string view,
+		required string viewName,
 		any options={},
 		boolean deserialize=true,
 		any inflateTo="",
@@ -888,8 +923,8 @@ component serializable="false" accessors="true"{
 		string returnType="array"
 	){
 		// if options is struct, then build out the query, else use it as an object.
-		var oQuery = ( isStruct( arguments.options ) ? getQuery( arguments.options ) : arguments.options );
-		var oView  	= getView( arguments.designDocumentName, arguments.view );
+		var oQuery = ( isStruct( arguments.options ) ? newQuery( arguments.options ) : arguments.options );
+		var oView  	= getView( arguments.designDocumentName, arguments.viewName );
 		var results = rawQuery( oView, oQuery );
 
 		// Native return type?
@@ -899,7 +934,7 @@ component serializable="false" accessors="true"{
     	if( arrayLen( results.getErrors() ) ){
     		// PLEASE NOTE, the response received may not include all documents if one or more nodes are offline 
 	    	// and not yet failed over.  Couchbase basically sends back what docs it _can_ access and ignores the other nodes.
-    		variables.util.handleRowErrors( message='There was an error executing the view: #arguments.view#',
+    		variables.util.handleRowErrors( message='There was an error executing the view: #arguments.viewName#',
     										rowErrors=results.getErrors(),
     										type='CouchbaseClient.ViewException' );
     	}
@@ -951,47 +986,52 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Queries a Couchbase view and returns a raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse). 
+	* Queries a Couchbase view. 
 	* See: http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/ViewResponse.html
-	* @view.hint A couchbase view object (com.couchbase.client.protocol.views.View)
+	* @viewName.hint A couchbase view object (com.couchbase.client.protocol.views.View)
 	* @query.hint A couchbase query object (com.couchbase.client.protocol.views.Query)
+	* @return A raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse).
 	*/
-	any function rawQuery( required any view, required any query ){
-		return variables.couchbaseClient.query( arguments.view, arguments.query );
+	any function rawQuery( required any viewName, required any query ){
+		return variables.couchbaseClient.query( arguments.viewName, arguments.query );
 	}
 
 	/**
-	* Gets access to a view contained in a design document from the cluster by returning a View Java object (com.couchbase.client.protocol.views.View). 
+	* Gets access to a view contained in a design document from the cluster 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
 	* @designDocumentName.hint The name of the design document
 	* @viewName.hint The name of the view to get
+	* @return A View Java object (com.couchbase.client.protocol.views.View).
 	*/
 	any function getView( required string designDocumentName, required string viewName ){
 		return variables.couchbaseClient.getView( arguments.designDocumentName, arguments.viewName );	
 	}
 
 	/**
-	* Gets access to a spatial view contained in a design document from the cluster by returning a View Java object (com.couchbase.client.protocol.views.SpatialView). 
+	* Gets access to a spatial view contained in a design document from the cluster. 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
 	* @designDocumentName.hint The name of the design document
-	* @name.hint The name of the view to get
+	* @viewName.hint The name of the view to get
+	* @return A View Java object (com.couchbase.client.protocol.views.SpatialView).
 	*/
-	any function getSpatialView( required string designDocumentName, required string name ){
-		return variables.couchbaseClient.getSpatialView( arguments.designDocumentName, arguments.name );	
+	any function getSpatialView( required string designDocumentName, required string viewName ){
+		return variables.couchbaseClient.getSpatialView( arguments.designDocumentName, arguments.viewName );	
 	}
 
 	/**
-	* Gets a design document by returning a DesignDocument Java object (com.couchbase.client.protocol.views.DesignDocument).
+	* Gets a design document.
 	* This method will throw an error if the design document name doesn't exist.  Names are case-sensitive.
 	* @designDocumentName.hint The name of the design document
+	* @return A DesignDocument Java object (com.couchbase.client.protocol.views.DesignDocument).
 	*/
 	any function getDesignDocument( required string designDocumentName ){
 		return variables.couchbaseClient.getDesignDoc( arguments.designDocumentName );	
 	}
 
 	/**
-	* Deletes a design document
+	* Deletes a design document from the server
 	* @designDocumentName.hint The name of the design document
+	* @return True if successsful, false if unsuccessful
 	*/
 	any function deleteDesignDocument( required string designDocumentName ){
 		return variables.couchbaseClient.deleteDesignDoc( arguments.designDocumentName );	
@@ -1000,15 +1040,16 @@ component serializable="false" accessors="true"{
 	/**
 	* Initializes a new design document Java object.  The design doc will have no views and will not be saved yet. 
 	* @designDocumentName.hint The name of the design document to initialize
+	* @return An instance of com.couchbase.client.protocol.views.DesignDocument.
 	*/
 	any function newDesignDocument( required string designDocumentName ){
-		return getJava( "com.couchbase.client.protocol.views.DesignDocument" ).init( arguments.designDocumentName );	
+		return newJava( "com.couchbase.client.protocol.views.DesignDocument" ).init( arguments.designDocumentName );	
 	}
 
 	/**
 	* Checks to see if a design document exists.	
 	* @designDocumentName.hint The name of the design document to check for
-	* Returns true if the design document is found and false if it is not found.
+	* @Return True if the design document is found and false if it is not found.
 	*/
 	boolean function designDocumentExists( required string designDocumentName ){
 		
@@ -1023,14 +1064,14 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Checks to see if a view exists.  
-	* Will return 0 if the design document doesn't exist as well as if the design document exists, but there is no view by that name.
-	* If the view does exist, it will return the index of the views array where the matching view is 
+	* Checks to see if a view exists.
 	* You can check for a view by name, but if you supply a map or reduce function, they will be checked as well.
 	* @designDocumentName.hint The name of the design document to check for
 	* @viewName.hint The name of the view to check for
 	* @mapFunction.hint The map function to check for.  Must be an exact match.
 	* @reduceFunction.hint The reduce function to check for.  Must be an exact match.
+	* @Return 0 if the design document doesn't exist as well as if the design document exists, but there is no view by that name.
+	* If the view does exist, it will return the index of the view in the designDocument's view array.
 	*/
 	any function viewExists( required string designDocumentName, required string viewName, string mapFunction, string reduceFunction ){
 		// If the design doc doesn't exist, bail.
@@ -1063,6 +1104,18 @@ component serializable="false" accessors="true"{
 		return 0;
 	}
 
+
+	/**
+	* Creates a new instance of a viewDesign Java object (com.couchbase.client.protocol.views.ViewDesign)
+	* @viewName.hint The name of the view to be created 
+	* @mapFunction.hint The map function for the view represented as a string
+	* @reduceFunction.hint The reduce function for the view represented as a string
+	* @Return An instance of the Java class com.couchbase.client.protocol.views.ViewDesign
+	*/
+	any function newViewDesign( required string viewName, required string mapFunction, string reduceFunction = ''  ){
+		return newJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );	
+	}
+
 	/**
 	* Asynchronously Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  This method
 	* will return immediatley, but the view probalby won't be available to query for a few seconds. 
@@ -1073,6 +1126,7 @@ component serializable="false" accessors="true"{
 	*/
 	void function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '' ){
 		
+		// This is required to clean up carriage returns
 		arguments.mapFunction = variables.util.normalizeViewFunction(arguments.mapFunction);
 		arguments.reduceFunction = variables.util.normalizeViewFunction(arguments.reduceFunction);
 		
@@ -1090,15 +1144,11 @@ component serializable="false" accessors="true"{
 			var designDocument = newDesignDocument( arguments.designDocumentName );
 		}
 		
-		// Overloaded Java constructor based on whether there's a reduceFunction
-		if( len(trim( arguments.reduceFunction ))) {
-			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );	
-		} else {
-			var viewDesign = getJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction );			
-		}
+		// Create a representation of our new view
+		var viewDesign = newViewDesign( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );
 		
 		var views = designDocument.getViews();
-		// Check for this view by name
+		// Check for this view by name (A less specific check than the one at the top of this method)
 		var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
 		// And update or add it into the array as neccessary
 		if( matchIndex ) {
@@ -1116,13 +1166,13 @@ component serializable="false" accessors="true"{
 
 
 	/**
-	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  The method will return true when the 
-	* view is ready.  If the view is still not accessable after the number of seconds specified in the "waitFor" parameter, the method will return false.
+	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  
 	* @designDocumentName.hint The name of the design document for the view to be saved under.  The design document will be created if neccessary
 	* @viewName.hint The name of the view to be saved
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
 	* @waitFor.hint How many seconds to wait for the view to save before giving up.  Defaults to 20, but may need to be higher for larger buckets.
+	* @Return True when the view is ready.  If the view is still not accessable after the number of seconds specified in the "waitFor" parameter, the method will return false.
 	*/
 	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '', waitFor = 20 ){
 		
@@ -1179,7 +1229,7 @@ component serializable="false" accessors="true"{
 			} else {
 				// If this was the last view, nuke the entire design document.  
 				// This is a limitation of the Java client as it will refuse to save a design doc with no views.
-				deleteDesignDocument( arguments.designDocumentName );
+				deletedesigndocument( arguments.designDocumentName );
 			}
 
 			
@@ -1190,11 +1240,12 @@ component serializable="false" accessors="true"{
 	/************************* SERIALIZE/DESERIALIZE INTEGRATION ***********************************/
 
 	/**
-	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
+	* Deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
+	* @Return The deserialized data
 	*/
 	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
 		// Data marshaler
@@ -1202,8 +1253,9 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* This method serializes incoming data according to our rules and it returns a string representation usually JSON
+	* Serializes incoming data according to our rules.
 	* @data.hint The data to serialize
+	* @Return A string representation, usually JSON.
 	*/
 	string function serializeData( required any data ){
 		// Go to data marshaler
@@ -1214,6 +1266,7 @@ component serializable="false" accessors="true"{
 
 	/**
     * Get the java loader instance
+    * @Return The javaLoader CFC.
     */
     any function getJavaLoader() {
     	if( ! structKeyExists( server, variables.javaLoaderID ) ){ loadSDK(); }
@@ -1221,10 +1274,12 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-    * Get an instance of a java class
+    * Get a java class using either the JavaLoader or createOject() based on the "useClassloader" config value.
+    * You will need to call init() if you want to run the class constructor and get an instance of it.  
     * @className.hint The class to get
+    * @Return The java class specified. 
     */
-    any function getJava( required className ) {
+    any function newJava( required className ) {
     	return ( variables.couchbaseConfig.getUseClassloader() ? getJavaLoader().create( arguments.className ) : createObject( "java", arguments.className ) );
 	}
 	
@@ -1232,6 +1287,8 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Build the data marshaller
+	* @config.hint The CFCouchbase config object
+	* @Return The data marshaller 
 	*/
 	private any function buildDataMarshaller( required any config ){
 		var marshaller = arguments.config.getDataMarshaller();
@@ -1248,7 +1305,9 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Buid a couchbase connection client according to config and returns the raw java connection client object
+	* Build a couchbase connection client according to config and returns the raw java connection client object
+	* @config.hint The CFCouchbase config object
+	* @Return The java CouchbaseClient class (com.couchbase.client.CouchbaseClient).
 	*/
 	private any function buildCouchbaseClient( required any config ){
 		// get config options
@@ -1257,7 +1316,7 @@ component serializable="false" accessors="true"{
 		var serverURIs = variables.util.buildServerURIs( configData.servers );
 
 		// Create a connection factory builder
-		factoryBuilder = getJava( "com.couchbase.client.CouchbaseConnectionFactoryBuilder" ).init();
+		factoryBuilder = newJava( "com.couchbase.client.CouchbaseConnectionFactoryBuilder" ).init();
 		
 		// Set options
         factoryBuilder.setOpTimeout( javaCast( "long", configData.opTimeout ) )
@@ -1274,12 +1333,13 @@ component serializable="false" accessors="true"{
 		var cf = factoryBuilder.buildCouchbaseConnection( serverURIs, configData.bucketName, configData.password );
 		
 		// build out the connection
-		return getJava( "com.couchbase.client.CouchbaseClient" ).init( cf );
+		return newJava( "com.couchbase.client.CouchbaseClient" ).init( cf );
 	}
 
 	/**
 	* Standardize and validate configuration object
 	* @config.hint The config options as a struct, path or instance.
+	* @Return The CFCouchbase config CFC
 	*/
 	private any function validateConfig( required any config ){
 		// do we have a simple path to inflate
@@ -1309,7 +1369,8 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Get the lib information as an array
+	* Get a list of all the jars in the lib directory
+	* @Return An array of jar file names
 	*/
 	private array function getLibJars(){
 		return directoryList( variables.libPath, false, "path" );
@@ -1318,7 +1379,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Load JavaLoader with the SDK
 	*/
-	private function loadSDK(){
+	private void function loadSDK(){
 		try{
 
 			// verify if not in server scope
@@ -1339,7 +1400,10 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Default persist and replicate from arguments
+	* Default persist and replicate from arguments.  Will create "persistTo" with a default value of ZERO and "replicateTo" with a 
+	* default value of ZERO if they don't exist.
+	* @args.hint The argument collection to process
+	* @Return The argument collection with the defaulted values. 
 	*/
 	private CouchbaseClient function defaultPersistReplicate( required args ) {
 

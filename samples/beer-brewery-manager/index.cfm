@@ -3,7 +3,7 @@
 	<cfparam name="url.startRecord" default="1" type="numeric" min="1">
 	
 	<cfset cbClient = application.couchbase>
-	
+			
 	<cfset breweryCount = cbClient.query("manager", "listBreweries")>
 	<cfset BeerCount = cbClient.query("manager", "listBeersByBrewery")>
 	<cfset breweries = cbClient.query("manager", "listBreweries", { includeDocs = true, limit=url.recordsPerPage, offSet = url.startRecord-1, reduce = false })>

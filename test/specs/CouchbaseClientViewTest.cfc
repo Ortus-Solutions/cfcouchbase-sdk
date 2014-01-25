@@ -46,12 +46,12 @@ component{
 			});
 
 			it( "can produce a raw query object", function(){
-				var oQuery = couchbase.getQuery();
+				var oQuery = couchbase.newQuery();
 				expect(	oQuery.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.Query" );
 			});
 
 			it( "can produce a raw query object with options", function(){
-				var oQuery = couchbase.getQuery( { debug: true, limit: 10 } );
+				var oQuery = couchbase.newQuery( { debug: true, limit: 10 } );
 				expect(	oQuery.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.Query" );
 				var args = oQuery.getArgs();
 				expect(	args[ "debug" ] ).toBeTrue();
@@ -59,7 +59,7 @@ component{
 			});
 
 			it( "can do a raw query", function(){
-				var oQuery = couchbase.getQuery( { limit: 10, includeDocs:true } );
+				var oQuery = couchbase.newQuery( { limit: 10, includeDocs:true } );
 				var oView  = couchbase.getView( "beer", "brewery_beers" );
 				var results = couchbase.rawquery( oView, oQuery );
 				expect(	results.getMap() ).toBeStruct();
@@ -98,7 +98,7 @@ component{
 			it( "can do a query with a filter", function(){
 				// filter out beers
 				var results = couchbase.query( designDocumentName='beer', 
-											   view='brewery_beers', 
+											   viewName='brewery_beers', 
 											   options={ limit: 10, includeDocs: true},
 											   filter=function( row ){
 											   	return ( false );
@@ -112,7 +112,7 @@ component{
 			it( "can do a query with custom transformations", function(){
 				// filter out beers
 				var results = couchbase.query( designDocumentName='beer', 
-											   view='brewery_beers', 
+											   viewName='brewery_beers', 
 											   options={ limit: 100, includeDocs: true },
 											   deserialize=false,
 											   transform=function( row ){
@@ -146,58 +146,58 @@ component{
 			});
 
 			it( "can return native results", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="native" );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="native" );
 				expect(	results.getClass().getName() ).toBe( "com.couchbase.client.protocol.views.ViewResponseWithDocs" );
 			});
 
 			it( "can return a native iterator", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="iterator" );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="iterator" );
 				// ensure obj behaves as an iterator
 				results.next();
 			});
 
 			it( "can return results explicitly ordered ascending", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'ASC' } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'ASC' } );
 				expect( results[1].id ).toBeLT( results[2].id );
 			});
 
 			it( "can return results explicitly ordered descending", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'DESC' } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'DESC' } );
 				expect( results[1].id ).toBeGT( results[2].id );
 			});
 
 			it( "can return results ordered ascending by default", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10, skip: 20 } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20 } );
 				expect( results[1].id ).toBeLT( results[2].id );
 			});
 
 			it( "can throw on invalid sortOrder", function(){
 			
 				expect( function(){
-	               couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'invalid' } );
+	               couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, sortOrder:'invalid' } );
           		}).toThrow( type="InvalidSortOrder" );
           				
 			});
 		
 			it( "can limit number of results", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 10 } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10 } );
 				expect( results ).toHaveLength( 10 );
 			});
 
 		
 			it( "can return results at an offset", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 20 } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20 } );
 				// ID of the 11th result
 				var id11 = results[11].id;
 				// Offset of 10 should return 11th record as the first item in the array
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ offset: 10 } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ offset: 10 } );
 				
 				expect( results[1].id ).toBe( id11 );
 			});
 		
 			it( "can filter results by a single key", function(){
 				// In this case, key is an array. It can also be simple string depending on the view
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ reduce: false, key: ["21st_amendment_brewery_cafe"] } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ reduce: false, key: ["21st_amendment_brewery_cafe"] } );
 				expect( results ).toHaveLength( 1 );
 				expect( results[1].id ).toBe( '21st_amendment_brewery_cafe' );
 				
@@ -209,7 +209,7 @@ component{
 				var key2 = [ "aass_brewery" ];
 				var key3 = [ "512_brewing_company","512_brewing_company-512_alt" ];
 				
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ reduce: false, keys: [key1, key2, key3] } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ reduce: false, keys: [key1, key2, key3] } );
 				expect( results ).toHaveLength( 3 );
 				expect( results[1].id ).toBe( '21st_amendment_brewery_cafe' );
 				expect( results[2].id ).toBe( 'aass_brewery' );
@@ -217,24 +217,24 @@ component{
 			});
 		
 			it( "can get possibly stale data", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 20, stale: 'OK' } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'OK' } );
 				expect( results ).toBeArray();
 			});
 		
 			it( "can get fresh data", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 20, stale: 'FALSE' } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'FALSE' } );
 				expect( results ).toBeArray();
 			});
 		
 			it( "can get possibly stale data but request a refresh to happen after", function(){
-				var results = couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 20, stale: 'UPDATE_AFTER' } );
+				var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'UPDATE_AFTER' } );
 				expect( results ).toBeArray();
 			});
 		
 			it( "can throw error on invalid stale option", function(){
 									
 				expect( function(){
-					couchbase.query( designDocumentName='beer', view='brewery_beers', options={ limit: 20, stale: 'invalid' } );
+					couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'invalid' } );
           		}).toThrow( type="InvalidStale" );
           		
 			});
@@ -281,7 +281,7 @@ component{
 						'  emit(meta.id, null);#CRLF#' &
 						'}';
 															
-					couchbase.saveView( designDocumentName = 'myDoc', viewName = 'myView', mapFunction = mapFunction, waitFor = 60 );
+					couchbase.saveView( designDocumentName = 'myDoc', viewName = 'myView', mapFunction = mapFunction, waitFor = 1 );
 	          		
 				});
 	
@@ -296,7 +296,7 @@ component{
 	          		
 				});
 	
-				it( "can save a view with map and reduce function", function(){
+				it( "can save a view synchronously with map and reduce function", function(){
 					var CRLF = chr(13)&chr(10);
 					var mapFunction = 
 						'function (doc, meta) {#CRLF#' & 
@@ -305,7 +305,7 @@ component{
 						
 					var reduceFunction = '_count';
 										
-					couchbase.saveView( 'myDoc2', 'myView3', mapFunction, reduceFunction );
+					couchbase.saveView( 'myDoc2', 'myView3', mapFunction, reduceFunction, 1 );
 	          		
 				});		
 	
@@ -344,7 +344,7 @@ component{
 				});
 			
 				it( "can execute brand new view", function(){
-					var results = couchbase.query( designDocumentName='myDoc', view='myView', options={ limit: 20, stale: 'OK' } );
+					var results = couchbase.query( designDocumentName='myDoc', viewName='myView', options={ limit: 20, stale: 'OK' } );
 				});
 			});
 		});

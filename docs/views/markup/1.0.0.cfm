@@ -112,5 +112,5 @@ There are 3 ways to pass configuration into the CouchbaseClient.
 
 == Help & Support ==
 
-If you need any help related to our ProfileBox product, you can use our online help group at https://groups.google.com/a/ortussolutions.com/forum/#!forum/profilebox.  If you need any type of custom consulting or support package hours, please contact us at [mailto:consulting@ortussolutions.com consulting@ortussolutions.com] or visit
+If you need any help related to our ProfileBox product, you can use our online help group at http://groups.google.com/group/coldbox .  If you need any type of custom consulting or support package hours, please contact us at [mailto:consulting@ortussolutions.com consulting@ortussolutions.com] or visit
 us at [http://www.ortussolutions.com www.ortussolutions.com].

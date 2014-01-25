@@ -42,7 +42,7 @@ component{
 			xit( "can flush docs", function(){
 				var future = couchbase.flush();
 				future.get();
-				expect( couchbase.getStats( "vb_active_curr_items" ) ).toBe( 0 );
+				expect( couchbase.getAggregateStat( "vb_active_curr_items" ) ).toBe( 0 );
 			});
 
 			it( "can touch an expiration time", function(){
@@ -382,7 +382,7 @@ component{
 				it( "can get global stats", function(){
 					var stats = couchbase.getStats();
 					expect( stats ).toBeStruct();
-					expect( couchbase.getStats( "vb_active_curr_items" ) ).toBeNumeric();
+					expect( couchbase.getAggregateStat( "vb_active_curr_items" ) ).toBeNumeric();
 				});
 
 				it( "can get doc stats", function(){

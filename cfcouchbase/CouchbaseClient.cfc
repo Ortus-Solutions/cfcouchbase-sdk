@@ -638,7 +638,8 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Decrement the given counter, returning the new value. Due to the way the memcached server operates on items, incremented and decremented items will be returned as Strings with any operations that return a value.
+	* Decrement the given counter, returning the new value.  This method is thread safe as it decrements and retrives the value in a single operation as opposed to 
+	* getting it, and then setting it again with subsequent calls.  
 	* 
 	* <pre>
 	* newValue = client.decr( 'passesLeft', 1 );
@@ -669,7 +670,8 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Decrement the given counter asynchronously.
+	* Decrement the given counter asynchronously.  This method is thread safe as it decrements and retrives the value in a single operation as opposed to 
+	* getting it, and then setting it again with subsequent calls.  
 	* 
 	* <pre>
 	* future = client.asyncDecr( 'passesLeft', 1 );
@@ -691,7 +693,8 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Increment the given counter.  
+	* Increment the given counter.  This method is thread safe as it increments and retrives the value in a single operation as opposed to 
+	* getting it, and then setting it again with subsequent calls.  
 	* 
 	* <pre>
 	* newValue = client.incr( 'numErrors', 1 );
@@ -723,14 +726,15 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Increment the given counter asynchronously 
+	* Increment the given counter asynchronously.  This method is thread safe as it increments and retrives the value in a single operation as opposed to 
+	* getting it, and then setting it again with subsequent calls.  	 
 	* 
 	* <pre>
 	* future = client.asyncIncr( 'numErrors', 1 );
 	* </pre>
 	* 
-	* @ID.hint The id of the document to decrement
-	* @value.hint The amount to decrement
+	* @ID.hint The id of the document to increment
+	* @value.hint The amount to imcrement
 	* 
 	* @return A future with the incremented value, or -1 if the increment failed.
 	*/ 
@@ -745,7 +749,7 @@ component serializable="false" accessors="true"{
 	}
 
 	/**
-	* Touch the given key to reset its expiration time.
+	* Touch the given ID to reset its expiration time.
 	* 
 	* <pre>
 	* future = client.touch( 'sessionData', 30 );

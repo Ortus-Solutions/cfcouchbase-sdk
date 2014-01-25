@@ -281,7 +281,7 @@ component{
 						'  emit(meta.id, null);#CRLF#' &
 						'}';
 															
-					couchbase.saveView( designDocumentName = 'myDoc', viewName = 'myView', mapFunction = mapFunction, waitFor = 1 );
+					couchbase.saveView( designDocumentName = 'myDoc', viewName = 'myView', mapFunction = mapFunction, waitFor = 10 );
 	          		
 				});
 	
@@ -305,7 +305,7 @@ component{
 						
 					var reduceFunction = '_count';
 										
-					couchbase.saveView( 'myDoc2', 'myView3', mapFunction, reduceFunction, 1 );
+					couchbase.saveView( 'myDoc2', 'myView3', mapFunction, reduceFunction, 10 );
 	          		
 				});		
 	

@@ -39,8 +39,7 @@ component{
 			    emit(doc.brewery_id, null);
 			  }
 			}',
-			'_count',
-			1
+			'_count'
 		);
 				
 		return true;

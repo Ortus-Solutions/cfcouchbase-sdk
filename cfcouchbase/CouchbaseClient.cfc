@@ -1123,8 +1123,9 @@ component serializable="false" accessors="true"{
 	* @viewName.hint The name of the view to be saved
 	* @mapFunction.hint The map function for the view represented as a string
 	* @reduceFunction.hint The reduce function for the view represented as a string
+	* @Return True if the view was saved, false if no save occurred due to the view already existing.
 	*/
-	void function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '' ){
+	boolean function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '' ){
 		
 		// This is required to clean up carriage returns
 		arguments.mapFunction = variables.util.normalizeViewFunction(arguments.mapFunction);
@@ -1132,7 +1133,7 @@ component serializable="false" accessors="true"{
 		
 		// If this exact view already exists, we've nothing to do here
 		if( viewExists( argumentCollection=arguments ) ) {
-			return;
+			return false;
 		}
 	
 		// Does the design doc exist?
@@ -1161,7 +1162,9 @@ component serializable="false" accessors="true"{
 		
 		// Even though this method is called "create", it will turn the design document into JSON
 		// and PUT it into the REST API which will also update existing design docs
-		variables.couchbaseClient.createDesignDoc( designDocument );			
+		variables.couchbaseClient.createDesignDoc( designDocument );
+		
+		return true;			
 	}
 
 
@@ -1176,14 +1179,19 @@ component serializable="false" accessors="true"{
 	*/
 	boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '', waitFor = 20 ){
 		
-    	asyncSaveView( argumentCollection=arguments );
-		
+    	var viewSaved = asyncSaveView( argumentCollection=arguments );
+    	
+    	// Bail now if no save actually occurred
+    	if( !viewSaved ) {
+			return true;
+		}
+    		
 	  	// View creation and population is asynchronous so we'll wait a while until it's ready.  
 		var attempts = 0;
 		while(++attempts <= arguments.waitFor) {
 			try {
 				// Access the view
-				this.query( designDocument=arguments.designDocumentName, view=arguments.viewName, options={ limit: 20, stale: 'FALSE' } );
+				this.query( designDocumentName=arguments.designDocumentName, viewName=arguments.viewName, options={ limit: 20, stale: 'FALSE' } );
 				
 				// The view is ready to be used!
 				return true;
@@ -1197,7 +1205,7 @@ component serializable="false" accessors="true"{
 		// We've given up and the view never worked. There could be a problem, but most 
 		// likely the bucket just isn't finished indexing
 		return false;
-
+		
 	}
 
 

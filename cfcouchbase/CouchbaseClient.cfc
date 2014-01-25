@@ -968,11 +968,26 @@ component serializable="false" accessors="true"{
 			var thisValue = "";
 			// provide some basic auto-casting.
 			switch( thisKey ){
-				case "limit" : case "skip" : { 
+				case "limit" : case "skip" : case "offset" : {
+					 
+					if( !isNumeric(arguments.options[ thisKey ]) || arguments.options[ thisKey ] < 0 ) {
+						throw( message='Invalid #thisKey# value of [#arguments.options[ thisKey ]#]', detail='Valid values are non-negative integers.', type='Invalid#thisKey#' );	
+					}
+					
 					thisValue = javaCast( "int", arguments.options[ thisKey ] );
+					
+					if( thisKey == 'offset' ) {
+						thisKey = 'skip';
+					}
+					
 					break;
 				}
 				case "debug" : case "descending" : case "inclusiveEnd" : case "includeDocs" : case "reduce" : { 
+					 
+					if( !isBoolean(arguments.options[ thisKey ]) ) {
+						throw( message='Invalid #thisKey# value of [#arguments.options[ thisKey ]#]', detail='Valid values are TRUE and FALSE.', type='Invalid#thisKey#' );	
+					}
+					
 					thisValue = javaCast( "boolean", arguments.options[ thisKey ] );
 					break;
 				}
@@ -985,23 +1000,31 @@ component serializable="false" accessors="true"{
 					}
 					
 					if( thisKey == 'group' ) { 
+					 
+						if( !isBoolean(arguments.options[ 'group' ]) ) {
+							throw( message='Invalid group value of [#arguments.options[ 'group' ]#]', detail='Valid values are TRUE and FALSE.', type='InvalidGroup' );	
+						}
 						
 						// If group is true and there is also a group level, skip the group option.  In addition to being redundant,
 						// there is a nasty bug where if group=true comes after group_level on the REST URL, the group_level will be ignored:
 						// http://www.couchbase.com/issues/browse/JCBC-386
 						if( arguments.options[ 'group' ] && structKeyExists(arguments.options, 'groupLevel') ) {
 							continue;
-						}
-						
+						}						
+					
 						thisValue = javaCast( "boolean", arguments.options[ 'group' ] );
 					} else {
+												 
+						if( !isNumeric(arguments.options[ 'groupLevel' ]) || arguments.options[ 'groupLevel' ] < 0 ) {
+							throw( message='Invalid groupLevel value of [#arguments.options[ 'groupLevel' ]#]', detail='Valid values are non-negative integers.', type='InvalidGroupLevel' );	
+						}
 						
 						// If grouping has been turned off for this query, then skip grouplevel
 						// This is to prevent undesired results if you've temporarily disabled grouping on a query with a group level  
 						if( structKeyexists( arguments.options, "group" ) && !arguments.options.group ) {
 							continue;
 						}
-						
+					
 						thisValue = javaCast( "int", arguments.options[ 'groupLevel' ] );
 						
 					}
@@ -1018,12 +1041,6 @@ component serializable="false" accessors="true"{
 						throw( message='Invalid sortOrder value of [#sortOrder#]', detail='Valid values are ASC and DESC.', type='InvalidSortOrder' );
 					}
 					thisKey = 'descending';
-					break;
-				}
-				// Allow offset as a convenient facade for skip
-				case "offset" : { 
-					thisValue = javaCast( "int", arguments.options[ 'offset' ] );
-					thisKey = 'skip';
 					break;
 				}
 				// startKey & rangeStart

@@ -231,13 +231,87 @@ component{
 				expect( results ).toBeArray();
 			});
 		
-			it( "can throw error on invalid stale option", function(){
-									
-				expect( function(){
-					couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'invalid' } );
-          		}).toThrow( type="InvalidStale" );
-          		
+			describe( "Validate Query Options", function(){
+			
+				it( "can throw error on invalid stale option", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'invalid' } );
+	          		}).toThrow( type="InvalidStale" );
+	          		
+				});
+						
+				it( "can throw error on invalid limit", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: -5 } );
+	          		}).toThrow( type="InvalidLimit" );
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 'invalid' } );
+	          		}).toThrow( type="InvalidLimit" );
+	          		
+				});
+						
+				it( "can throw error on invalid offset", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ offset: -5 } );
+	          		}).toThrow( type="InvalidOffset" );
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ offset: 'invalid' } );
+	          		}).toThrow( type="InvalidOffset" );
+	          		
+				});
+						
+				it( "can throw error on invalid groupLevel", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ groupLevel: -5 } );
+	          		}).toThrow( type="InvalidGroupLevel" );
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ groupLevel: 'invalid' } );
+	          		}).toThrow( type="InvalidGroupLevel" );
+	          		
+				});
+						
+				it( "can throw error on invalid inclusiveEnd", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ inclusiveEnd: 'invalid' } );
+	          		}).toThrow( type="InvalidInclusiveEnd" );
+										
+				});	
+						
+				it( "can throw error on invalid reduce", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ reduce: 'invalid' } );
+	          		}).toThrow( type="InvalidReduce" );
+										
+				});	
+						
+				it( "can throw error on invalid includeDocs", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ includeDocs: 'invalid' } );
+	          		}).toThrow( type="InvalidIncludeDocs" );
+										
+				});	
+						
+				it( "can throw error on invalid group", function(){
+										
+					expect( function(){
+						couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ group: 'invalid' } );
+	          		}).toThrow( type="InvalidGroup" );
+										
+				});	
+				
 			});
+			
+			
 
 			describe( "View Administration", function(){
 												

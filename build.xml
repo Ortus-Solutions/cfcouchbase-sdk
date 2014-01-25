@@ -52,8 +52,8 @@
         <concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
         
         <!-- Copy src -->    
-        <copy todir="${dir.build}/sdk">
-            <fileset dir="src" />
+        <copy todir="${dir.build}/cfcouchbase">
+            <fileset dir="cfcouchbase" />
         </copy>
 
         <!--Copy text files to root folder-->
@@ -86,7 +86,7 @@
         </copy>
         
         <!-- Zip API Docs -->
-        <zip destfile="${dir.dist}/CFCouchbaseDocs-${cfcouchbase.version}.zip" basedir="${dir.build}/apidocs"></zip>
+        <zip destfile="${dir.dist}/CFCouchbase_APIDocs_${cfcouchbase.version}.zip" basedir="${dir.build}/apidocs"></zip>
                 
         <!-- Zip Distro -->
         <zip destfile="${dir.dist}/CFCouchbase_${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>

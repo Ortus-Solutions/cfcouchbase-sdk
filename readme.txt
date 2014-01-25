@@ -59,17 +59,19 @@ Official Site
 INSTALLATION
 ********************************************************************************
 Place anywhere in your server and create a "/cfcouchbase" mapping to the 
-"sdk" directory from the distribution.
+"cfcouchbase" directory from the distribution.
 
-this.mappings[ "/cfcouchbase" ] = path.to.cfcouchbase.sdk;
+this.mappings[ "/cfcouchbase" ] = path.to.cfcouchbase;
 
-You can also rename the "sdk" folder to "couchbase" and drop in your webroot.
+You can also place the "cfcouchbase" folder in your webroot.
 
 ********************************************************************************
 SYSTEM REQUIREMENTS
 ********************************************************************************
+
+- Couchbase Server 1.8+
 - Railo 3.1+
-- Adob ColdFusion 9.01+
+- Adobe ColdFusion 9.01+
  
 ********************************************************************************
 THE DAILY BREAD

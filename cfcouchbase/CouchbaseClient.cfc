@@ -1692,16 +1692,27 @@ component serializable="false" accessors="true"{
 			arguments.config = new "#arguments.config#"();
 		}
 
-		// check family, for memento injection
-		if( isObject( arguments.config ) && !isInstanceOf( arguments.config, "cfcouchbase.config.CouchbaseConfig" ) ){
-			// get memento out via injection
-			var oConfig = new config.CouchbaseConfig();
-			arguments.config.getMemento = oConfig.getMemento;
-			return oConfig.init( argumentCollection=arguments.config.getMemento() );
-
-		}
-		else if ( isObject( arguments.config ) ){
-			return arguments.config;
+		// We've been given a CFC instance		
+		if( isObject( arguments.config ) ){
+			
+			// Validate the configure() method
+			if( !structKeyExists( arguments.config, 'configure' ) ) {
+				throw( message='Config file must have a configure() method', detail='Valid config CFCs must set their config settings into the variables scope in a configure() method.', type='InvalidConfig' );
+			}
+			
+			// Configure the CFC
+			arguments.config.configure();
+			
+			// check family, for memento injection
+			if( isInstanceOf( arguments.config, "cfcouchbase.config.CouchbaseConfig" ) ) {
+				return arguments.config;				
+			} else {
+				// get memento out via mixin
+				var oConfig = new config.CouchbaseConfig();
+				arguments.config.getMemento = oConfig.getMemento;
+				return oConfig.init( argumentCollection=arguments.config.getMemento() );				
+			}
+			
 		}
 
 		// check if its a struct literal of config options

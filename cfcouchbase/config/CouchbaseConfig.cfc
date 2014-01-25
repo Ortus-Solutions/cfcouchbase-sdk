@@ -109,6 +109,7 @@ component accessors="true"{
 	variables.defaultTimeout				= 0;
 	variables.dataMarshaller				= "";
 
+	
 	/**
 	* Constructor
 	* You can pass any name-value pair as arguments to the constructor that matches the properties in this configuration object to be set.
@@ -124,6 +125,13 @@ component accessors="true"{
 
 		return this;
 	}
+
+	/**
+	* Configure method
+	* Don't put anything here since people extending this component may not call super.configure().  
+	* It exists so people can create this component directly as their config and call setters on it.
+	*/
+	function configure(){}
 
 	/**
 	* Get a memento representation of the config options

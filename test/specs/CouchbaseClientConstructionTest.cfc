@@ -69,6 +69,13 @@ component{
 				expect(	couchbase.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
 			});
 		
+			it( "with bad config", function(){				
+				expect( function(){
+					var badConfig = new test.resources.BadConfig();
+					couchbase = new cfcouchbase.CouchbaseClient( config=badConfig );
+          		}).toThrow( type="InvalidConfig" );     	
+			});
+		
 		});
 	}
 	

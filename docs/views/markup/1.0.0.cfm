@@ -276,7 +276,250 @@ There are many other methods for getting data.  Please check the API docs (in th
 
 === Data Serialization ===
 
-=== Working with Views ===
+Couchbase can literally store anything in a bucket as long as it's represented as a string and no larger than 20MB.  
+The CFCouchbase SDK will automatically serialize complex data for you when storing it and deserialize it when you ask for it again.  
+
+You can skip everything below and get the raw data back from Couchbase as a string if you pass ''deserialize=false'' into your '''get()''' method.
+
+Here are the rules for the built-in data marshaller:
+
+* '''JSON Strings''' and other '''Simple Values''' - Will be stored as-is
+* '''Structs''' and '''Arrays''' - Will be converted via ''serializeJSON()''
+* '''Queries''' - Will be converted to binary with ''objectSave()'' and wrapped in a struct with the following metadata:
+** '''type''' - ''cfcouchbase-query''
+** '''recordcount''' - The query record count
+** '''columnlist''' - The columns in the query
+
+<p>&nbsp;</p>
+For '''CFCs''' the following rules will be used:
+
+* If the CFC has a public method '''$serialize''', it will be called and its results saved.  The method must return a string.
+* If the CFC has at least one property defined and an annotation called '''autoInflate''', it will be stored as a struct with the following metadata:
+** '''type''' - ''cfcouchbase-cfcdata''
+** '''data''' -  A struct of property name/values
+** '''classpath''' - The name of the CFC
+* If the CFC has at least one property defined but no '''autoInflate''' annotation, a struct of property name/values will be stored but without the metdata above.
+* All other CFC's will converted to binary with ''objectSave()'' and wrapped in a struct with the following metadata:
+** '''type''' - ''cfcouchbase-cfc''
+** '''binary''' - A binary representation of the CFC
+** '''classpath''' -  - The name of the CFC
+
+In some instances when retrieving CFCs from Couchbase, you will want to have more control over how the object gets created, or perhaps you are using a serialization method that doesn't even track the original component path.
+In this case, you can use the inflateTo parameter.  
+
+Pass in a component path and the SDK will instantiate that component and call setters to repopulate it with the data.
+   
+<source lang="javascript">
+person = client.get(
+	ID = 'brad',
+	inflateTo = 'path.to.person'
+);
+</source>
+
+If you need even more control such as performing dependency injection, passing construtor args to the CFC, or dynamically choosing the component to create, you can supply a closure that acts as a provider and produces an empty object ready to be populated.
+
+<source lang="javascript">
+person = client.get(
+	ID = 'brad',
+	inflateTo = function( document ){
+		// Create object
+		var obj = new path.to.person();
+		// Special setup
+		if( document.role == 'admin' ) {
+			obj.setAdmin(true);
+		}
+		// Autowire object
+		wirebox.autowire(obj);
+		// Return it
+		return obj;
+	}
+);
+</source>
+
+=== Executing Queries ===
+
+One of the most powerful parts of Couchbase Server is the ability to define views (or indexes) on your data and execute queries against your buckets of data.
+The minimum information you need to execute a query is the name of the design document and view you wish you use.
+
+<source lang="javascript">
+results = client.query( designDocumentName='beer', viewName='brewery_beers' );
+
+for( var result in results ) {
+	writeOutput( result.document.name );
+	writeOutput( '<br>' );
+}
+</source>
+
+==== Results ====
+
+This code will return an array of structs for each key in the view.  Each struct will have the following peices of data:
+* '''id''' - The unique document id.  Only avaialble on non-reduced queries
+* '''document''' - The actual JSON document that was stored.  Only available on non-reduced views
+* '''key''' - For non-reduced queries, the key emitted from the map  function.  For reduced views, null.
+* '''value''' - For non-reduced queries, the value emitted from the map function. For reduced views, the output of the reduce function.
+
+<p>&nbsp;</p>
+
+==== Query Options ====
+
+You can also pass in a struct of options to control how the query is executed.  Here are some of the most common options.  Please check the API docs for the full list.
+
+{| cellpadding=”5”, class="table table-hover table-striped"
+! '''Option''' !! '''Description''' 
+|-
+|| '''sortOrder''' || Specifies the direction to sort the results based on the map function's "key" value.  Valid values are ASC and DESC.
+|-
+|| '''limit''' || Number of records to return
+|-
+|| '''offset''' || Number of records to skip when returning
+|-
+|| '''reduce''' || Flag to control whether the reduce portion of the view is run. If false, only the results of the map function are returned.
+|-
+|| '''includeDocs''' || Specifies whether or not to include the entire document in the results or just the key names. Default is false.
+|-
+|| '''startkey''' || Specify the start of a range of keys to return.
+|-
+|| '''endkey''' || Specify the end of a range of keys to return.
+|-
+|| '''group''' || Flag to control whether the results of the reduce function are grouped.
+|-
+|| '''keys''' || An array of keys to return.  For complex keys, pass each key as an array.
+|-
+|| '''stale''' || Specifies if stale data can be returned with the view.  Possible values are:
+* '''OK''' - (default) - stale data is ok
+* '''FALSE''' - force index of view
+* '''UPDATE_AFTER''' - potentially returns stale data, but starts an asynch re-index.
+|}
+
+
+<source lang="javascript">
+// Return 10 records, skipping the first 20.  Force fresh data
+results = client.query( designDocumentName='beer', viewName='brewery_beers', options={ limit = 10, offset = 20, stale = 'FALSE' } );
+
+// Only return 20 records and skip the reduce function in the view
+results = client.query( designDocumentName='beer', viewName='by_location', options={ limit = 20, reduce = false } );
+
+// Group results (Will return a single record with the count as the value)
+results = client.query( designDocumentName='beer', viewName='brewery_beers', options={ group = true } );
+
+// Start at the specified key and sort descending 
+results = client.query( designDocumentName='beer', viewName='brewery_beers', options={ sortOrder = 'DESC', startKey = ["aldaris","aldaris-zelta"] } );
+</source>
+
+
+==== Controlling Query Output ====
+
+Here are some additional parameters to the '''query()''' method to help you control the output.
+
+===== Fiter =====
+
+Specify a closure to the '''filter''' argument that returns true for records that should be included in the final output.
+
+<source lang="javascript">
+// Only return breweries
+results = client.query(
+	designDocumentName = 'beer', 
+	viewName = 'brewery_beers', 
+	filter = function( row ){
+		if( row.document.type == 'brewery' ) {
+			return true;
+		}
+		return false;
+	}
+);
+</source>
+
+===== Transform =====
+
+You can provide custom transformations for each result by passing a closure for '''transform'''.
+
+<source lang="javascript">
+results = couchbase.query(
+	designDocumentName = 'beer', 
+	viewName = 'brewery_beers', 
+	deserialize = false,
+	transform = function( row ){
+		row.document = deserializeJSON( row.document );
+	}
+);
+</source>
+
+===== Return Type =====
+
+You can ask the '''query()''' method to return an array (default), a Java ViewReponse object, or a Java iterator.  
+By default we use the cf type which uses transformations, automatic deserializations and inflations.
+
+<source lang="javascript">
+// Get an iterator of Java objects
+iterator = couchbase.query(
+	designDocumentName = 'beer', 
+	viewName = 'brewery_beers', 
+	returnType = 'Iterator' 
+);
+
+while( iterator.hasNex() ) {
+	writeOutput( iterator.getNext().getKey() );
+}
+</source>
+
+
+
+=== Managing Views ===
+
+Views define via JavaScript a '''map''' function that populates keys from the data in your bucket.  
+Views can also define an addition '''reduce''' function that is used to aggregate data down.  One or more views live inside of a design document.  
+
+Please read more about views in the [http://docs.couchbase.com/couchbase-manual-2.0/#views-and-indexes Couchbase Docs].
+
+You can manage views and design documents from the Couchbase web console and you can also manage them programattically via the SDK as well.  Here's a list of some useful methods:
+
+* '''designDocumentExists()''' - Check for the existance of a design document.
+* '''getDesignDocument()''' - Retreive a design document and all its views
+* '''deleteDesignDocument()''' - Delete a design document and all its views from the cluster
+* '''viewExists()''' - Check for the existance of a single view
+* '''saveView()''' - Save/update a view and wait for it to index
+* '''asyncSaveView()''' - Save/update a view but don't wait for it to become usable
+* '''deleteView()''' - Delete a single view from its design document
+
+The really nice thing about '''saveView()''' and '''asyncSaveView()''' is they either insert or udpate an existing view based on whether it already exists.
+They also only save to the cluster if the view doesn't exist or is different.  This means you can repeatedly call saveView() and nothing will happen on any call but the first.
+
+This allows you to specify the views that you need in your application when it starts up and they will only save if neccessary:
+
+<source lang="javascript">
+// application start
+public boolean function onApplicationStart(){
+	application.couchbase = new cfcouchbase.CouchbaseClient( { bucketName="beer-sample" } );
+	
+	// Specify the views the applications needs here.  They will be created/updated
+	// when the client is initialized if they don't already exist or are out of date.
+	
+	application.couchbase.saveView(
+		'manager',
+		'listBreweries',
+		'function (doc, meta) {
+		  if ( doc.type == ''brewery'' ) {
+		    emit(doc.name, null);
+		  }
+		}',
+		'_count'
+	);
+			
+	application.couchbase.saveView(
+		'manager',
+		'listBeersByBrewery',
+		'function (doc, meta) {
+		  if ( doc.type == ''beer'' ) {
+		    emit(doc.brewery_id, null);
+		  }
+		}',
+		'_count'
+	);
+			
+	return true;
+}
+</source>
+
 
 === Working with Futures ===
 

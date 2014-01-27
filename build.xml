@@ -35,6 +35,7 @@
         <!-- Cleanup + Init -->
         <delete dir="${dir.build}" />
         <mkdir dir="${dir.build}"/>
+        <chmod file="${dir.build}/**" perm="g+wxrs" type="both" />
     </target>
 
     <!-- Build test reports -->
@@ -91,6 +92,9 @@
         <!-- Zip Distro -->
         <zip destfile="${dir.dist}/CFCouchbase_${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>
         
+        <!-- Fix permissions just in case -->
+        <chmod file="${dir.build}/**" perm="g+wxrs" type="both" />
+
         <!-- Cleanup -->
         <delete dir="${dir.build}" />
         

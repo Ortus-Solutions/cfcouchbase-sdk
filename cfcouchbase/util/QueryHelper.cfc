@@ -122,13 +122,25 @@ component accessors="true"{
 				}
 				// startKey & rangeStart
 				case "startKey" : case "rangeStart" : {
-					thisValue = serializeJSON( arguments.options[thisKey] );
+					thisValue = serializeJSON( arguments.options[ thisKey ] );
+					thisKey = 'rangeStart';
+					break;
+				}
+				// startKey & rangeStart
+				case "startKeyJSON" : case "rangeStartJSON" : {
+					thisValue = arguments.options[ thisKey ];
 					thisKey = 'rangeStart';
 					break;
 				}
 				// endKey as rangeEnd
 				case "endKey" : case "rangeEnd" : {
-					thisValue = serializeJSON( arguments.options[thisKey] );
+					thisValue = serializeJSON( arguments.options[ thisKey ] );
+					thisKey = 'rangeEnd';
+					break;
+				}
+				// endKey as rangeEnd
+				case "endKeyJSON" : case "rangeEndJSON" : {
+					thisValue = arguments.options[ thisKey ];
 					thisKey = 'rangeEnd';
 					break;
 				}
@@ -137,12 +149,16 @@ component accessors="true"{
 					thisValue = serializeJSON( arguments.options[ thisKey ] );
 					break;
 				}
+				case "keyJSON" : case "keysJSON" : { 
+					thisValue = arguments.options[ thisKey ];
+					break;
+				}
 				// handle stale option
 				case "stale" : { 
 					var oStale = variables.client.newJava( "com.couchbase.client.protocol.views.Stale" );
 					var stale = arguments.options[ 'stale' ];
 					
-		            switch (stale) {
+		            switch ( stale ){
 		                // Force index rebuild (slowest)
 		                case "FALSE":
 		                    thisValue = oStale.FALSE;

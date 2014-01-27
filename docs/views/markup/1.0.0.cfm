@@ -11,7 +11,7 @@ Here is a quick sample showing how easy it is to work with the Couchbase SDK.
 client  = new cfcouchbase.CouchbaseClient();
 
 // Create a document in the cluster
-client.set( 'brad', { name: "Brad", age: 33, hair: "red" } );
+client.set( 'brad', { name: 'Brad', age: 33, hair: 'red' } );
 
 // Retrieve that doc
 person = client.get( 'brad' );
@@ -84,7 +84,7 @@ Download the SDK from our [http://www.coldbox.org/download download page] and un
 The CFCouchase SDK is contained in a single folder.  The easiest way to install it is to copy "cfcouchbase" in the web root.  For a more secure installation, place it outside the web root and create a mapping called "cfcouchbase".   
 
 <source lang="javascript">
-this.mappings[ "/cfcouchbase" ] = "C:\path\to\cfcouchbase";
+this.mappings[ '/cfcouchbase' ] = 'C:\path\to\cfcouchbase';
 </source>
 
 Now that the code is in place, all you need to do is create an instance of <span class="label">cfcouchbase.CouchbaseClient</span> for each bucket you want to connect to.  
@@ -142,7 +142,9 @@ Here are some of the most common setting you will need to use:
 |-
 || '''bucketName''' || string || default || The bucketname to connect to on the cluster.  This is case-sensitive
 |-
-|| '''password''' || string ||  --- || The optional password of the bucket.  
+|| '''password''' || string ||  --- || The optional password of the bucket.
+|-
+|| '''dataMarshaller''' || any ||  --- || The data marshaller to use for serializations and deserializations, please put the class path or the instance of the marshaller to use.  Remember that it must implement our interface: cfcouchbase.data.IDataMarshaller  
 |}
 
 
@@ -154,8 +156,8 @@ The simplest way to get started using the SDK is to simply pass a struct of conf
 couchbase = new cfcouchbase.CouchbaseClient(
 	{
 		servers = ['http://cache1:8091','http://cache2:8091'],
-		bucketName = "myBucket",
-		bucketName = "myPass"
+		bucketName = 'myBucket',
+		bucketName = 'myPass'
 	} 
 );
 </source>
@@ -172,8 +174,8 @@ component {
 	
 	function configure() {
 		servers = ['http://cache1:8091','http://cache2:8091'];
-		bucketName = "myBucket";
-		bucketName = "myPass";
+		bucketName = 'myBucket';
+		bucketName = 'myPass';
 	}
 
 }
@@ -204,7 +206,7 @@ The easiest way to store a document in your Couchbase cluster is by calling the 
 <source lang="javascript">
 client.set(
 	ID = 'brad',
-	value = { name: "Brad", age: 33, hair: "red" } 
+	value = { name: 'Brad', age: 33, hair: 'red' } 
 );
 </source>
 
@@ -235,7 +237,7 @@ The call is still async but returns a Java future object.  Calling the '''get()'
 // This document will be persisted to disk on at least two nodes
 future = client.set(
 	ID = 'brad',
-	value = { name: "Brad", age: 33, hair: "red" },
+	value = { name: 'Brad', age: 33, hair: 'red' },
 	persistTo = client.persistTo.TWO, 
 	replicateTo = client.persistTo.TWO
 );
@@ -333,6 +335,53 @@ person = client.get(
 		// Return it
 		return obj;
 	}
+);
+</source>
+
+
+===== Custom Transformers =====
+
+If you don't like how we set up data serialization, or just have super-custom requirements you can provide your own data marshaller to have full control.
+Create a CFC that implements the <span class="label">cfcouchbase.data.IDataMarshaller</span> interface.  It only needs to have three methods:
+
+* '''serializeData()''' - Returns the data in a string form so it can be persisted in Couchbase
+* '''deserializeData()''' - Received the raw string data from Couchbase and inflates it as neccessary to the original state
+* '''setCouchbaseClient()''' - Gives the marshaller a chance to store a local reference to the client in case it needs to talk back.
+
+<span class="label label-info">myDataMarshaller.cfc</span>
+<source lang="javascript">
+component implements='cfcouchbase.data.IDataMarshaller' {
+
+	any function setCouchbaseClient( required couchcbaseClient ){
+		variables.couchbaseClient = arguments.couchcbaseClient;
+		return this;
+	}
+
+	string function serializeData( required any data ){
+		if( !isSimpleValue( data ) ) {
+			return serializeJSON( data );
+		}
+		return data;
+	}
+
+	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
+		if( isJSON( data ) && deserialize ) {
+			return deserializeJSON( data );
+		}
+		return data;
+	}
+	
+}
+</source>
+
+After you have created your custom marshaller, simply pass in an instance of it or the full component path as a config setting:
+
+<source lang="javascript">
+couchbase = new cfcouchbase.CouchbaseClient(
+	{
+		bucketName = 'myBucket',
+		dataMarshaller = 'path.to.myDataMarshaller'
+	} 
 );
 </source>
 

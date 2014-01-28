@@ -161,7 +161,63 @@ component{
 					expect(	setResult.status ).toBe( false );
 					expect(	setResult.detail ).toBe( "NOT_FOUND" );
 				});	
-								
+
+
+				describe( "Durability Options", function() {
+				
+					it( "with default persisTo and replicateTo", function(){
+						var future = couchbase.set( ID="unittest", value="hello" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+					});	
+				
+					it( "with invalid persisTo", function(){
+						expect( function(){
+							couchbase.set( ID="unittest", value="hello", persistTo="invalid" );
+		          		}).toThrow( type="InvalidPersistTo" );
+					});
+				
+					it( "with invalid replicateTo", function(){
+						expect( function(){
+							couchbase.set( ID="unittest", value="hello", replicateTo="invalid" );
+		          		}).toThrow( type="InvalidReplicateTo" );
+					});
+				
+					it( "with valid persisTo", function(){
+						// Extra whitespace
+						var future = couchbase.set( ID="unittest", value="hello", persistTo=" ZERO " );
+						future.get();
+						
+						var future = couchbase.set( ID="unittest", value="hello", persistTo="ZERO" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+						
+						var future = couchbase.set( ID="unittest", value="hello", persistTo="MASTER" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();						
+						
+						var future = couchbase.set( ID="unittest", value="hello", persistTo="ONE" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+
+					});
+				
+					it( "with valid replicateTo", function(){
+						// Extra whitespace
+						var future = couchbase.set( ID="unittest", value="hello", replicateTo=" ZERO " );
+						future.get();
+						
+						var future = couchbase.set( ID="unittest", value="hello", replicateTo="ZERO" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+						
+					});
+				
+				});
+
+
+
+
 			});
 
 

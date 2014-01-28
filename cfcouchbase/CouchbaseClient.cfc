@@ -124,8 +124,8 @@ component serializable="false" accessors="true"{
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
 	*/ 
@@ -133,8 +133,8 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required any value, 
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		// serialization determinations go here
@@ -167,8 +167,8 @@ component serializable="false" accessors="true"{
 	* @value.hint The value to store
 	* @CAS.hint CAS value retrieved via getWithCAS()
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED" indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or a regular set() commend to store the document. 
 	*/ 
@@ -177,8 +177,8 @@ component serializable="false" accessors="true"{
 		required any value, 
 		required string CAS,
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 
 
@@ -224,8 +224,8 @@ component serializable="false" accessors="true"{
 	* @ID.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
 	*/ 
@@ -233,8 +233,8 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required any value, 
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
@@ -269,16 +269,16 @@ component serializable="false" accessors="true"{
 	* 
 	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
 	* @timeout.hint The expiration of the documents in minutes.
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	*/ 
 	any function setMulti( 
 		required struct data,
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		
 		var results = {};
@@ -322,8 +322,8 @@ component serializable="false" accessors="true"{
 	* @ID The ID of the document to replace.
 	* @value.hint The value of the document to replace
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
 	*/ 
@@ -331,8 +331,8 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required any value, 
 		numeric timeout,
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
@@ -780,15 +780,15 @@ component serializable="false" accessors="true"{
 	* </pre>
 	* 
 	* @ID The ID of the document to delete, or an array of ID's to delete
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or a struct of futures depending on whether a single ID or an array of IDs are passed, 
 	*/ 
 	any function delete( 
 		required any ID, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
@@ -1634,18 +1634,41 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Default persist and replicate from arguments.  Will create "persistTo" with a default value of ZERO and "replicateTo" with a 
-	* default value of ZERO if they don't exist.
+	* default value of ZERO if they don't exist.  Also translates from string inputs to the Java enum value
 	*
 	* @args.hint The argument collection to process
 	*
 	* @Return The argument collection with the defaulted values. 
 	*/
-	private CouchbaseClient function defaultPersistReplicate( required args ) {
+	private any function defaultPersistReplicate( required args ) {
+		var validPersistTo = 'ZERO,MASTER,ONE,TWO,THREE,FOUR';
+		var validReplicateTo = 'ZERO,ONE,TWO,THREE';
 
-		if( !structKeyExists( args, "persistTo" ) ){ args.persistTo = this.persistTo.ZERO; }
-		if( !structKeyExists( args, "replicateTo" ) ){ args.replicateTo = this.replicateTo.ZERO; }
+		// persistTo
+		if( structKeyExists( args, "persistTo" ) ) {
+			args.persistTo = trim( args.persistTo );
+			if( !listFindNoCase( validPersistTo, args.persistTo ) ) {
+						throw( message='Invalid persistTo value of [#args.persistTo#]', detail='Valid values are [#validPersistTo#]', type='InvalidPersistTo' );
+			}
+			args.persistTo = this.persistTo[args.persistTo];
+		} else {
+			// Default it
+			args.persistTo = this.persistTo.ZERO;
+		}
 
-		return this;
+		// replicateTo
+		if( structKeyExists( args, "replicateTo" ) ) {
+			args.replicateTo = trim( args.replicateTo );
+			if( !listFindNoCase( validReplicateTo, args.replicateTo ) ) {
+						throw( message='Invalid replicateTo value of [#args.replicateTo#]', detail='Valid values are [#validReplicateTo#]', type='InvalidReplicateTo' );
+			}
+			args.replicateTo = this.replicateTo[args.replicateTo];
+		} else {
+			// Default it
+			args.replicateTo = this.replicateTo.ZERO;
+		}
+
+		return args;
 	}
 
 }

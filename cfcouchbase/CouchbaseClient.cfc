@@ -142,10 +142,11 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout 	= ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 		// with replicate and persist
+		
 		return variables.couchbaseClient.set( arguments.ID, 
-													javaCast( "int", arguments.timeout*60 ), 
+													javaCast( "int", arguments.timeout ), 
 													serializeData( arguments.value ), 
 													arguments.persistTo, 
 													arguments.replicateTo );
@@ -185,7 +186,7 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 		
 		// with replicate and persist
 		var result = {};
@@ -194,7 +195,7 @@ component serializable="false" accessors="true"{
 		result.detail = "SUCCESS";
 		var CASResponse = variables.couchbaseClient.cas( arguments.ID,
 													javaCast( "long", arguments.CAS ),			 											
-													javaCast( "int", arguments.timeout*60 ), 
+													javaCast( "int", arguments.timeout ), 
 													serializeData( arguments.value ), 
 													arguments.persistTo, 
 													arguments.replicateTo );
@@ -243,11 +244,11 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 		
 		// with replicate and persist
 		return variables.couchbaseClient.add( arguments.ID, 
-													javaCast( "int", arguments.timeout*60 ), 
+													javaCast( "int", arguments.timeout ), 
 													arguments.value, 
 													arguments.persistTo, 
 													arguments.replicateTo );
@@ -286,7 +287,7 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 
 		// Loop over incoming key/value pairs
 		for( var local.ID in arguments.data ) {
@@ -339,10 +340,11 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
+		
 		// store it
 		return variables.couchbaseClient.replace( arguments.ID, 
-														javaCast( "int", arguments.timeout*60 ), 
+														javaCast( "int", arguments.timeout ), 
 														arguments.value,
 														arguments.persistTo,
 														arguments.replicateTo );
@@ -509,10 +511,12 @@ component serializable="false" accessors="true"{
 					any inflateTo=""
 				 ){		 	 
 		arguments.ID = variables.util.normalizeID( arguments.ID );
+		// Default timeout	
+		defaultTimeout( arguments );
 		
 		var resultsWithCAS = variables.couchbaseClient.getAndTouch(
 														arguments.ID,
-														javaCast( "int", arguments.timeout*60 )
+														javaCast( "int", arguments.timeout )
 													   );
 
 		if( !isNull( resultsWithCAS ) ){
@@ -545,7 +549,10 @@ component serializable="false" accessors="true"{
 	){		 	 
 		
 		arguments.ID = variables.util.normalizeID( arguments.ID );
-		return variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+		// Default timeout
+		defaultTimeout( arguments );
+		
+		return variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout ) );
 	}
 
 	/**
@@ -663,12 +670,13 @@ component serializable="false" accessors="true"{
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
+		
 		// store it
 		return variables.couchbaseClient.decr( arguments.ID, 
 													 javaCast( "long", arguments.value ), 
 													 javaCast( "long", arguments.defaultValue ),
-													 javaCast( "int", arguments.timeout*60 ) );
+													 javaCast( "int", arguments.timeout ) );
 	}
 
 	/**
@@ -718,12 +726,13 @@ component serializable="false" accessors="true"{
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
+		
 		// store it
 		return variables.couchbaseClient.incr( arguments.ID, 
 													 javaCast( "long", arguments.value ), 
 													 javaCast( "long", arguments.defaultValue ),
-													 javaCast( "int", arguments.timeout*60 ) );
+													 javaCast( "int", arguments.timeout ) );
 
 	}
 
@@ -767,9 +776,11 @@ component serializable="false" accessors="true"{
 		required numeric timeout
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
+		// Default timeout
+		defaultTimeout( arguments );
 
 		// store it
-		return variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+		return variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout ) );
 	}
 
 	/**
@@ -1648,7 +1659,7 @@ component serializable="false" accessors="true"{
 		if( structKeyExists( args, "persistTo" ) ) {
 			args.persistTo = trim( args.persistTo );
 			if( !listFindNoCase( validPersistTo, args.persistTo ) ) {
-						throw( message='Invalid persistTo value of [#args.persistTo#]', detail='Valid values are [#validPersistTo#]', type='InvalidPersistTo' );
+				throw( message='Invalid persistTo value of [#args.persistTo#]', detail='Valid values are [#validPersistTo#]', type='InvalidPersistTo' );
 			}
 			args.persistTo = this.persistTo[args.persistTo];
 		} else {
@@ -1660,7 +1671,7 @@ component serializable="false" accessors="true"{
 		if( structKeyExists( args, "replicateTo" ) ) {
 			args.replicateTo = trim( args.replicateTo );
 			if( !listFindNoCase( validReplicateTo, args.replicateTo ) ) {
-						throw( message='Invalid replicateTo value of [#args.replicateTo#]', detail='Valid values are [#validReplicateTo#]', type='InvalidReplicateTo' );
+				throw( message='Invalid replicateTo value of [#args.replicateTo#]', detail='Valid values are [#validReplicateTo#]', type='InvalidReplicateTo' );
 			}
 			args.replicateTo = this.replicateTo[args.replicateTo];
 		} else {
@@ -1670,5 +1681,37 @@ component serializable="false" accessors="true"{
 
 		return args;
 	}
+	
+
+	/**
+	* Default timeout in arguments.  Will create "timeout" with a default value specified in settings
+	* Also accounts for timeouts over 30 days which must be represented as epoch date.
+	*
+	* @args.hint The argument collection to process
+	*
+	* @Return The argument collection with the defaulted values. 
+	*/
+	private any function defaultTimeout( required args ) {
+		var secondsIn30Days = 30 * 24 * 60 * 60;
+		
+		args.timeout = ( !structKeyExists( args, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout );
+		
+		// Validate timeout
+		if( !isNumeric(args.timeout) || args.timeout < 0 ) {
+			throw( message='Invalid timeout value of [#args.timeout#]', detail='Valid values are positive integers', type='InvalidTimeout' );
+		}
+		
+		// Convert minutes to seconds
+		args.timeout = args.timeout*60;
+				
+		// Timeouts over 30 days must be treated as epoch dates (seconds since 1970)
+		// If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
+		if( args.timeout > secondsIn30Days ) {
+			var secondsSinceEpoch = datediff( 's', createdatetime( '1970','01','01','00','00','00' ), dateConvert( "local2Utc", now() ) );
+			args.timeout += secondsSinceEpoch; 
+		}
+
+		return args;
+	}	
 
 }

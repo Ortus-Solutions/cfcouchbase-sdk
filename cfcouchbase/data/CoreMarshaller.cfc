@@ -185,7 +185,7 @@ component accessors="true"{
 			return serializeJSON( nativeObject );
 		} 
 		// else just store properties as data
-		else if( arrayLen( mdCache.properties ) ){
+		else if( structKeyExists( mdCache, "properties" ) and arrayLen( mdCache.properties ) ){
 			var nativeData = {};
 			// build out a memento from the properties.
 			for( var thisProp in mdCache.properties ){

@@ -13,11 +13,8 @@ Description :
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 
 	<!--- init --->
-    <cffunction name="init" output="false" access="public" returntype="BeanPopulator" hint="Constructor">
+    <cffunction name="init" output="false" access="public" returntype="ObjectPopulator" hint="Constructor">
     	<cfscript>
-    		JSONUtil  = createObject("component","coldbox.system.core.conversion.JSON").init();
-			mixerUtil = createObject("component","coldbox.system.core.dynamic.MixerUtil").init();
-
 			return this;
 		</cfscript>
     </cffunction>
@@ -40,7 +37,7 @@ Description :
 		<!--- ************************************************************* --->
 		<cfscript>
 			// Inflate JSON
-			arguments.memento = JSONUtil.decode(arguments.JSONString);
+			arguments.memento = deserializeJSON(arguments.JSONString);
 
 			// populate and return
 			return populateFromStruct(argumentCollection=arguments);
@@ -237,7 +234,8 @@ Description :
 				// Determine Method of population
 				if( structKeyExists(arguments,"scope") and len(trim(arguments.scope)) neq 0 ){
 					scopeInjection = true;
-					mixerUtil.start( beanInstance );
+					// Add mixin to target
+					beanInstance.populatePropertyMixin = variables.populatePropertyMixin;
 				}
 
 				// If composing relationships, get target metadata
@@ -247,6 +245,9 @@ Description :
 
 				// Populate Bean
 				for(key in arguments.memento){
+					// shortcut to property value
+					propertyValue = arguments.memento[ key ];
+					
 					// init population flag
 					pop = true;
 					// init nullValue flag
@@ -260,14 +261,12 @@ Description :
 						pop = false;
 					}
 					// Ignore Empty?
-					if( arguments.ignoreEmpty and isSimpleValue(arguments.memento[key]) and not len( trim( arguments.memento[key] ) ) ){
+					if( arguments.ignoreEmpty and isSimpleValue(propertyValue) and not len( trim( propertyValue ) ) ){
 						pop = false;
 					}
 
 					// Pop?
 					if( pop ){
-						// shortcut to property value
-						propertyValue = arguments.memento[ key ];
 						// Scope Injection?
 						if( scopeInjection ){
 							beanInstance.populatePropertyMixin(propertyName=key,propertyValue=propertyValue,scope=arguments.scope);
@@ -322,7 +321,7 @@ Description :
 										targetEntityName = getComponentMetaData( relationalMeta[ key ].cfc ).entityName;
 									}
 									catch( any e ) {
-										getUtil().throwIt(type="BeanPopulator.PopulateBeanException",
+										throw(type="BeanPopulator.PopulateBeanException",
 							  			  message="Error populating bean #getMetaData(beanInstance).name# relationship of #key#. The component #relationalMeta[ key ].cfc# could not be found.",
 							  			  detail="#e.Detail#<br>#e.message#<br>#e.tagContext.toString()#");
 									}
@@ -359,7 +358,7 @@ Description :
 															keyValue = evaluate("item.get#structKeyColumn#()");
 														}
 														catch( Any e ) {
-															getUtil().throwIt(type="BeanPopulator.PopulateBeanException",
+															throw(type="BeanPopulator.PopulateBeanException",
                     							  			  message="Error populating bean #getMetaData(beanInstance).name# relationship of #key#. The structKeyColumn #structKeyColumn# could not be resolved.",
                     							  			  detail="#e.Detail#<br>#e.message#<br>#e.tagContext.toString()#");
 														}
@@ -408,7 +407,7 @@ Description :
 				else{
 		        	arguments.keyTypeAsString = propertyValue.getClass().toString();
 				}
-				getUtil().throwIt(type="BeanPopulator.PopulateBeanException",
+				throw(type="BeanPopulator.PopulateBeanException",
 					  			  message="Error populating bean #getMetaData(beanInstance).name# with argument #key# of type #arguments.keyTypeAsString#.",
 					  			  detail="#e.Detail#<br>#e.message#<br>#e.tagContext.toString()#");
 			}
@@ -436,9 +435,18 @@ Description :
 		</cfscript>
 	</cffunction>
 
-	<!--- Get ColdBox Util --->
-	<cffunction name="getUtil" access="private" output="false" returntype="coldbox.system.core.util.Util" hint="Create and return a util object">
-		<cfreturn createObject("component","coldbox.system.core.util.Util")/>
+
+	<!--- populatePropertyMixin --->
+	<cffunction name="populatePropertyMixin" hint="Populates a property if it exists" access="private" returntype="void" output="false">
+		<cfargument name="propertyName" 	required="true" hint="The name of the property to inject."/>
+		<cfargument name="propertyValue" 	required="true" hint="The value of the property to inject"/>
+		<cfargument name="scope" 			required="false" default="variables" hint="The scope to which inject the property to."/>
+		<cfscript>
+			// Validate Property
+			if( structKeyExists(evaluate(arguments.scope),arguments.propertyName) ){
+				"#arguments.scope#.#arguments.propertyName#" = arguments.propertyValue;
+			}
+		</cfscript>
 	</cffunction>
 
 </cfcomponent>

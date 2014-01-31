@@ -1,0 +1,5 @@
+component{
+
+	// No configure() method!
+
+}

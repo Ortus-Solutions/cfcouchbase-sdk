@@ -72,6 +72,54 @@ component{
 					expect(	future.getStatus().isSuccess() ).toBeTrue();
 				});	
 
+				it( "with invalid timeout", function(){
+						expect( function(){
+							couchbase.set( ID="unittest", value="hello", timeout=-5 );
+		          		}).toThrow( type="InvalidTimeout" );
+				});		
+
+				it( "with valid timeout", function(){
+					var future = couchbase.set( ID="unittest", value="hello", timeout=5 );
+					future.get();
+					expect(	future.getStatus().isSuccess() ).toBeTrue();
+				});		
+
+				it( "with timeout less than 30 days", function(){
+					var future = couchbase.set( ID="ten_minutes", value="I should only last 10 minutes", timeout=10 ).get();
+					
+					var currentEpochDate = createObject("java","java.util.Date").init().getTime() / 1000;	
+					var tenMinutesInTheFutureEpoch = round(currentEpochDate + (10 * 60)); 
+					
+					// See if the expiration date (stored as seconds since epoch) matches what I think it should be.
+					//	Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call.
+					expect( round(tenMinutesInTheFutureEpoch/100) ).toBe( round(couchbase.getDocStats("ten_minutes").get().key_exptime/100) );
+										
+				});			
+
+				it( "with timeout greater than 30 days", function(){
+					var future = couchbase.set( ID="fortyFive_days", value="I should last 45 days", timeout=45*24*60 ).get();
+					
+					var currentEpochDate = createObject("java","java.util.Date").init().getTime() / 1000;	
+					var fortyFiveDaysInTheFutureEpoch = round(currentEpochDate + (45 * 60 * 60 * 24)); 
+					
+					// See if the expiration date (stored as seconds since epoch) matches what I think it should be.
+					//	Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call.
+					expect( round(fortyFiveDaysInTheFutureEpoch/100) ).toBe( round(couchbase.getDocStats("fortyFive_days").get().key_exptime/100) );
+										
+				});	
+
+/*
+	
+	<cfset currentEpochDate = createObject("java","java.util.Date").init().getTime() / 1000>	
+	<cfset fortyFiveDaysInTheFutureEpoch = round(currentEpochDate + (45 * 60 * 60 * 24))> 
+	<cfset cachePut("fortyFive_days","I should last 45 days",CreateTimeSpan(45,0,0,0))>
+	
+	<!--- See if the expiration date (stored as seconds since epoch) matches what I think it should be.
+		Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call. --->
+	<cf_valueEquals left="#round(fortyFiveDaysInTheFutureEpoch/100)#" right="#round(cacheGetMetadata("fortyFive_days").custom.key_exptime/100)#">
+
+*/
+
 				it( "with json data", function(){
 					var data = serializeJSON( { "name"="Lui", "awesome"=true, "when"=now(), "children" = [1,2] } );
 					var future = couchbase.set( ID="unittest-json", value=data );
@@ -161,7 +209,63 @@ component{
 					expect(	setResult.status ).toBe( false );
 					expect(	setResult.detail ).toBe( "NOT_FOUND" );
 				});	
-								
+
+
+				describe( "Durability Options", function() {
+				
+					it( "with default persisTo and replicateTo", function(){
+						var future = couchbase.set( ID="unittest", value="hello" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+					});	
+				
+					it( "with invalid persisTo", function(){
+						expect( function(){
+							couchbase.set( ID="unittest", value="hello", persistTo="invalid" );
+		          		}).toThrow( type="InvalidPersistTo" );
+					});
+				
+					it( "with invalid replicateTo", function(){
+						expect( function(){
+							couchbase.set( ID="unittest", value="hello", replicateTo="invalid" );
+		          		}).toThrow( type="InvalidReplicateTo" );
+					});
+				
+					it( "with valid persisTo", function(){
+						// Extra whitespace
+						var future = couchbase.set( ID="unittest", value="hello", persistTo=" ZERO " );
+						future.get();
+						
+						var future = couchbase.set( ID="unittest", value="hello", persistTo="ZERO" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+						
+						var future = couchbase.set( ID="unittest", value="hello", persistTo="MASTER" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();						
+						
+						var future = couchbase.set( ID="unittest", value="hello", persistTo="ONE" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+
+					});
+				
+					it( "with valid replicateTo", function(){
+						// Extra whitespace
+						var future = couchbase.set( ID="unittest", value="hello", replicateTo=" ZERO " );
+						future.get();
+						
+						var future = couchbase.set( ID="unittest", value="hello", replicateTo="ZERO" );
+						future.get();
+						expect(	future.getStatus().isSuccess() ).toBeTrue();
+						
+					});
+				
+				});
+
+
+
+
 			});
 
 

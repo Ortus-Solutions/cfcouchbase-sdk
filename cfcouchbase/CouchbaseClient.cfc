@@ -124,8 +124,8 @@ component serializable="false" accessors="true"{
 	* @ID.hint The unique id of the document to store
 	* @value.hint The value to store
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
 	*/ 
@@ -133,8 +133,8 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required any value, 
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		// serialization determinations go here
@@ -142,10 +142,11 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout 	= ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 		// with replicate and persist
+		
 		return variables.couchbaseClient.set( arguments.ID, 
-													javaCast( "int", arguments.timeout*60 ), 
+													javaCast( "int", arguments.timeout ), 
 													serializeData( arguments.value ), 
 													arguments.persistTo, 
 													arguments.replicateTo );
@@ -167,8 +168,8 @@ component serializable="false" accessors="true"{
 	* @value.hint The value to store
 	* @CAS.hint CAS value retrieved via getWithCAS()
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED" indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or a regular set() commend to store the document. 
 	*/ 
@@ -177,15 +178,15 @@ component serializable="false" accessors="true"{
 		required any value, 
 		required string CAS,
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 
 
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 		
 		// with replicate and persist
 		var result = {};
@@ -194,7 +195,7 @@ component serializable="false" accessors="true"{
 		result.detail = "SUCCESS";
 		var CASResponse = variables.couchbaseClient.cas( arguments.ID,
 													javaCast( "long", arguments.CAS ),			 											
-													javaCast( "int", arguments.timeout*60 ), 
+													javaCast( "int", arguments.timeout ), 
 													serializeData( arguments.value ), 
 													arguments.persistTo, 
 													arguments.replicateTo );
@@ -224,8 +225,8 @@ component serializable="false" accessors="true"{
 	* @ID.hint
 	* @value.hint
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
 	*/ 
@@ -233,8 +234,8 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required any value, 
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
@@ -243,11 +244,11 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 		
 		// with replicate and persist
 		return variables.couchbaseClient.add( arguments.ID, 
-													javaCast( "int", arguments.timeout*60 ), 
+													javaCast( "int", arguments.timeout ), 
 													arguments.value, 
 													arguments.persistTo, 
 													arguments.replicateTo );
@@ -269,16 +270,16 @@ component serializable="false" accessors="true"{
 	* 
 	* @data.hint A struct (key/value pair) of documents to set into Couchbase.
 	* @timeout.hint The expiration of the documents in minutes.
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
 	*/ 
 	any function setMulti( 
 		required struct data,
 		numeric timeout, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		
 		var results = {};
@@ -286,7 +287,7 @@ component serializable="false" accessors="true"{
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
 
 		// Loop over incoming key/value pairs
 		for( var local.ID in arguments.data ) {
@@ -322,8 +323,8 @@ component serializable="false" accessors="true"{
 	* @ID The ID of the document to replace.
 	* @value.hint The value of the document to replace
 	* @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
 	*/ 
@@ -331,18 +332,19 @@ component serializable="false" accessors="true"{
 		required string ID, 
 		required any value, 
 		numeric timeout,
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		// default persist and replicate
 		defaultPersistReplicate( arguments );
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
+		
 		// store it
 		return variables.couchbaseClient.replace( arguments.ID, 
-														javaCast( "int", arguments.timeout*60 ), 
+														javaCast( "int", arguments.timeout ), 
 														arguments.value,
 														arguments.persistTo,
 														arguments.replicateTo );
@@ -509,10 +511,12 @@ component serializable="false" accessors="true"{
 					any inflateTo=""
 				 ){		 	 
 		arguments.ID = variables.util.normalizeID( arguments.ID );
+		// Default timeout	
+		defaultTimeout( arguments );
 		
 		var resultsWithCAS = variables.couchbaseClient.getAndTouch(
 														arguments.ID,
-														javaCast( "int", arguments.timeout*60 )
+														javaCast( "int", arguments.timeout )
 													   );
 
 		if( !isNull( resultsWithCAS ) ){
@@ -545,7 +549,10 @@ component serializable="false" accessors="true"{
 	){		 	 
 		
 		arguments.ID = variables.util.normalizeID( arguments.ID );
-		return variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+		// Default timeout
+		defaultTimeout( arguments );
+		
+		return variables.couchbaseClient.asyncGetAndTouch( arguments.ID, javaCast( "int", arguments.timeout ) );
 	}
 
 	/**
@@ -663,12 +670,13 @@ component serializable="false" accessors="true"{
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
+		
 		// store it
 		return variables.couchbaseClient.decr( arguments.ID, 
 													 javaCast( "long", arguments.value ), 
 													 javaCast( "long", arguments.defaultValue ),
-													 javaCast( "int", arguments.timeout*60 ) );
+													 javaCast( "int", arguments.timeout ) );
 	}
 
 	/**
@@ -718,12 +726,13 @@ component serializable="false" accessors="true"{
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		// default timeouts
-		arguments.timeout = ( !structKeyExists( arguments, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : arguments.timeout );
+		defaultTimeout( arguments );
+		
 		// store it
 		return variables.couchbaseClient.incr( arguments.ID, 
 													 javaCast( "long", arguments.value ), 
 													 javaCast( "long", arguments.defaultValue ),
-													 javaCast( "int", arguments.timeout*60 ) );
+													 javaCast( "int", arguments.timeout ) );
 
 	}
 
@@ -767,9 +776,11 @@ component serializable="false" accessors="true"{
 		required numeric timeout
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
+		// Default timeout
+		defaultTimeout( arguments );
 
 		// store it
-		return variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout*60 ) );
+		return variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout ) );
 	}
 
 	/**
@@ -780,15 +791,15 @@ component serializable="false" accessors="true"{
 	* </pre>
 	* 
 	* @ID The ID of the document to delete, or an array of ID's to delete
-	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Use the this.peristTo enum on this object for values [ ZERO, MASTER, ONE, TWO, THREE ]
-	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Use the this.replicateTo enum on this object for values [ ZERO, ONE, TWO, THREE ]
+	* @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+	* @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
 	* 
 	* @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or a struct of futures depending on whether a single ID or an array of IDs are passed, 
 	*/ 
 	any function delete( 
 		required any ID, 
-		any persistTo, 
-		any replicateTo
+		string persistTo, 
+		string replicateTo
 	){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 
@@ -1014,8 +1025,8 @@ component serializable="false" accessors="true"{
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
 	* @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
-	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has an id and the document: function( row ). A true will add the row to the final results.
-	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has an id and the document: function( row ). Since the struct is by reference, you do not need to return anything.
+	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). A true will add the row to the final results.
+	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). Since the struct is by reference, you do not need to return anything.
 	* @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
 	* 
 	* @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.	<br>Each struct contains the following items: id, document, key, value	<br>If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)	<br>If returnType is iterator, a Java iterator object will be returned
@@ -1634,18 +1645,73 @@ component serializable="false" accessors="true"{
 
 	/**
 	* Default persist and replicate from arguments.  Will create "persistTo" with a default value of ZERO and "replicateTo" with a 
-	* default value of ZERO if they don't exist.
+	* default value of ZERO if they don't exist.  Also translates from string inputs to the Java enum value
 	*
 	* @args.hint The argument collection to process
 	*
 	* @Return The argument collection with the defaulted values. 
 	*/
-	private CouchbaseClient function defaultPersistReplicate( required args ) {
+	private any function defaultPersistReplicate( required args ) {
+		var validPersistTo = 'ZERO,MASTER,ONE,TWO,THREE,FOUR';
+		var validReplicateTo = 'ZERO,ONE,TWO,THREE';
 
-		if( !structKeyExists( args, "persistTo" ) ){ args.persistTo = this.persistTo.ZERO; }
-		if( !structKeyExists( args, "replicateTo" ) ){ args.replicateTo = this.replicateTo.ZERO; }
+		// persistTo
+		if( structKeyExists( args, "persistTo" ) ) {
+			args.persistTo = trim( args.persistTo );
+			if( !listFindNoCase( validPersistTo, args.persistTo ) ) {
+				throw( message='Invalid persistTo value of [#args.persistTo#]', detail='Valid values are [#validPersistTo#]', type='InvalidPersistTo' );
+			}
+			args.persistTo = this.persistTo[args.persistTo];
+		} else {
+			// Default it
+			args.persistTo = this.persistTo.ZERO;
+		}
 
-		return this;
+		// replicateTo
+		if( structKeyExists( args, "replicateTo" ) ) {
+			args.replicateTo = trim( args.replicateTo );
+			if( !listFindNoCase( validReplicateTo, args.replicateTo ) ) {
+				throw( message='Invalid replicateTo value of [#args.replicateTo#]', detail='Valid values are [#validReplicateTo#]', type='InvalidReplicateTo' );
+			}
+			args.replicateTo = this.replicateTo[args.replicateTo];
+		} else {
+			// Default it
+			args.replicateTo = this.replicateTo.ZERO;
+		}
+
+		return args;
 	}
+	
+
+	/**
+	* Default timeout in arguments.  Will create "timeout" with a default value specified in settings
+	* Also accounts for timeouts over 30 days which must be represented as epoch date.
+	*
+	* @args.hint The argument collection to process
+	*
+	* @Return The argument collection with the defaulted values. 
+	*/
+	private any function defaultTimeout( required args ) {
+		var secondsIn30Days = 30 * 24 * 60 * 60;
+		
+		args.timeout = ( !structKeyExists( args, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout );
+		
+		// Validate timeout
+		if( !isNumeric(args.timeout) || args.timeout < 0 ) {
+			throw( message='Invalid timeout value of [#args.timeout#]', detail='Valid values are positive integers', type='InvalidTimeout' );
+		}
+		
+		// Convert minutes to seconds
+		args.timeout = args.timeout*60;
+				
+		// Timeouts over 30 days must be treated as epoch dates (seconds since 1970)
+		// If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
+		if( args.timeout > secondsIn30Days ) {
+			var secondsSinceEpoch = datediff( 's', createdatetime( '1970','01','01','00','00','00' ), dateConvert( "local2Utc", now() ) );
+			args.timeout += secondsSinceEpoch; 
+		}
+
+		return args;
+	}	
 
 }

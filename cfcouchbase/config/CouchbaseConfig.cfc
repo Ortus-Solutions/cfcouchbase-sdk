@@ -87,7 +87,7 @@ component accessors="true"{
 	*/
 	property name="defaultTimeout"				default="0"		type="numeric";
 	/**
-	* The data marshaller to use for serializations and deserializations, plese put the class path or the instance of the marshaller to use.
+	* The data marshaller to use for serializations and deserializations, please put the class path or the instance of the marshaller to use.
 	* Please remember that it must implement our interface: cfcouchbase.data.IDataMarshaller
 	*/
 	property name="dataMarshaller"				default="";

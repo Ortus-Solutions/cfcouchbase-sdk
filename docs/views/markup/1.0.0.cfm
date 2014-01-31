@@ -11,7 +11,7 @@ Here is a quick sample showing how easy it is to work with the Couchbase SDK.
 client  = new cfcouchbase.CouchbaseClient();
 
 // Create a document in the cluster
-client.set( 'brad', { name: "Brad", age: 33, hair: "red" } );
+client.set( 'brad', { name: 'Brad', age: 33, hair: 'red' } );
 
 // Retrieve that doc
 person = client.get( 'brad' );
@@ -84,7 +84,7 @@ Download the SDK from our [http://www.coldbox.org/download download page] and un
 The CFCouchase SDK is contained in a single folder.  The easiest way to install it is to copy "cfcouchbase" in the web root.  For a more secure installation, place it outside the web root and create a mapping called "cfcouchbase".   
 
 <source lang="javascript">
-this.mappings[ "/cfcouchbase" ] = "C:\path\to\cfcouchbase";
+this.mappings[ '/cfcouchbase' ] = 'C:\path\to\cfcouchbase';
 </source>
 
 Now that the code is in place, all you need to do is create an instance of <span class="label">cfcouchbase.CouchbaseClient</span> for each bucket you want to connect to.  
@@ -142,7 +142,9 @@ Here are some of the most common setting you will need to use:
 |-
 || '''bucketName''' || string || default || The bucketname to connect to on the cluster.  This is case-sensitive
 |-
-|| '''password''' || string ||  --- || The optional password of the bucket.  
+|| '''password''' || string ||  --- || The optional password of the bucket.
+|-
+|| '''dataMarshaller''' || any ||  --- || The data marshaller to use for serializations and deserializations, please put the class path or the instance of the marshaller to use.  Remember that it must implement our interface: cfcouchbase.data.IDataMarshaller  
 |}
 
 
@@ -154,8 +156,8 @@ The simplest way to get started using the SDK is to simply pass a struct of conf
 couchbase = new cfcouchbase.CouchbaseClient(
 	{
 		servers = ['http://cache1:8091','http://cache2:8091'],
-		bucketName = "myBucket",
-		bucketName = "myPass"
+		bucketName = 'myBucket',
+		bucketName = 'myPass'
 	} 
 );
 </source>
@@ -172,8 +174,8 @@ component {
 	
 	function configure() {
 		servers = ['http://cache1:8091','http://cache2:8091'];
-		bucketName = "myBucket";
-		bucketName = "myPass";
+		bucketName = 'myBucket';
+		bucketName = 'myPass';
 	}
 
 }
@@ -204,7 +206,7 @@ The easiest way to store a document in your Couchbase cluster is by calling the 
 <source lang="javascript">
 client.set(
 	ID = 'brad',
-	value = { name: "Brad", age: 33, hair: "red" } 
+	value = { name: 'Brad', age: 33, hair: 'red' } 
 );
 </source>
 
@@ -235,7 +237,7 @@ The call is still async but returns a Java future object.  Calling the '''get()'
 // This document will be persisted to disk on at least two nodes
 future = client.set(
 	ID = 'brad',
-	value = { name: "Brad", age: 33, hair: "red" },
+	value = { name: 'Brad', age: 33, hair: 'red' },
 	persistTo = client.persistTo.TWO, 
 	replicateTo = client.persistTo.TWO
 );
@@ -279,7 +281,7 @@ There are many other methods for getting data.  Please check the API docs (in th
 Couchbase can literally store anything in a bucket as long as it's represented as a string and no larger than 20MB.  
 The CFCouchbase SDK will automatically serialize complex data for you when storing it and deserialize it when you ask for it again.  
 
-You can skip everything below and get the raw data back from Couchbase as a string if you pass ''deserialize=false'' into your '''get()''' method.
+You can skip everything below and get the raw data back from Couchbase as a string if you pass ''deserialize=false'' into your '''get()''' or '''query()''' method.
 
 Here are the rules for the built-in data marshaller:
 
@@ -305,7 +307,7 @@ For '''CFCs''' the following rules will be used:
 ** '''classpath''' -  - The name of the CFC
 
 In some instances when retrieving CFCs from Couchbase, you will want to have more control over how the object gets created, or perhaps you are using a serialization method that doesn't even track the original component path.
-In this case, you can use the inflateTo parameter.  
+In this case, you can use the '''inflateTo''' parameter.  
 
 Pass in a component path and the SDK will instantiate that component and call setters to repopulate it with the data.
    
@@ -336,6 +338,53 @@ person = client.get(
 );
 </source>
 
+
+===== Custom Transformers =====
+
+If you don't like how we set up data serialization or just have super-custom requirements, you can provide your own data marshaller to have full control.
+Create a CFC that implements the <span class="label">cfcouchbase.data.IDataMarshaller</span> interface.  It only needs to have three methods:
+
+* '''serializeData()''' - Returns the data in a string form so it can be persisted in Couchbase
+* '''deserializeData()''' - Received the raw string data from Couchbase and inflates it as neccessary to the original state
+* '''setCouchbaseClient()''' - Gives the marshaller a chance to store a local reference to the client in case it needs to talk back.
+
+<span class="label label-info">myDataMarshaller.cfc</span>
+<source lang="javascript">
+component implements='cfcouchbase.data.IDataMarshaller' {
+
+	any function setCouchbaseClient( required couchcbaseClient ){
+		variables.couchbaseClient = arguments.couchcbaseClient;
+		return this;
+	}
+
+	string function serializeData( required any data ){
+		if( !isSimpleValue( data ) ) {
+			return serializeJSON( data );
+		}
+		return data;
+	}
+
+	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
+		if( isJSON( data ) && deserialize ) {
+			return deserializeJSON( data );
+		}
+		return data;
+	}
+	
+}
+</source>
+
+After you have created your custom marshaller, simply pass in an instance of it or the full component path as a config setting:
+
+<source lang="javascript">
+couchbase = new cfcouchbase.CouchbaseClient(
+	{
+		bucketName = 'myBucket',
+		dataMarshaller = 'path.to.myDataMarshaller'
+	} 
+);
+</source>
+
 === Executing Queries ===
 
 One of the most powerful parts of Couchbase Server is the ability to define views (or indexes) on your data and execute queries against your buckets of data.
@@ -350,11 +399,37 @@ for( var result in results ) {
 }
 </source>
 
+Here are the arguments you can pass into '''query()'''.
+
+{| cellpadding=”5”, class="table table-hover table-striped"
+! '''Argument''' !! '''Type''' !! '''Default''' !! '''Description''' 
+|-
+|| '''designDocumentName''' || string || --- || The name of the design document
+|-
+|| '''viewName''' || string || --- || The name of the view to get
+|-
+|| '''options''' || any || {} || The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
+|-
+|| '''deserialize''' || boolean || true || If true, it will deserialize the documents if they are valid JSON, else they are ignored.
+|-
+|| '''inflateTo''' || any || --- || A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
+|-
+|| '''filter''' || function || --- || A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). A true will add the row to the final results.
+|-
+|| '''transform''' || function || --- || A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). Since the struct is by reference, you do not need to return anything.
+|-
+|| '''returnType''' || any || "Array" || The type of return for us to return to you. Available options:
+* '''array''' (default) - Returns results as a CFML array of structs. after applying deserialization, fitler and tranform functions.
+* '''native''' - Returns the underlying Java response object containing the results.
+* '''iterator''' - Returns a java Iterator object containing the results.
+|}
+
+
 ==== Results ====
 
-This code will return an array of structs for each key in the view.  Each struct will have the following peices of data:
+These keys are included in the struct that represents a row.  This is the same struct that is returned in the result array and passed into the transform and filter closures.  
 * '''id''' - The unique document id.  Only avaialble on non-reduced queries
-* '''document''' - The actual JSON document that was stored.  Only available on non-reduced views
+* '''document''' - The JSON document reinflated back to its original form.  Only available on non-reduced views
 * '''key''' - For non-reduced queries, the key emitted from the map  function.  For reduced views, null.
 * '''value''' - For non-reduced queries, the value emitted from the map function. For reduced views, the output of the reduce function.
 
@@ -362,7 +437,7 @@ This code will return an array of structs for each key in the view.  Each struct
 
 ==== Query Options ====
 
-You can also pass in a struct of options to control how the query is executed.  Here are some of the most common options.  Please check the API docs for the full list.
+Here are some of the most common keys you can pass in the struct of '''options''' to control how the query is executed.  Please check the API docs for the full list.
 
 {| cellpadding=”5”, class="table table-hover table-striped"
 ! '''Option''' !! '''Description''' 
@@ -407,11 +482,7 @@ results = client.query( designDocumentName='beer', viewName='brewery_beers', opt
 </source>
 
 
-==== Controlling Query Output ====
-
-Here are some additional parameters to the '''query()''' method to help you control the output.
-
-===== Fiter =====
+==== Fiter ====
 
 Specify a closure to the '''filter''' argument that returns true for records that should be included in the final output.
 
@@ -429,7 +500,7 @@ results = client.query(
 );
 </source>
 
-===== Transform =====
+==== Transform ====
 
 You can provide custom transformations for each result by passing a closure for '''transform'''.
 
@@ -444,7 +515,7 @@ results = couchbase.query(
 );
 </source>
 
-===== Return Type =====
+==== Return Type ====
 
 You can ask the '''query()''' method to return an array (default), a Java ViewReponse object, or a Java iterator.  
 By default we use the cf type which uses transformations, automatic deserializations and inflations.

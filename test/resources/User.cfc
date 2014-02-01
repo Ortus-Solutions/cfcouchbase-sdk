@@ -18,5 +18,12 @@ component accessors="true"{
 		});
 
 	}
+	
+	function $deserialize( data ){
+
+		setName( data.name );
+		setAge( data.age );
+		
+	}
 
 }

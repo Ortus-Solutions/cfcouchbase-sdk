@@ -173,13 +173,13 @@ component accessors="true"{
 	private function deserializeObjects( required any data, required any inflateTo, deserializeOptions={} ){
 		var oTarget = '';
 
-		if( isStruct( arguments.data ) ) {
-			
-			oTarget = generateInflatable( arguments.inflateTo );
+		if( isStruct( arguments.data ) ) {			
+			oTarget = generateInflatable( arguments.inflateTo, arguments.data );
 			
 			// Check if the object has a method called "$deserialize", if it does, call it and return
 			if( structKeyExists( oTarget, "$deserialize" ) ){
-				return oTarget.$deserialize( arguments.data );
+				oTarget.$deserialize( arguments.data );
+				return oTarget;
 			}
 			
 			arguments.deserializeOptions.target = oTarget;
@@ -195,7 +195,7 @@ component accessors="true"{
 			
 			while( ++i <= arguments.data.recordCount ) {
 				
-				arguments.deserializeOptions.target = generateInflatable( arguments.inflateTo );
+				arguments.deserializeOptions.target = generateInflatable( arguments.inflateTo, arguments.data );
 				arguments.deserializeOptions.qry = arguments.data;
 				arguments.deserializeOptions.rowNumber = i;
 				
@@ -207,11 +207,12 @@ component accessors="true"{
 		// Non-JSON string
 		} else {
 			
-			oTarget = generateInflatable( arguments.inflateTo );
+			oTarget = generateInflatable( arguments.inflateTo, arguments.data );
 			
 			// Check if the object has a method called "$deserialize", if it does, call it and return
 			if( structKeyExists( oTarget, "$deserialize" ) ){
-				return oTarget.$deserialize( arguments.data );
+				oTarget.$deserialize( arguments.data );
+				return oTarget;
 			}
 
 			// They gave us an inflateTo, but we don't know how to use this data type
@@ -235,7 +236,7 @@ component accessors="true"{
 	/**
 	* Generates inflatable CFC from a class path or closure provider 
 	*/
-	private function generateInflatable( required any inflateTo ){
+	private function generateInflatable( required any inflateTo, required any data ){
 		
 		if( isSimpleValue( arguments.inflateTo ) ) {
 			// Treat as a class path
@@ -243,8 +244,9 @@ component accessors="true"{
 		} else if( isObject( arguments.inflateTo ) ) {
 			return arguments.inflateTo;
 		} else {
-			// Call as a provider
-			return arguments.inflateTo();
+			// Call as a provider.  The provider gets to peek at the data
+			// in case that determines what kind of object to build
+			return arguments.inflateTo( arguments.data );
 		}
 		
 	}

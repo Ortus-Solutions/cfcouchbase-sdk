@@ -44,15 +44,9 @@ component accessors="true"{
 
 		return this;
 	}
-
-	/**
-	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
-	*/
-	any function setCouchbaseClient( required couchcbaseClient ){
-		variables.couchbaseClient = arguments.couchcbaseClient;
-		return this;
-	}
-
+	
+	
+	// ************************ Serialization ************************ 
 
 	/**
 	* This method serializes incoming data according to our rules and it returns a string representation usually JSON
@@ -81,30 +75,6 @@ component accessors="true"{
 		else{
 			return serializeJSON( arguments.data );
 		}
-	}
-
-	/**
-	* Get the md of an object
-	*/
-	struct function getObjectMD( required target ){
-
-		if( !variables.objectMDCache.containsKey( arguments.target ) ){
-			lock name="cfcouchbase.marshallercache" type="exclusive" timeout="10" throwOnTimeout="true"{
-				if( !variables.objectMDCache.containsKey( arguments.target ) ){
-					variables.objectMDCache.put( arguments.target, variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.target ) );	
-				}
-			}
-		}
-
-		return variables.objectMDCache.get( arguments.target );
-	}
-
-	/**
-	* Clear the metadata cache
-	*/
-	any function clearObjectCache(){
-		variables.objectMDCache.clear();
-		return this;
 	}
 
 	/**
@@ -149,6 +119,9 @@ component accessors="true"{
 			"classpath" = mdCache.name
 		} );
 	}
+
+
+	// ************************ Deserialization ************************ 
 
 	/**
 	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
@@ -248,6 +221,17 @@ component accessors="true"{
 		
 	}
 
+	// ************************ Utility ************************ 
+
+
+	/**
+	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
+	*/
+	any function setCouchbaseClient( required couchcbaseClient ){
+		variables.couchbaseClient = arguments.couchcbaseClient;
+		return this;
+	}
+	
 	/**
 	* Generates inflatable CFC from a class path or closure provider 
 	*/
@@ -263,6 +247,30 @@ component accessors="true"{
 			return arguments.inflateTo();
 		}
 		
+	}
+	
+	/**
+	* Get the md of an object
+	*/
+	struct function getObjectMD( required target ){
+
+		if( !variables.objectMDCache.containsKey( arguments.target ) ){
+			lock name="cfcouchbase.marshallercache" type="exclusive" timeout="10" throwOnTimeout="true"{
+				if( !variables.objectMDCache.containsKey( arguments.target ) ){
+					variables.objectMDCache.put( arguments.target, variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.target ) );	
+				}
+			}
+		}
+
+		return variables.objectMDCache.get( arguments.target );
+	}
+
+	/**
+	* Clear the metadata cache
+	*/
+	any function clearObjectCache(){
+		variables.objectMDCache.clear();
+		return this;
 	}
 
 }

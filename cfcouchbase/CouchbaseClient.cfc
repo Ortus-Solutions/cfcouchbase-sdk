@@ -360,18 +360,18 @@ component serializable="false" accessors="true"{
 	* 
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* 
 	* @return The object if found, null otherwise.
 	*/
-	any function get( required string ID, boolean deserialize=true, any inflateTo="" ){
+	any function get( required string ID, boolean deserialize=true, struct deserializeOptions={}, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		var results = variables.couchbaseClient.get( arguments.ID );
 
 		if( !isNull( results ) ){
-			// deserializations go here.
-			return deserializeData( results, arguments.inflateTo, arguments.deserialize );
+			return deserializeData( results, arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
 		}
 	}
 
@@ -402,11 +402,12 @@ component serializable="false" accessors="true"{
 	* 
 	* @ID.hint An array of document IDs to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* 
 	* @return A struct of values.  Any document IDs not found will not exist in the struct.
 	*/
-	any function getMulti( required array ID, boolean deserialize=true, any inflateTo="" ){
+	any function getMulti( required array ID, boolean deserialize=true, struct deserializeOptions={}, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		var result = {};
@@ -414,8 +415,7 @@ component serializable="false" accessors="true"{
 		var map = variables.couchbaseClient.getBulk( arguments.ID );
 		for( var key in map ) {
 			var value = map[ key ];
-			// deserializations go here.
-			result[ key ] = deserializeData( value, arguments.inflateTo, arguments.deserialize );	
+			result[ key ] = deserializeData( value, arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );	
 		}
 		return result;
 	}
@@ -449,11 +449,12 @@ component serializable="false" accessors="true"{
 	* 
 	* @ID.hint The ID of the document to retrieve.
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* 
 	* @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
 	*/
-	any function getWithCAS( required string ID, boolean deserialize=true, any inflateTo="" ){
+	any function getWithCAS( required string ID, boolean deserialize=true, struct deserializeOptions={}, any inflateTo="" ){
 		arguments.ID = variables.util.normalizeID( arguments.ID );
 		
 		var resultsWithCAS = variables.couchbaseClient.gets( arguments.ID );
@@ -462,7 +463,7 @@ component serializable="false" accessors="true"{
 			// build struct out.
 			var result = {
 				cas 	= resultsWithCAS.getCAS(),
-				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
+				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions )
 			};
 
 			return result;
@@ -500,6 +501,7 @@ component serializable="false" accessors="true"{
 	* @ID.hint The ID of the document to retrieve.
 	* @timeout.hint The expiration of the document in minutes
 	* @deserialize.hint Deserialize the JSON automatically for you and return the representation
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* 
 	* @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
@@ -508,6 +510,7 @@ component serializable="false" accessors="true"{
 					required string ID,
 					required numeric timeout,
 					boolean deserialize=true,
+					struct deserializeOptions={},
 					any inflateTo=""
 				 ){		 	 
 		arguments.ID = variables.util.normalizeID( arguments.ID );
@@ -523,7 +526,7 @@ component serializable="false" accessors="true"{
 			// build struct out.
 			var result = {
 				cas 	= resultsWithCAS.getCAS(),
-				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize )
+				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions )
 			};
 
 			return result;
@@ -1024,6 +1027,7 @@ component serializable="false" accessors="true"{
 	* @viewName.hint The name of the view to get
 	* @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
 	* @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	* @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
 	* @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). A true will add the row to the final results.
 	* @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). Since the struct is by reference, you do not need to return anything.
@@ -1036,6 +1040,7 @@ component serializable="false" accessors="true"{
 		required string viewName,
 		any options={},
 		boolean deserialize=true,
+		struct deserializeOptions={},
 		any inflateTo="",
 		any filter,
 		any transform,
@@ -1078,7 +1083,7 @@ component serializable="false" accessors="true"{
 			
 			// Did we get a document or none?
 			if( hasDocs ){
-				thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize );
+				thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
 			}
 			// check for reduced
 			if( isReduced ){
@@ -1465,12 +1470,18 @@ component serializable="false" accessors="true"{
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	*
 	* @Return The deserialized data
 	*/
-	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
-		// Data marshaler
-		return variables.dataMarshaller.deserializeData( arguments.data, arguments.inflateTo, arguments.deserialize );
+	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true, struct deserializeOptions={} ){
+		
+		if( arguments.deserialize ) {
+			return variables.dataMarshaller.deserializeData( arguments.data, arguments.inflateTo, arguments.deserializeOptions );	
+		} else {
+			return arguments.data;
+		}
+		
 	}
 
 	/**

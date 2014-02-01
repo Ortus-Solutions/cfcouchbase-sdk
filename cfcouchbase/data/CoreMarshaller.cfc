@@ -21,7 +21,6 @@
 * IN THE SOFTWARE.
 ********************************************************************************
 * @author Luis Majano, Brad Wood
-* This is our data marshaller interface for serializing and deserializing objects from Couchbase to CFML and vice-versa
 */
 component accessors="true"{
 
@@ -41,6 +40,7 @@ component accessors="true"{
 	function init(){
 
 		variables.objectMDCache = createObject( "java", "java.util.HashMap" ).init();
+		variables.ObjectPopulator = new cfcouchbase.data.ObjectPopulator();
 
 		return this;
 	}
@@ -53,58 +53,6 @@ component accessors="true"{
 		return this;
 	}
 
-	/**
-	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
-	* inflateTo parameter wich can be an object we should inflate our data to.
-	* @data.hint A JSON document to deserialize according to our rules
-	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
-	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
-	*/
-	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
-		var results = arguments.data;
-		
-		// no deserializations
-		if( !arguments.deserialize ){ return arguments.data; }
-
-		// do custom deserializations here.
-		if( arguments.deserialize && isJSON( arguments.data ) ){
-			// Deserialize JSON
-			results = deserializeJSON( arguments.data );
-			
-			// Do we have a cfcouchbase CFC memento to inflate?
-			if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfcdata" ){
-				// try to inflate it back:
-				var oTarget = new "#results.classpath#"();
-				for( var thisProp in results.data ){
-					evaluate( "oTarget.set#thisProp#( results.data[ thisProp ] )" );
-				}
-				// this is an object already, just return, no inflations necessary
-				return oTarget;
-			}
-			// Do we have a cfcouchbase native CFC?
-			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfc" ){
-				// this is an object already, just return, no inflations necessary
-				return objectLoad( toBinary( results.binary  ) );
-			}
-			// Do we have a cfcouchbase query?
-			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-query" ){
-				results = objectLoad( toBinary( results.binary  ) );
-			}
-
-			// Do inflations here
-			if( len( arguments.inflateTo ) ){
-				// inflate from struct
-				if( isStruct( results ) ){
-
-				} else if ( isQuery( results ) ){
-					
-				}
-
-			}
-		}
-		
-		return results;
-	}
 
 	/**
 	* This method serializes incoming data according to our rules and it returns a string representation usually JSON
@@ -200,6 +148,121 @@ component accessors="true"{
 			"binary" = toBase64( objectSave( arguments.data ) ),
 			"classpath" = mdCache.name
 		} );
+	}
+
+	/**
+	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
+	* inflateTo parameter wich can be an object we should inflate our data to.
+	* @data.hint A JSON document to deserialize according to our rules
+	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
+	*/
+	any function deserializeData( required string data, any inflateTo="", deserializeOptions={} ){
+		var results = arguments.data;
+
+		if( isJSON( arguments.data ) ){
+			// Deserialize JSON
+			results = deserializeJSON( arguments.data );
+			
+			// Do we have a cfcouchbase CFC memento to inflate?
+			if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfcdata" ){
+				
+				// Use class path from JSON unless it's being overridden
+				if( isSimpleValue( arguments.inflateTo ) && !len( trim( arguments.inflateTo ) ) ) {
+					arguments.inflateTo = results.classpath;
+				}
+				
+				return deserializeObjects( results.data, arguments.inflateTo, arguments.deserializeOptions );
+			}
+			// Do we have a cfcouchbase native CFC?
+			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfc" ){
+				// this is an object already, just return, no inflations necessary
+				return objectLoad( toBinary( results.binary  ) );
+			}
+			// Do we have a cfcouchbase query?
+			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-query" ){
+				results = objectLoad( toBinary( results.binary  ) );
+			}
+
+		}
+		
+		// If there's an inflateTo, then we're sending back a CFC!
+		if( !isSimpleValue( arguments.inflateTo ) || len( trim( arguments.inflateTo ) ) ){
+			return deserializeObjects( results, arguments.inflateTo, arguments.deserializeOptions );
+		}		
+		
+		// We reach this if it's not JSON, or we're not inflating to a CFC
+		return results;
+	}
+	/**
+	* Does object inflation
+	*/
+	private function deserializeObjects( required any data, required any inflateTo, deserializeOptions={} ){
+		var oTarget = '';
+
+		if( isStruct( arguments.data ) ) {
+			
+			oTarget = generateInflatable( arguments.inflateTo );
+			
+			// Check if the object has a method called "$deserialize", if it does, call it and return
+			if( structKeyExists( oTarget, "$deserialize" ) ){
+				return oTarget.$deserialize( arguments.data );
+			}
+			
+			arguments.deserializeOptions.target = oTarget;
+			arguments.deserializeOptions.memento = arguments.data;
+			
+			return ObjectPopulator.populateFromStruct( argumentCollection = arguments.deserializeOptions );
+			
+		} else if( isQuery( arguments.data ) ) {
+			
+			// Loop over query and inflate a CFC for each row
+			var results = [];
+			var i = 0;
+			
+			while( ++i <= arguments.data.recordCount ) {
+				
+				arguments.deserializeOptions.target = generateInflatable( arguments.inflateTo );
+				arguments.deserializeOptions.qry = arguments.data;
+				arguments.deserializeOptions.rowNumber = i;
+				
+				arrayAppend( results, ObjectPopulator.populateFromQuery( argumentCollection = arguments.deserializeOptions ) );
+			}
+			
+			return results;
+			
+		// Non-JSON string
+		} else {
+			
+			oTarget = generateInflatable( arguments.inflateTo );
+			
+			// Check if the object has a method called "$deserialize", if it does, call it and return
+			if( structKeyExists( oTarget, "$deserialize" ) ){
+				return oTarget.$deserialize( arguments.data );
+			}
+
+			// They gave us an inflateTo, but we don't know how to use this data type
+			return arguments.data;
+			
+		}
+		
+	}
+
+	/**
+	* Generates inflatable CFC from a class path or closure provider 
+	*/
+	private function generateInflatable( required any inflateTo ){
+		
+		if( isSimpleValue( arguments.inflateTo ) ) {
+			// Treat as a class path
+			return new "#arguments.inflateTo#"();
+		} else if( isObject( arguments.inflateTo ) ) {
+			return arguments.inflateTo;
+		} else {
+			// Call as a provider
+			return arguments.inflateTo();
+		}
+		
 	}
 
 }

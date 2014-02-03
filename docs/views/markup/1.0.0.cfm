@@ -278,7 +278,7 @@ There are many other methods for getting data.  Please check the API docs (in th
 Couchbase can literally store anything in a bucket as long as it's represented as a string and no larger than 20MB.  
 The CFCouchbase SDK will automatically serialize complex data for you when storing it and deserialize it when you ask for it again.  
 
-==== Avoid Serialization ====
+==== Simple Values ====
 Before we tell how CFCouchbase serializes your data, we'll tell you how to ''avoid'' this behavior if you don't want it.  
 Simple values (strings) won't be touched, so if you want to control how an array is serialized, just turn it to a '''string''' first and then pass it into ''set()''.  These strings can be JSON or anything of your choosing.
 

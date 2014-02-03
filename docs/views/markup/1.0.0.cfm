@@ -24,9 +24,6 @@ client.shutdown( 10 );
 </source>
 
 
-</source>
-
-
 <p>&nbsp;</p>
 
 <blockquote>
@@ -281,40 +278,77 @@ There are many other methods for getting data.  Please check the API docs (in th
 Couchbase can literally store anything in a bucket as long as it's represented as a string and no larger than 20MB.  
 The CFCouchbase SDK will automatically serialize complex data for you when storing it and deserialize it when you ask for it again.  
 
-You can skip everything below and get the raw data back from Couchbase as a string if you pass ''deserialize=false'' into your '''get()''' or '''query()''' method.
+==== Avoid Serialization ====
+Before we tell how CFCouchbase serializes your data, we'll tell you how to ''avoid'' this behavior if you don't want it.  
+Simple values (strings) won't be touched, so if you want to control how an array is serialized, just turn it to a '''string''' first and then pass it into ''set()''.  These strings can be JSON or anything of your choosing.
 
-Here are the rules for the built-in data marshaller:
+And if you want the raw data back from Couchbase as a string (regardless of how it was stored),  pass '''deserialize=false''' into your ''get()'' or ''query()'' methods and the CFCouchbase won't touch it!
 
-* '''JSON Strings''' and other '''Simple Values''' - Will be stored as-is
-* '''Structs''' and '''Arrays''' - Will be converted via ''serializeJSON()''
-* '''Queries''' - Will be converted to binary with ''objectSave()'' and wrapped in a struct with the following metadata:
-** '''type''' - ''cfcouchbase-query''
-** '''recordcount''' - The query record count
-** '''columnlist''' - The columns in the query
+<source lang="javascript">
+// Set my own JSON string
+client.set( 'IDidItMyWay', '{ "title": "My Way", "artist": "Frank Sinatra", "year": "1969" }' );
 
-<p>&nbsp;</p>
-For '''CFCs''' the following rules will be used:
+// And get it back out as a string
+song = client.get( 'IDidItMyWay', deserilize=true );
+</source>
 
-* If the CFC has a public method '''$serialize''', it will be called and its results saved.  The method must return a string.
-* If the CFC has at least one property defined and an annotation called '''autoInflate''', it will be stored as a struct with the following metadata:
-** '''type''' - ''cfcouchbase-cfcdata''
-** '''data''' -  A struct of property name/values
-** '''classpath''' - The name of the CFC
-* If the CFC has at least one property defined but no '''autoInflate''' annotation, a struct of property name/values will be stored but without the metdata above.
-* All other CFC's will converted to binary with ''objectSave()'' and wrapped in a struct with the following metadata:
-** '''type''' - ''cfcouchbase-cfc''
-** '''binary''' - A binary representation of the CFC
-** '''classpath''' -  - The name of the CFC
 
-In some instances when retrieving CFCs from Couchbase, you will want to have more control over how the object gets created, or perhaps you are using a serialization method that doesn't even track the original component path.
-In this case, you can use the '''inflateTo''' parameter.  
+==== Complex Data ====
 
-Pass in a component path and the SDK will instantiate that component and call setters to repopulate it with the data.
+Complex data will be automatically serialized for you with no extra work on your part.  Just pass them into ''set()'' and you'll get the same data structore back from ''get()''
+
+* '''Structs''' and '''Arrays''' Will be converted via ''serializeJSON()'' and stored as JSON so you can query them with views.
+* '''Queries''' - Will be converted to binary with ''objectSave()'' and wrapped in a struct of metadata containing the ''recordcount'' and ''columnlist''.
+
+<source lang="javascript">
+client.set( 'weekDays', ['Sunday','Monday','Tuesday','Wednesay','Thursday','Friday','Saturday'] );
+days = client.get( 'weekDays' );
+writeOutput( arrayLen( days ) );
+</source>
+
+==== Components ====
+
+There are a lot of different ways to handle '''CFC'''s and we allow for several different methods of handling them that come with varying degrees of control and convenience.
+
+===== Auto Inflation =====
+
+The easiest way to store the data in a CFC that has properties defined is to add an annotation called '''autoInflate'''.  When storing the component, the data will be stored automatically as a JSON struct along with some metadata about the component.
+When retreiving that document from Couchbase, a new component will be created an inflated with the data.  This is the easiest approach as it is completely seamless.
+
+<span class="label label-info">song.cfc</span>
+<source lang="javascript">
+component accessors="true" autoInflate=true {
+	property name="title";
+	property name="artist";
+}
+</source>
+
+<source lang="javascript">
+funkyChicken = new path.to.song();
+funkyChicken.setTitle( "Chicken Dance" );
+funkyChicken.setArtist( "Werner Thomas" );
+
+// Pass the CFC in
+couchbase.set( 'funkyChicken', funkyChicken );
+
+// And get a CFC out!
+birdieSong = couchbase.get( 'funkyChicken' );
+
+writeOutput( birdieSong.gettitle() );
+writeOutput( birdieSong.getArtist() );
+</source>
+
+===== Manual Inflation =====
+
+If you pass a CFC with properties but it does not have the '''autoinflate''' attribute like above, the data will still be stored as a JSON struct, but without the extra metadata.
+When retrieving this document, you wtill just get a struct back by default.  You can build a CFC yourself, or specify an '''inflateTo''' argument to instruct CFCouchbase how to reinflate your data.
+
+Pass in a component path (or component instance) and the SDK will instantiate that component and call setters to repopulate it with the data.
    
 <source lang="javascript">
 person = client.get(
-	ID = 'brad',
-	inflateTo = 'path.to.person'
+	ID = 'funkyChicken',
+	inflateTo = 'path.to.song'
 );
 </source>
 
@@ -322,24 +356,78 @@ If you need even more control such as performing dependency injection, passing c
 
 <source lang="javascript">
 person = client.get(
-	ID = 'brad',
+	ID = 'funkyChicken',
 	inflateTo = function( document ){
 		// Create object
-		var obj = new path.to.person();
-		// Special setup
-		if( document.role == 'admin' ) {
-			obj.setAdmin(true);
-		}
+		var obj = new path.to.song();
+		
 		// Autowire object
 		wirebox.autowire(obj);
+		
 		// Return it
 		return obj;
 	}
 );
 </source>
 
+If you are getting multiple documents back from Couchbase, your '''inflateTo''' closure will be called once per document.
 
-===== Custom Transformers =====
+<p>&nbsp;</p>
+
+<span class="alert alert-info">
+'''Note''' : You can even use inflate to when retrieving result sets, or querying Couchbase views and you'll get an array of populated CFCs!
+</span>
+
+===== Custom =====
+
+If you really want to get funky and control how your components are serialized, you can fall back on conventions.  If the CFC has a public method '''$serialize()''', it will be called and its output (must be a string) will be saved in Couchbase.
+
+If the CFC has a public method '''$deserialize( data )''', it will be called and given the data so it can populate itself.
+
+<span class="label label-info">CustomUser.cfc</span>
+<source lang="javascript">
+// CustomUser is an object that implements its own serialization scheme
+// using pipe-delimited lists to store the data instead of JSON.  It has both
+// a $serialize() and $deserialize() method to facilitate that.
+component accessors="true"{
+	property name="firstName";
+	property name="lastName";
+	property name="age";
+
+	function $serialize(){
+		// Serialize as pipe-delimited list
+		return '#getFirstName()#|#getLastName()#|#getAge()#';
+	}
+	
+	function $deserialize( data ){
+		// Deserialize the pipe-delimited list
+		setFirstName( listGetAt( data, 1, '|' ) );
+		setLastName( listGetAt( data, 2, '|' ) );
+		setAge( listGetAt( data, 3, '|' ) );		
+	}
+}
+</source>
+
+<source lang="javascript">
+user = new CustomUser();
+user.setFirstName( "Brad" );
+user.setLastName( "Wood" );
+user.setAge( 45 );
+
+couchbase.set( 'half-pipe', user );
+
+reinflatedUser = couchbase.get( id="half-pipe", inflateTo='CustomUser' );
+
+writeOutput( reinflatedUser.getFirstName() );
+writeOutput( reinflatedUser.getLastName() );
+writeOutput( reinflatedUser.getAge() );
+</source>
+
+===== Binary =====
+
+If you pass a CFC instance in that has no properties and no $serialize() method, CFCouchbase will use '''objectSave()''' to turn the comonent into binary and it will be saved as a base64-encoded string.
+
+==== Custom Transformers ====
 
 If you don't like how we set up data serialization or just have super-custom requirements, you can provide your own data marshaller to have full control.
 Create a CFC that implements the <span class="label">cfcouchbase.data.IDataMarshaller</span> interface.  It only needs to have three methods:
@@ -364,7 +452,7 @@ component implements='cfcouchbase.data.IDataMarshaller' {
 		return data;
 	}
 
-	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true ){
+	any function deserializeData( required string data, any inflateTo="", struct deserializeOptions={} ){
 		if( isJSON( data ) && deserialize ) {
 			return deserializeJSON( data );
 		}
@@ -384,6 +472,12 @@ couchbase = new cfcouchbase.CouchbaseClient(
 	} 
 );
 </source>
+
+<p>&nbsp;</p>
+
+<span class="alert alert-info">
+'''Note''' : Once you specify a custom data marshaller, you are overriding all '''Data Serialization''' functionality above.
+</span>
 
 === Executing Queries ===
 
@@ -411,6 +505,8 @@ Here are the arguments you can pass into '''query()'''.
 || '''options''' || any || {} || The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
 |-
 || '''deserialize''' || boolean || true || If true, it will deserialize the documents if they are valid JSON, else they are ignored.
+|-
+|| '''deserializeOptions''' || struct || --- || A struct of options to help control how the data is deserialized when populating an object.  See ObjectPopulator.cfc for more info.
 |-
 || '''inflateTo''' || any || --- || A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
 |-

@@ -130,7 +130,7 @@ component accessors="true"{
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	*/
-	any function deserializeData( required string data, any inflateTo="", deserializeOptions={} ){
+	any function deserializeData( required string data, any inflateTo="", struct deserializeOptions={} ){
 		var results = arguments.data;
 
 		if( isJSON( arguments.data ) ){

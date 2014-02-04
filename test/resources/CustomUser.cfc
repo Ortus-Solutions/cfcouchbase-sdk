@@ -20,7 +20,7 @@ component accessors="true"{
 
 	}
 	
-	function $deserialize( data ){
+	function $deserialize( ID, data ){
 
 		// Deserialize the pipe-delimited list
 		setFirstName( listGetAt( data, 1, '|' ) );

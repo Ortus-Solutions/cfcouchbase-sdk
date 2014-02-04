@@ -382,7 +382,7 @@ If you are getting multiple documents back from Couchbase, your '''inflateTo''' 
 
 If you really want to get funky and control how your components are serialized, you can fall back on conventions.  If the CFC has a public method '''$serialize()''', it will be called and its output (must be a string) will be saved in Couchbase.
 
-If the CFC has a public method '''$deserialize( data )''', it will be called and given the data so it can populate itself.
+If the CFC has a public method '''$deserialize( ID, data )''', it will be called and given the data so it can populate itself.
 
 <span class="label label-info">CustomUser.cfc</span>
 <source lang="javascript">
@@ -399,7 +399,7 @@ component accessors="true"{
 		return '#getFirstName()#|#getLastName()#|#getAge()#';
 	}
 	
-	function $deserialize( data ){
+	function $deserialize( ID, data ){
 		// Deserialize the pipe-delimited list
 		setFirstName( listGetAt( data, 1, '|' ) );
 		setLastName( listGetAt( data, 2, '|' ) );

@@ -26,14 +26,9 @@
 	<cfmodule template="includes/paginationOptions.cfm" totalRecords="#breweryCount[1].value#">
 	
 	<cfloop array="#breweries#" index="brewery">
-			
-		<cfset numBreweryBeers = 0>
-		<cfset breweryBeerCount = cbClient.query("manager", "listBeersByBrewery", { group = true, key = brewery.id })>
-		<cfif arraylen( breweryBeerCount )>
-			<cfset numBreweryBeers = breweryBeerCount[1].value>
-		</cfif>
-		
 		<cfset oBrewery = brewery.document>
+		<cfset numBreweryBeers = oBrewery.getBeerCount()>
+		
 		<h4><a href="brewery.cfm?breweryID=#brewery.id#">#HTMLEditFormat(oBrewery.getName())#</a> (#numBreweryBeers# Beers)</h4>
 		<cfif len(oBrewery.getWebsite())>
 		#oBrewery.getState()#, 

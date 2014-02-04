@@ -23,7 +23,7 @@
 * @author Luis Majano, Brad Wood
 * This is our data marshaller interface for serializing and deserializing objects from Couchbase to CFML and vice-versa
 */
-interface{
+interface {
 
 	/**
 	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
@@ -34,10 +34,12 @@ interface{
 	/**
 	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
+	* @ID.hint The ID of the document being deserialized
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	*/
-	any function deserializeData( required string data, any inflateTo="" );
+	any function deserializeData( required string ID, required string data, any inflateTo="", struct deserializeOptions={} );
 
 	/**
 	* This method serializes incoming data according to our rules and it returns a string representation usually JSON

@@ -22,7 +22,7 @@
 ********************************************************************************
 * @author Luis Majano, Brad Wood
 */
-component accessors="true"{
+component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 
 	/**
 	* The link back to the couchbase client.
@@ -126,13 +126,14 @@ component accessors="true"{
 	/**
 	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
+	* @ID.hint The ID of the document being deserialized
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	*/
-	any function deserializeData( required string data, any inflateTo="", struct deserializeOptions={} ){
+	any function deserializeData( required string ID, required string data, any inflateTo="", struct deserializeOptions={} ){
 		var results = arguments.data;
-
+		
 		if( isJSON( arguments.data ) ){
 			// Deserialize JSON
 			results = deserializeJSON( arguments.data );
@@ -145,7 +146,7 @@ component accessors="true"{
 					arguments.inflateTo = results.classpath;
 				}
 				
-				return deserializeObjects( results.data, arguments.inflateTo, arguments.deserializeOptions );
+				return deserializeObjects( arguments.ID, results.data, arguments.inflateTo, arguments.deserializeOptions );
 			}
 			// Do we have a cfcouchbase native CFC?
 			else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfc" ){
@@ -161,7 +162,7 @@ component accessors="true"{
 		
 		// If there's an inflateTo, then we're sending back a CFC!
 		if( !isSimpleValue( arguments.inflateTo ) || len( trim( arguments.inflateTo ) ) ){
-			return deserializeObjects( results, arguments.inflateTo, arguments.deserializeOptions );
+			return deserializeObjects( arguments.ID, results, arguments.inflateTo, arguments.deserializeOptions );
 		}		
 		
 		// We reach this if it's not JSON, or we're not inflating to a CFC
@@ -170,21 +171,30 @@ component accessors="true"{
 	/**
 	* Does object inflation
 	*/
-	private function deserializeObjects( required any data, required any inflateTo, deserializeOptions={} ){
+	private function deserializeObjects( required string ID, required any data, required any inflateTo, deserializeOptions={} ){
 		var oTarget = '';
+		var propertyIDName = '';
 
 		if( isStruct( arguments.data ) ) {			
 			oTarget = generateInflatable( arguments.inflateTo, arguments.data );
 			
 			// Check if the object has a method called "$deserialize", if it does, call it and return
 			if( structKeyExists( oTarget, "$deserialize" ) ){
-				oTarget.$deserialize( arguments.data );
+				oTarget.$deserialize( arguments.ID, arguments.data );
 				return oTarget;
+			}
+						
+			// Determine what this CFC calls its ID
+			propertyIDName = determineIDPropertyName( oTarget, arguments.deserializeOptions );
+			// If it's not already in the struct...
+			if( len( propertyIDName ) && !structKeyExists( arguments.data, propertyIDName ) ) {
+				// ... put it there
+				arguments.data[propertyIDName] = arguments.ID;
 			}
 			
 			arguments.deserializeOptions.target = oTarget;
 			arguments.deserializeOptions.memento = arguments.data;
-			
+						
 			return ObjectPopulator.populateFromStruct( argumentCollection = arguments.deserializeOptions );
 			
 		} else if( isQuery( arguments.data ) ) {
@@ -211,7 +221,7 @@ component accessors="true"{
 			
 			// Check if the object has a method called "$deserialize", if it does, call it and return
 			if( structKeyExists( oTarget, "$deserialize" ) ){
-				oTarget.$deserialize( arguments.data );
+				oTarget.$deserialize( arguments.ID, arguments.data );
 				return oTarget;
 			}
 
@@ -274,5 +284,33 @@ component accessors="true"{
 		variables.objectMDCache.clear();
 		return this;
 	}
+
+	/**
+	* Determine which property of the CFC is the primary ID.  Returns empty string if none found.
+	*/
+	private string function determineIDPropertyName( required any target, required struct deserializeOptions ){
+		var md = getObjectMD( arguments.target );
+		
+		// Look at the properties in the CFC
+		if( structKeyExists( md, 'properties' ) ){
+			// Search for a fieldtype of ID
+			for( var thisProp in md.properties ){
+				if( structKeyExists( thisProp, 'fieldtype' ) && thisProp.fieldtype == 'ID' ) {
+					// And return its name
+					return thisProp.name;
+				}
+			}
+		}
+		
+		// If none found, allow the IDPropertyName to be passed via the deserializeOptions 
+		if( structKeyExists( deserializeOptions, 'IDPropertyName' ) ){
+			return deserializeOptions.IDPropertyName;
+		}
+		
+		// Not found
+		return '';
+		
+	}
+
 
 }

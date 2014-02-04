@@ -371,7 +371,7 @@ component serializable="false" accessors="true"{
 		var results = variables.couchbaseClient.get( arguments.ID );
 
 		if( !isNull( results ) ){
-			return deserializeData( results, arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
+			return deserializeData( arguments.ID, results, arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
 		}
 	}
 
@@ -415,7 +415,7 @@ component serializable="false" accessors="true"{
 		var map = variables.couchbaseClient.getBulk( arguments.ID );
 		for( var key in map ) {
 			var value = map[ key ];
-			result[ key ] = deserializeData( value, arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );	
+			result[ key ] = deserializeData( key, value, arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );	
 		}
 		return result;
 	}
@@ -463,7 +463,7 @@ component serializable="false" accessors="true"{
 			// build struct out.
 			var result = {
 				cas 	= resultsWithCAS.getCAS(),
-				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions )
+				value 	= deserializeData( arguments.ID, resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions )
 			};
 
 			return result;
@@ -526,7 +526,7 @@ component serializable="false" accessors="true"{
 			// build struct out.
 			var result = {
 				cas 	= resultsWithCAS.getCAS(),
-				value 	= deserializeData( resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions )
+				value 	= deserializeData( arguments.ID, resultsWithCAS.getValue(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions )
 			};
 
 			return result;
@@ -1083,7 +1083,7 @@ component serializable="false" accessors="true"{
 			
 			// Did we get a document or none?
 			if( hasDocs ){
-				thisDocument.document = deserializeData( thisRow.getDocument(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
+				thisDocument.document = deserializeData( thisRow.getID(), thisRow.getDocument(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
 			}
 			// check for reduced
 			if( isReduced ){
@@ -1467,6 +1467,7 @@ component serializable="false" accessors="true"{
 	* Deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	*
+	* @ID.hint The ID of the document being deserialized
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
@@ -1474,10 +1475,10 @@ component serializable="false" accessors="true"{
 	*
 	* @Return The deserialized data
 	*/
-	any function deserializeData( required string data, any inflateTo="", boolean deserialize=true, struct deserializeOptions={} ){
+	any function deserializeData( required string ID, required string data, any inflateTo="", boolean deserialize=true, struct deserializeOptions={} ){
 		
 		if( arguments.deserialize ) {
-			return variables.dataMarshaller.deserializeData( arguments.data, arguments.inflateTo, arguments.deserializeOptions );	
+			return variables.dataMarshaller.deserializeData( arguments.ID, arguments.data, arguments.inflateTo, arguments.deserializeOptions );	
 		} else {
 			return arguments.data;
 		}

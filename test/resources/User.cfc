@@ -19,7 +19,7 @@ component accessors="true"{
 
 	}
 	
-	function $deserialize( data ){
+	function $deserialize( ID, data ){
 
 		setName( data.name );
 		setAge( data.age );

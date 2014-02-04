@@ -17,6 +17,7 @@ component{
 	// application start
 	public boolean function onApplicationStart(){
 		application.couchbase = new cfcouchbase.CouchbaseClient( { bucketName="beer-sample" } );
+		application.breweryService = new root.model.BreweryService();
 		
 		// Specify the views the applications needs here.  They will be created/updated
 		// when the client is initialized if they don't already exist.

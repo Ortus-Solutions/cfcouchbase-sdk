@@ -5,67 +5,66 @@
 	
 	<cfparam name="url.breweryID" default="not_supplied"> 
 	
-	<cfset cbClient = application.couchbase>
-	<cfset brewery = cbClient.get("#url.breweryID#")>
+	<cfset brewery = application.BreweryService.getBrewery( url.breweryID )>
 		
 	<cfif isnull(brewery)>
 		
 		Invalid BreweryID "#HTMLEditFormat(url.breweryID)#"
 	
 	<cfelse>
-		
-		<cfset breweryBeers = cbClient.query("manager", "listBeersByBrewery", { reduce = false, key = url.breweryID, includeDocs = true })>
-		
-		<a href="breweryEdit.cfm?breweryID=#HTMLEditFormat(url.breweryID)#">Edit this Brewery's Details</a><br><br>
+					
+		<a href="breweryEdit.cfm?breweryID=#HTMLEditFormat( brewery.getBreweryID() )#">Edit this Brewery's Details</a><br><br>
 
 		<table>
 			<tr>
 				<td>Name:</td>
-				<td>#HTMLEditFormat(brewery.name)#</td>
+				<td>#HTMLEditFormat( brewery.getName() )#</td>
 			</tr>
 			<tr>
 				<td>website:</td>
-				<td>#HTMLEditFormat(brewery.website)#</td>
+				<td>#HTMLEditFormat( brewery.getWebsite() )#</td>
 			</tr>
 			<tr>
 				<td>Phone:</td>
-				<td>#HTMLEditFormat(brewery.phone)#</td>
+				<td>#HTMLEditFormat( brewery.getPhone() )#</td>
 			</tr>
 			<tr>
 				<td>Description:</td>
-				<td>#HTMLEditFormat(brewery.description)#</td>
+				<td>#HTMLEditFormat( brewery.getDescription() )#</td>
 			</tr>
 			<tr>
 				<td>Address 1:</td>
-				<td><cfif arrayLen(brewery.address)>#HTMLEditFormat(brewery.address[1])#</cfif></td>
+				<td>#HTMLEditFormat( brewery.getAddress1() )#</td>
 			</tr>
 			<tr>
 				<td>Address 2:</td>
-				<td><cfif arrayLen(brewery.address) GT 1>#HTMLEditFormat(brewery.address[2])#</cfif></td>
+				<td>#HTMLEditFormat( brewery.getAddress2() )#</td>
 			</tr>
 			<tr>
 				<td>City:</td>
-				<td>#HTMLEditFormat(brewery.city)#</td>
+				<td>#HTMLEditFormat( brewery.getCity() )#</td>
 			</tr>
 			<tr>
 				<td>State:</td>
-				<td>#HTMLEditFormat(brewery.state)#</td>
+				<td>#HTMLEditFormat( brewery.getState() )#</td>
 			</tr>
 			<tr>
 				<td>Zip:</td>
-				<td>#HTMLEditFormat(brewery.code)#</td>
+				<td>#HTMLEditFormat( brewery.getCode() )#</td>
 			</tr>
 			<tr>
 				<td>Country:</td>
-				<td>#HTMLEditFormat(brewery.country)#</td>
+				<td>#HTMLEditFormat( brewery.getCountry() )#</td>
 			</tr>
 			<tr>
 				<td>Last Updated:</td>
-				<td>#dateFormat(brewery.updated,"full")#</td>
+				<td>#dateFormat( brewery.getUpdated(),"full" )#</td>
 			</tr>
 		</table>
-		
-		<h2>#HTMLEditFormat(brewery.name)#'s Beers</h2>
+
+		<cfset breweryBeers = brewery.getBeers()>
+				
+		<h2>#HTMLEditFormat( brewery.getName() )#'s Beers</h2>
 		<table border="1" cellpadding=5 cellspacing=0>
 			<tr>
 				<td></td>
@@ -74,26 +73,22 @@
 				<td>Style</td>
 				<td>Description</td>
 			</tr>
-			<cfloop array="#breweryBeers#" index="beer">
-				<cfset bDoc = beer.document>
+			<cfloop array="#breweryBeers#" index="beerRow">
+				<cfset beer = beerRow.document>
 				<tr>
-					<td><a href="beer.cfm?beerID=#beer.ID#">View</a></td>
-					<td>#HTMLEditFormat(bDoc.name)#</td>
+					<td><a href="beer.cfm?beerID=#beer.getBeerID()#">View</a></td>
+					<td>#HTMLEditFormat( beer.getName() )#</td>
 					<td>
-						<cfif structKeyExists(bDoc,'category')>
-							#HTMLEditFormat(bDoc.category)#
-						</cfif>
+						#HTMLEditFormat( beer.getCategory() )#
 					</td>
 					<td>
-						<cfif structKeyExists(bDoc,'style')>
-							#HTMLEditFormat(bDoc.style)#
-						</cfif>
+						#HTMLEditFormat( beer.getStyle() )#
 					</td>
 					<td>
-						<cfif len(bDoc.description) GT 50>
-							<span title="#HTMLEditFormat(bDoc.description)#">#HTMLEditFormat(left(bDoc.description,50))#...</span>
+						<cfif len( beer.getDescription() ) GT 50>
+							<span title="#HTMLEditFormat( beer.getDescription() )#">#HTMLEditFormat( left( beer.getDescription(), 50) )#...</span>
 						<cfelse>
-							#HTMLEditFormat(bDoc.description)#
+							#HTMLEditFormat( beer.getDescription() )#
 						</cfif>
 					</td>
 				</tr>

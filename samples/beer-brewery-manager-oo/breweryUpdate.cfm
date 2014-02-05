@@ -1,7 +1,6 @@
 <cfparam name="form.breweryID" default="not_supplied"> 
 
-<cfset cbClient = application.couchbase>
-<cfset brewery = cbClient.get("#form.breweryID#")>
+<cfset brewery = application.BreweryService.getBrewery( form.breweryID )>
 
 <cfif isnull(brewery)>
 	
@@ -9,23 +8,16 @@
 
 <cfelse>
 
-	<cfloop list="name,website,phone,description,city,state,code,country" index="field">
-		<cfset brewery[field] = form[field]>
+	<!--- Save some typing --->
+	<cfloop list="name,website,phone,description,city,state,code,country,address1,address2" index="field">
+		<cfset evaluate( "brewery.set#field#( form[field] )" )>
 	</cfloop>
 		
-	<cfset brewery.address[1] = form.address1>
+	<cfset brewery.setUpdated( "#dateFormat(now(),"yyyy-mm-dd")# #timeFormat(now(),"HH:mm:ss")#" )>
 	
-	<cfif len(form.address2)>
-		<cfset brewery.address[2] = form.address2>
-	<cfelseif arrayLen(brewery.address) GT 2>
-		<cfset arrayDeleteAt(brewery.address,2)>
-	</cfif>
+	<cfset brewery.save()>
 	
-	<cfset brewery.updated = "#dateFormat(now(),"yyyy-mm-dd")# #timeFormat(now(),"HH:mm:ss")#">
-	
-	<cfset cbClient.set(form.breweryID, brewery)>
-	
-	<cflocation url="brewery.cfm?breweryID=#URLEncodedFormat(form.breweryID)#" addToken="no">
+	<cflocation url="brewery.cfm?breweryID=#URLEncodedFormat( brewery.getBreweryID() )#" addToken="no">
 	
 </cfif>		
 

@@ -11,19 +11,19 @@
 
 	<cfmodule template="includes/paginationOptions.cfm" totalRecords="#numBreweries#">
 	
-	<cfloop array="#breweries#" index="brewery">
-		<cfset oBrewery = brewery.document>
+	<cfloop array="#breweries#" index="breweryRow">
+		<cfset brewery = breweryRow.document>
 		
-		<h4><a href="brewery.cfm?breweryID=#oBrewery.getBreweryID()#">#HTMLEditFormat(oBrewery.getName())#</a> (#oBrewery.getBeerCount()# Beers)</h4>
-		<cfif len(oBrewery.getWebsite())>
-		#oBrewery.getState()#, 
+		<h4><a href="brewery.cfm?breweryID=#brewery.getBreweryID()#">#HTMLEditFormat(brewery.getName())#</a> (#brewery.getBeerCount()# Beers)</h4>
+		<cfif len(brewery.getWebsite())>
+		#brewery.getState()#, 
 		</cfif>
-		#oBrewery.getCountry()#<br>
-		<cfif len(oBrewery.getWebsite())>
-			<a href="#oBrewery.getWebsite()#">website</a><br>
+		#brewery.getCountry()#<br>
+		<cfif len(brewery.getWebsite())>
+			<a href="#brewery.getWebsite()#">website</a><br>
 		</cfif>
 		
-		<small>#HTMLEditFormat(oBrewery.getDescription())#</small>
+		<small>#HTMLEditFormat(brewery.getDescription())#</small>
 		
 	</cfloop>
 	

@@ -5,55 +5,51 @@
 	
 	<cfparam name="url.beerID" default="not_supplied"> 
 	
-	<cfset cbClient = application.couchbase>
-	<cfset beer = cbClient.get("#url.beerID#")>
+	<cfset beer = application.BreweryService.getBeer( url.beerID )>
 		
 	<cfif isnull(beer)>
 		
-		Invalid beerID "#HTMLEditFormat(url.beerID)#"
+		Invalid beerID "#HTMLEditFormat( url.beerID )#"
 	
 	<cfelse>
-		<a href="brewery.cfm?breweryID=#HTMLEditFormat(beer.brewery_id)#">Back to brewey Details</a><br><br>
-		<a href="beerEdit.cfm?beerID=#HTMLEditFormat(url.beerID)#">Edit this beer's Details</a><br><br>
+				
+		<a href="brewery.cfm?breweryID=#HTMLEditFormat( beer.getBrewery_id() )#">Back to brewey Details</a><br><br>
+		<a href="beerEdit.cfm?beerID=#HTMLEditFormat( beer.getBeerID() )#">Edit this beer's Details</a><br><br>
 
 		<table>
 			<tr>
 				<td>Name:</td>
-				<td>#HTMLEditFormat(beer.name)#</td>
+				<td>#HTMLEditFormat( beer.getName() )#</td>
 			</tr>
 			<tr>
 				<td>Category:</td>
 				<td>
-					<cfif structkeyExists(beer,"category")>
-						#HTMLEditFormat(beer.category)#
-					</cfif>
+					#HTMLEditFormat( beer.getCategory() )#
 				</td>
 			</tr>
 			<tr>
 				<td>Style:</td>
-				<cfif structkeyExists(beer,"category")>
-					<td>#HTMLEditFormat(beer.style)#</td>
-				</cfif>
+				<td>#HTMLEditFormat( beer.getStyle() )#</td>
 			</tr>
 			<tr>
 				<td>Description:</td>
-				<td>#HTMLEditFormat(beer.description)#</td>
+				<td>#HTMLEditFormat( beer.getDescription() )#</td>
 			</tr>
 			<tr>
 				<td title="International Bitterness Units">IBU:</td>
-				<td>#HTMLEditFormat(beer.ibu)#</td>
+				<td>#HTMLEditFormat( beer.getIBU() )#</td>
 			</tr>
 			<tr>
 				<td title="Standard Reference Method">SRM:</td>
-				<td>#HTMLEditFormat(beer.srm)#</td>
+				<td>#HTMLEditFormat( beer.getSRM() )#</td>
 			</tr>
 			<tr>
 				<td>UPC:</td>
-				<td>#HTMLEditFormat(beer.upc)#</td>
+				<td>#HTMLEditFormat( beer.getUPC() )#</td>
 			</tr>
 			<tr>
 				<td>Last Updated:</td>
-				<td>#dateFormat(beer.updated,"full")#</td>
+				<td>#dateFormat( beer.getUpdated(), "full" )#</td>
 			</tr>
 		</table>
 							

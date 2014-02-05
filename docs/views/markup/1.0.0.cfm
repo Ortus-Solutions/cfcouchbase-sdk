@@ -358,14 +358,8 @@ If you need even more control such as performing dependency injection, passing c
 person = client.get(
 	ID = 'funkyChicken',
 	inflateTo = function( document ){
-		// Create object
-		var obj = new path.to.song();
-		
-		// Autowire object
-		wirebox.autowire(obj);
-		
-		// Return it
-		return obj;
+		// Let WireBox create and autowire an instance for us
+		return wirebox.getInstance( 'path.to.song' );
 	}
 );
 </source>

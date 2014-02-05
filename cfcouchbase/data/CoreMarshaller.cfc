@@ -93,22 +93,14 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		if( structKeyExists( mdCache, "autoInflate" ) AND arrayLen( mdCache.properties ) ){
 			var nativeObject = { 
 				"type"		= "cfcouchbase-cfcdata",
-				"data" 		= {}, 
+				"data" 		= buildMemento( arguments.data, mdCache ),
 				"classpath" = mdCache.name 
 			};
-			// build out a memento from the properties.
-			for( var thisProp in mdCache.properties ){
-				nativeObject.data[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
-			}
 			return serializeJSON( nativeObject );
 		} 
 		// else just store properties as data
 		else if( structKeyExists( mdCache, "properties" ) and arrayLen( mdCache.properties ) ){
-			var nativeData = {};
-			// build out a memento from the properties.
-			for( var thisProp in mdCache.properties ){
-				nativeData[ "#thisProp.name#" ] = evaluate( "arguments.data.get#thisProp.name#()" );
-			}
+			var nativeData = buildMemento( arguments.data, mdCache );
 			return serializeJSON( nativeData );
 		}
 
@@ -118,6 +110,20 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 			"binary" = toBase64( objectSave( arguments.data ) ),
 			"classpath" = mdCache.name
 		} );
+	}
+
+	/**
+	* build CFC memento
+	*/
+	private function buildMemento( required any target, required any metaData ){
+		memento = {};
+		// build out a memento from the properties.
+		for( var thisProp in arguments.metaData.properties ){
+			if( !structKeyExists( thisProp, 'inject' ) ) {
+				memento[ "#thisProp.name#" ] = evaluate( "arguments.target.get#thisProp.name#()" );
+			}
+		}
+		return memento; 
 	}
 
 

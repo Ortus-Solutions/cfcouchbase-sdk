@@ -20,7 +20,8 @@
 		};
 		
 		interceptors = [
-			 {class='coldbox.system.interceptors.SES'}
+			 {class='coldbox.system.interceptors.SES'},
+			 {class='root.model.ensureViews'}
 		];
 		
 	}

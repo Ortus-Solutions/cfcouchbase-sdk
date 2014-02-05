@@ -14,8 +14,8 @@
 			inflateTo = 'root.model.brewery',
 			options = {
 				includeDocs = true,
-				limit=url.recordsPerPage,
-				offSet = url.startRecord-1,
+				limit=arguments.limit,
+				offSet = arguments.offset,
 				reduce = false
 			});
 	}

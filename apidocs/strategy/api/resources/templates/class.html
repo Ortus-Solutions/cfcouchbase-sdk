@@ -18,7 +18,7 @@
 	<cfmodule template="inc/js.html" rootPath="#instance.class.root#">
 </head>
 
-<body bgcolor="white">
+<body class="withNavbar">
 
 <cfmodule template="inc/nav.html"
 			page="Class"
@@ -28,6 +28,7 @@
 			>
 
 <!-- ======== start of class data ======== -->
+<a name="class"><!-- --></a>
 
 <!-- Package -->
 <div class="pull-right">
@@ -64,6 +65,24 @@ Class
 
 <!-- Inheritance Tree-->
 <pre>#local.buffer.toString()#</pre>
+
+<div class="panel panel-default">
+	<div class="panel-heading"><strong>Class Attributes:</strong></div>
+		<div class="panel-body">
+		<cfloop collection="#arguments.metadata#" item="local.cfcmeta">
+			<cfif isSimpleValue( arguments.metadata[ local.cfcmeta ] ) AND
+				  !listFindNoCase( "hint,extends,fullname,functions,hashcode,name,path,properties,type,remoteaddress", local.cfcmeta ) >
+			<li class="label label-danger">
+				#lcase( local.cfcmeta )# 
+				<cfif len( arguments.metadata[ local.cfcmeta ] )>
+				: #arguments.metadata[ local.cfcmeta ]#		
+				</cfif>
+			</li>
+			&nbsp;
+			</cfif>
+		</cfloop>
+	</div>
+</div>
 
 <cfif arguments.metadata.type eq "component">
 	<cfset interfaces = getImplements(arguments.metadata)>
@@ -168,19 +187,18 @@ Class
 <!-- ========== METHOD SUMMARY =========== -->
 
 <a name="property_summary"><!-- --></a>
-<table class="tabel table-bordered table-hover">
-	<tr bgcolor="##ccccff" class="tableheadingcolor">
+<table class="table table-bordered table-hover">
+	<tr class="info">
 		<th align="left" colspan="5">
-			<strong>property summary</strong>
+			<strong>Property Summary</strong>
 		</th>
 	</tr>
-
-	<tr bgcolor="##ccccff" class="tableheadingcolor">
+	<tr class="info">
 		<th align="left">
 			<strong>type</strong>
 		</th>
 		<th align="left">
-			<strong>property & description</strong>
+			<strong>property</strong>
 		</th>
 		<th align="left">
 			<strong>default</strong>
@@ -193,64 +211,50 @@ Class
 		</th>
 	</tr>
 
-<cfloop query="local.qproperties">
-<cfset local.prop = local.qproperties.metadata />
-<cfset local.localproperties[ local.prop.name ] = 1 />
-<tr bgcolor="white" class="tablerowcolor">
-<td align="right" valign="top" width="1%">
-	<font size="-1">
-		<code>
-			&nbsp;#writetypelink(local.prop.type, arguments.package, arguments.qmetadata, local.prop)#
-		</code>
-	</font>
-</td>
-<td>
-	#writeMethodLink(arguments.name, arguments.package, local.prop, arguments.qMetaData)# 
-	<br>
-	<cfif StructKeyExists(local.prop, "hint") AND Len(local.prop.hint)>
-	<!-- only grab the first sentence of the hint -->
-	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#listGetAt(local.prop.hint, 1, ".")#.
-	</cfif>
-	
-	<br><br>
-	<strong>Attributes:</strong>
-	<ul>
-	<cfloop collection="#local.prop#" item="local.propmeta">
-		<cfif not listFindNoCase( "hint,name,default,type,serializable,required", local.propmeta ) >
-		<li>#lcase( local.propmeta )# = #local.prop[ local.propmeta ]#</li>
-		</cfif>
+	<cfloop query="local.qproperties">
+	<cfset local.prop = local.qproperties.metadata />
+	<cfset local.localproperties[ local.prop.name ] = 1 />
+	<tr>
+		<td align="right" valign="top" width="1%">
+			<code>#writetypelink(local.prop.type, arguments.package, arguments.qmetadata, local.prop)#</code>
+		</td>
+		<td>
+			#writeMethodLink(arguments.name, arguments.package, local.prop, arguments.qMetaData)# 
+			<br>
+			<cfif StructKeyExists( local.prop, "hint" ) AND Len( local.prop.hint )>
+			<!-- only grab the first sentence of the hint -->
+			#repeatString( '&nbsp;', 5)# #listGetAt(local.prop.hint, 1, ".")#.
+			</cfif>
+			<br><br>
+			<ul>
+			<cfloop collection="#local.prop#" item="local.propmeta">
+				<cfif not listFindNoCase( "hint,name,default,type,serializable,required", local.propmeta ) >
+				<li class="label label-default">#lcase( local.propmeta )# = #local.prop[ local.propmeta ]#</li>
+				</cfif>
+			</cfloop>
+			</ul>
+
+		</td>
+		<td align="right" valign="top" width="1%">
+			<cfif len( local.prop.default )>
+				<code>#local.prop.default#</code>
+			</cfif>
+		</td>
+		<td align="right" valign="top" width="1%">
+			<code>
+				#local.prop.serializable#
+			</code>
+		</td>
+		<td align="right" valign="top" width="1%">
+			<code>
+				#local.prop.required#
+			</code>
+		</td>
+	</tr>
 	</cfloop>
-	</ul>
-
-</td>
-<td align="right" valign="top" width="1%">
-	<font size="-1">
-		<code>
-			#local.prop.default#
-		</code>
-	</font>
-</td>
-<td align="right" valign="top" width="1%">
-	<font size="-1">
-		<code>
-			#local.prop.serializable#
-		</code>
-	</font>
-</td>
-<td align="right" valign="top" width="1%">
-	<font size="-1">
-		<code>
-			#local.prop.required#
-		</code>
-	</font>
-</td>
-</tr>
-</cfloop>
-</tr>
+	</tr>
 </table>
-&nbsp;
 </cfif>
-
 
 <cfif local.qInit.recordCount>
 	<cfset local.init = local.qInit.metadata />
@@ -258,26 +262,27 @@ Class
 	<!-- ======== CONSTRUCTOR SUMMARY ======== -->
 
 	<a name="constructor_summary"><!-- --></a>
-	<table border="1" width="100%" cellpadding="3" cellspacing="0" summary="">
-	<tr bgcolor="##ccccff" class="tableheadingcolor">
-	<th align="left" colspan="2"><font size="+2">
-	<strong>constructor summary</strong></font></th>
-	</tr>
-	<tr bgcolor="white" class="tablerowcolor">
-	<cfif local.init.access neq "public">
-		<td align="right" valign="top" width="1%"><font size="-1">
-		<code>#local.init.access# </code></font></td>
-	</cfif>
-	<td>
-		#writemethodlink(arguments.name, arguments.package, local.init, arguments.qmetadata)#
-	<br>
-	<cfif StructKeyExists(local.init, "hint") and len( local.init.hint ) >
-	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#listGetAt(local.init.hint, 1, ".")#.
-	</cfif>
-	</td>
-	</tr>
+	<table class="table table-bordered table-hover">
+		<tr class="info">
+			<th align="left" colspan="2">
+				<strong>Constructor Summary</strong>
+			</th>
+		</tr>
+		<tr>
+			<cfif local.init.access neq "public">
+				<td align="right" valign="top" width="1%">
+					<code>#local.init.access# </code>
+				</td>
+			</cfif>
+			<td>
+				#writemethodlink(arguments.name, arguments.package, local.init, arguments.qmetadata)#
+				<br>
+				<cfif StructKeyExists(local.init, "hint") and len( local.init.hint ) >
+				#repeatString( '&nbsp;', 5)# #listGetAt(local.init.hint, 1, ".")#.
+				</cfif>
+			</td>
+		</tr>
 	</table>
-	&nbsp;
 </cfif>
 
 <cfset local.qFunctions = getMetaSubQuery(local.qFunctions, "UPPER(name)!='INIT'") />
@@ -286,33 +291,35 @@ Class
 <!-- ========== METHOD SUMMARY =========== -->
 
 <a name="method_summary"><!-- --></a>
-<table border="1" width="100%" cellpadding="3" cellspacing="0" summary="">
-<tr bgcolor="##ccccff" class="tableheadingcolor">
-<th align="left" colspan="2"><font size="+2">
-<strong>method summary</strong></font></th>
-</tr>
+<table class="table table-bordered table-hover">
+	<tr class="info">
+		<th align="left" colspan="2">
+			<strong>Method Summary</strong>
+		</th>
+	</tr>
 
-<cfloop query="local.qFunctions">
-<cfset local.func = local.qFunctions.metadata />
-<cfset local.localFunctions[local.func.name] = 1 />
-<tr bgcolor="white" class="tablerowcolor">
-<td align="right" valign="top" width="1%"><font size="-1">
-<code><cfif local.func.access neq "public">#local.func.access#</cfif>&nbsp;#writetypelink(local.func.returntype, arguments.package, arguments.qmetadata, local.func)#</code></font></td>
-<td>#writemethodlink(arguments.name, arguments.package, local.func, arguments.qmetadata)#
-<br>
-<cfif StructKeyExists(local.func, "hint") AND Len(local.func.hint)>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#listGetAt(local.func.hint, 1, ".")#.
-</cfif>
-</td>
-</tr>
-</cfloop>
-</tr>
+	<cfloop query="local.qFunctions">
+	<cfset local.func = local.qFunctions.metadata />
+	<cfset local.localFunctions[ local.func.name ] = 1 />
+	<tr>
+		<td align="right" valign="top" width="1%">
+			<code><cfif local.func.access neq "public">#local.func.access#&nbsp;</cfif>#writetypelink(local.func.returntype, arguments.package, arguments.qmetadata, local.func)#</code>
+		</td>
+		<td>
+			#writemethodlink(arguments.name, arguments.package, local.func, arguments.qmetadata)#
+			<br>
+			<cfif StructKeyExists(local.func, "hint") AND Len(local.func.hint)>
+			#repeatString( '&nbsp;', 5)##listGetAt(local.func.hint, 1, ".")#.
+			</cfif>
+		</td>
+	</tr>
+	</cfloop>
 </table>
 
 </cfif>
 
+<a name="inherited_methods"><!-- --></a>
 <cfset local.localmeta = arguments.metadata />
-
 <cfloop condition="#StructKeyExists(local.localmeta, 'extends')#">
 	<cfscript>
 		if(local.localmeta.type eq "interface")
@@ -329,112 +336,111 @@ Class
 
 	&nbsp;
 	<a name="methods_inherited_from_class_#local.localmeta.name#"><!-- --></a>
-	<table summary="" border="1" cellpadding="3" cellspacing="0" width="100%">
-	<tbody><tr class="TableSubHeadingColor" bgcolor="##eeeeff">
-	<th align="left"><strong>Methods inherited from class #writeClassLink(getPackage(local.localmeta.name), getObjectName(local.localmeta.name), arguments.qMetaData, 'long')#</strong></th>
-	</tr>
-	<tr class="TableRowColor" bgcolor="white">
-	<td>
-		<cfset local.buffer.setLength(0) />
-		<cfset i = 1 />
-		<cfloop query="local.qFunctions">
-			<cfset local.func = local.qFunctions.metadata />
-			<cfif NOT StructKeyExists(local.localFunctions, local.func.name)>
-			<cfif i++ neq 1>
-				<cfset local.buffer.append(", ") />
-			</cfif>
-			<cfset local.buffer.append('<a href="#instance.class.root#/#replace(getPackage(local.localmeta.name), '.', '/', 'all')#/#getObjectName(local.localmeta.name)#.html###local.func.name#()">#local.func.name#</a>') />
-			<cfset local.localFunctions[local.func.name] = 1 />
-			</cfif>
-		</cfloop>
-		
-		<cfif local.buffer.length()>
-			<code>#local.buffer.toString()#</code>
-		<cfelse>
-			<code><em>None</em></code>
-		</cfif>
-	</td>
-	</tr>
-	</tbody></table>
+	<table class="table table-hover table-bordered">
+		<tr class="info">
+			<th align="left">
+				<strong>Methods inherited from class <kbd>#writeClassLink(getPackage(local.localmeta.name), getObjectName(local.localmeta.name), arguments.qMetaData, 'long')#<kbd></strong>
+			</th>
+		</tr>
+		<tr>
+			<td>
+				<cfset local.buffer.setLength(0) />
+				<cfset i = 1 />
+				<cfloop query="local.qFunctions">
+					<cfset local.func = local.qFunctions.metadata />
+					<cfif NOT StructKeyExists(local.localFunctions, local.func.name)>
+					<cfif i++ neq 1>
+						<cfset local.buffer.append(", ") />
+					</cfif>
+					<cfset local.buffer.append('<a href="#instance.class.root#/#replace(getPackage(local.localmeta.name), '.', '/', 'all')#/#getObjectName(local.localmeta.name)#.html###local.func.name#()">#local.func.name#</a>') />
+					<cfset local.localFunctions[local.func.name] = 1 />
+					</cfif>
+				</cfloop>
+				
+				<cfif local.buffer.length()>
+					<code>#local.buffer.toString()#</code>
+				<cfelse>
+					<code><em>None</em></code>
+				</cfif>
+			</td>
+		</tr>
+	</table>
 </cfloop>
 
-&nbsp;
-<P>
-
-<cfif StructKeyExists(local, "init")>
+<hr>
 
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
+<cfif StructKeyExists(local, "init")>
+	<a name="constructor_detail"><!-- --></a>
+	<table class="table table-bordered">
+		<tr class="info">
+			<th colspan="1" align="left">
+				<strong>Constructor Detail</strong>
+			</th>
+		</tr>
+	</table>
 
-<a name="constructor_detail"><!-- --></a>
-</p><table summary="" border="1" cellpadding="3" cellspacing="0" width="100%">
-<tbody><tr class="tableheadingcolor" bgcolor="##ccccff">
-<th colspan="1" align="left"><font size="+2">
-<strong>Constructor Detail</strong></font></th>
-</tr>
-</tbody></table>
+	<a name="#local.init.name#()"><!-- --></a><h3>
+	#local.init.name#</h3>
+	<kbd>#local.init.access# #writeMethodLink(arguments.name, arguments.package, local.init, arguments.qMetaData, false)#</kbd>
 
-<a name="#local.init.name#()"><!-- --></a><h3>
+	<br><br>
 
-#local.init.name#</h3>
-<code>#local.init.access# #writeMethodLink(arguments.name, arguments.package, local.init, arguments.qMetaData, false)#</code>
-<dl>
-<dd>
-<cfif StructKeyExists(local.init, "hint")>
-#local.init.hint#
+	<cfif StructKeyExists(local.init, "hint")>
+	<p>#local.init.hint#</p>
+	</cfif>
+
+	<cfif StructKeyExists(local.init, "parameters") AND ArrayLen(local.init.parameters)>
+	<dl>
+		<dt><strong>Parameters:</strong></dt>
+		<cfloop array="#local.init.parameters#" index="local.param">
+			<dd><code>#local.param.name#</code><cfif StructKeyExists(local.param, "hint")> - #local.param.hint#</cfif></dd>
+		</cfloop>
+	</dl>
+	</cfif>
+	<hr>
 </cfif>
-<p>
-</p>
-<cfif StructKeyExists(local.init, "parameters") AND ArrayLen(local.init.parameters)>
-<dl>
-<dt><strong>Parameters:</strong></dt>
-<cfloop array="#local.init.parameters#" index="local.param">
-<dd><code>#local.param.name#</code><cfif StructKeyExists(local.param, "hint")> - #local.param.hint#</cfif></dd>
-</cfloop>
-</dl>
-</cfif>
-
-</dd></dl>
-</cfif>
-
-<cfif local.qProperties.recordCount>
 
 <!-- ============ PROPERTY DETAIL ========== -->
+<cfif local.qProperties.recordCount>
+	<a name="property_detail"><!-- --></a>
+	<table class="table table-bordered">
+		<tr class="info">
+			<th colspan="1" align="left">
+				<strong>Property Detail</strong>
+			</th>
+		</tr>
+	</table>
 
-<a name="property_detail"><!-- --></a>
-<table summary="" border="1" cellpadding="3" cellspacing="0" width="100%">
-<tbody><tr class="tableheadingcolor" bgcolor="##ccccff">
-<th colspan="1" align="left"><font size="+2">
-<strong>Property Detail</strong></font></th>
-</tr>
-</tbody></table>
+	<cfloop query="local.qProperties">
+		<cfset local.prop = local.qProperties.metadata />
+		<a name="#local.prop.name#()"><!-- --></a>
+		<h3>#local.prop.name#</h3>
 
-<cfloop query="local.qProperties">
-	<cfset local.prop = local.qProperties.metadata />
-	<a name="#local.prop.name#()"><!-- --></a><h3>
-	#local.prop.name#</h3>
-	<code>#writeTypeLink(local.prop.type, arguments.package, arguments.qMetaData, local.prop)# #writeMethodLink(arguments.name, arguments.package, local.prop, arguments.qMetaData, false)#</code>
+		<kbd>
+			property #writeTypeLink(local.prop.type, arguments.package, arguments.qMetaData, local.prop)# 
+			#writeMethodLink(arguments.name, arguments.package, local.prop, arguments.qMetaData, false)#
+			<cfif structKeyExists( local.prop, "default" ) and len( local.prop.default )>
+			= [#local.prop.default#]
+			</cfif>
+		</kbd>
 
-	<dl>
-	<dd>
-	<cfif StructKeyExists(local.prop, "hint") AND Len(local.prop.hint)>
-	#local.prop.hint#
-	</cfif>
-	<p>
-	</p></dd>
-
-	<dl>
-	<dt><strong>Attributes:</strong></dt>
-	<cfloop collection="#local.prop#" item="local.param">
-		<cfif not listFindNoCase( "name,type,hint", local.param )>
-		<dd><code>#lcase( local.param )#</code> - #local.prop[ local.param ]#</dd>
+		<br><br>
+		<cfif StructKeyExists(local.prop, "hint") AND Len(local.prop.hint)>
+			<p>#local.prop.hint#</p>
 		</cfif>
-	</cfloop>
-	</dl>
 
-	</dd>
-	</dl>
-	<hr>
-</cfloop>
+		<dl>
+		<dt><strong>Attributes:</strong></dt>
+		<cfloop collection="#local.prop#" item="local.param">
+			<cfif not listFindNoCase( "name,type,hint,default", local.param )>
+			<dd><code>#lcase( local.param )#</code> - #local.prop[ local.param ]#</dd>
+			</cfif>
+		</cfloop>
+		</dl>
+
+		<hr>
+	</cfloop>
 </cfif>
 
 
@@ -447,26 +453,26 @@ Class
 <!-- ============ METHOD DETAIL ========== -->
 
 <a name="method_detail"><!-- --></a>
-<table summary="" border="1" cellpadding="3" cellspacing="0" width="100%">
-<tbody><tr class="TableHeadingColor" bgcolor="##ccccff">
-<th colspan="1" align="left"><font size="+2">
-<strong>Method Detail</strong></font></th>
-</tr>
-</tbody></table>
+<table class="table table-bordered">
+	<tr class="info">
+		<th colspan="1" align="left">
+			<strong>Method Detail</strong>
+		</th>
+	</tr>
+</table>
+
 <cfloop query="local.qFunctions">
 	<cfset local.func = local.qFunctions.metadata />
-	<a name="#local.func.name#()"><!-- --></a><h3>
-	#local.func.name#</h3>
+	<a name="#local.func.name#()"><!-- --></a>
+	<h3>#local.func.name#</h3>
+	
 	<kbd>#local.func.access# #writeTypeLink(local.func.returnType, arguments.package, arguments.qMetaData, local.func)# #writeMethodLink(arguments.name, arguments.package, local.func, arguments.qMetaData, false)#</kbd>
+	
 	<br><br>
 
-	<dl>
-	<dd>
 	<cfif StructKeyExists(local.func, "hint") AND Len(local.func.hint)>
-		#local.func.hint#
+		<p>#local.func.hint#</p>
 	</cfif>
-	<p>
-	</p></dd>
 
 	<cfif arguments.metadata.type eq "component">
 		<cfset local.specified = findSpecifiedBy(arguments.metaData, local.func.name) />
@@ -521,14 +527,6 @@ Class
 </cfloop>
 </cfif>
 
-<cfmodule template="inc/nav.html"
-			page="Class"
-			projectTitle= "#arguments.projectTitle#"
-			package = "#arguments.package#"
-			file="#replace(arguments.package, '.', '/', 'all')#/#arguments.name#"
-			>
-
-<HR>
 
 </body>
 </html>

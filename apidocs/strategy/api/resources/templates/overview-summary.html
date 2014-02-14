@@ -18,7 +18,7 @@
 
 </head>
 
-<body>
+<body class="withNavbar">
 
 <cfmodule template="inc/nav.html"
 			page="Overview"
@@ -26,15 +26,11 @@
 			file="overview-summary"
 			>
 
-<h2>
-#arguments.projecttitle#
-</h2>
-
 <div class="table-responsive">
 <table class="table table-hover table-striped">
 	<thead>
 		<tr class="info">
-			<th colspan="1"><strong>packages</strong></th>
+			<th colspan="1"><strong>Package Overview</strong></th>
 		</tr>
 	</thead>
 	<cfoutput query="arguments.qPackages">

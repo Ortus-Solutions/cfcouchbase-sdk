@@ -19,8 +19,7 @@
 
 </head>
 
-<body>
-
+<body class="withNavbar">
 
 <cfmodule template="inc/nav.html"
 			page="Package"
@@ -29,10 +28,8 @@
 			file="#replace(arguments.package, '.', '/', 'all')#/package-summary"
 			>
 <h2>
-package: <span class="label label-info">#arguments.package#</span>
+<span class="label label-success">#arguments.package#</span>
 </h2>
-
-<p>&nbsp;</p>
 
 <div class="table-responsive">
 <cfif arguments.qInterfaces.recordCount>

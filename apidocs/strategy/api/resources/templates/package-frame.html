@@ -1,4 +1,5 @@
 <cfoutput>
+<cfset assetPath = repeatstring( '../', listlen( arguments.package, "." ) )>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,47 +13,39 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
-	<link rel ="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css" title="style">
-	<link rel ="stylesheet" type="text/css" href="#repeatstring('../', listlen(arguments.package, "."))#stylesheet.css" title="style">
+	<link rel ="stylesheet" type="text/css" href="#assetPath#bootstrap/css/bootstrap.min.css" title="style">
+	<link rel ="stylesheet" type="text/css" href="#assetPath#stylesheet.css" title="style">
 	<link href='https://fonts.googleapis.com/css?family=Ubuntu:400,300,300italic,400italic,700,700italic|Ubuntu+Mono' rel='stylesheet' type='text/css' />
+
+	<cfmodule template="inc/js.html" rootPath="">
 </head>
 
 <body>
-<font size="+1" class="frametitlefont">
-	<a href="package-summary.html" target="classFrame">#arguments.package#</a>
-</font>
+
+<p>
+	<a href="package-summary.html" target="classFrame"><span class="label label-success">#arguments.package#</span></a>
+</p>
 
 <cfif arguments.qInterfaces.recordCount>
-<table border="0" width="100%" summary="">
-	<tr>
-		<td nowrap>
-			<font size="+1" class="frameheadingfont">
-			interfaces</font>&nbsp;
-			<font class="frameitemfont">
-			<cfloop query="arguments.qinterfaces">
-			<br>
-			<a href="#name#.html" title="class in #package#" target="classFrame"><i>#name#</i></a>
-			</cfloop>
-		</td>
-	</tr>
-</table>
+<p><strong>interfaces</strong></p>
+<ul class="list-unstyled">
+	<cfloop query="arguments.qinterfaces">
+	<li>
+		<a href="#name#.html" title="class in #package#" target="classFrame"><i>#name#</i></a>
+	</li>
+	</cfloop>
+</ul>
 </cfif>
 
 <cfif arguments.qclasses.recordcount>
-<table border="0" width="100%" summary="">
-	<tr>
-		<td nowrap>
-			<font size="+1" class="frameheadingfont">
-			classes</font>&nbsp;
-			<font class="frameitemfont">
-			<cfloop query="arguments.qclasses">
-			<br>
-			<a href="#name#.html" title="class in #package#" target="classFrame">#name#</a>
-			</cfloop>
-		</td>
-	</tr>
-</table>
-
+<p><strong>classes</strong></p>
+<ul class="list-unstyled">
+	<cfloop query="arguments.qclasses">
+	<li>
+		<a href="#name#.html" title="class in #package#" target="classFrame">#name#</a>
+	</li>
+	</cfloop>
+</ul>
 </cfif>
 
 </body>

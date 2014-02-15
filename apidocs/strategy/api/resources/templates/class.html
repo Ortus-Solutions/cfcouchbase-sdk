@@ -69,9 +69,11 @@ Class
 <div class="panel panel-default">
 	<div class="panel-heading"><strong>Class Attributes:</strong></div>
 		<div class="panel-body">
+		<cfset local.cfcAttributesCount = 0>
 		<cfloop collection="#arguments.metadata#" item="local.cfcmeta">
 			<cfif isSimpleValue( arguments.metadata[ local.cfcmeta ] ) AND
 				  !listFindNoCase( "hint,extends,fullname,functions,hashcode,name,path,properties,type,remoteaddress", local.cfcmeta ) >
+			<cfset local.cfcAttributesCount++>
 			<li class="label label-danger">
 				#lcase( local.cfcmeta )# 
 				<cfif len( arguments.metadata[ local.cfcmeta ] )>
@@ -79,6 +81,9 @@ Class
 				</cfif>
 			</li>
 			&nbsp;
+			</cfif>
+			<cfif local.cfcAttributesCount eq 0>
+				<span class="label label-warning"><em>None</em></span>
 			</cfif>
 		</cfloop>
 	</div>
@@ -339,7 +344,7 @@ Class
 	<table class="table table-hover table-bordered">
 		<tr class="info">
 			<th align="left">
-				<strong>Methods inherited from class <kbd>#writeClassLink(getPackage(local.localmeta.name), getObjectName(local.localmeta.name), arguments.qMetaData, 'long')#<kbd></strong>
+				<strong>Methods inherited from class <kbd>#writeClassLink(getPackage(local.localmeta.name), getObjectName(local.localmeta.name), arguments.qMetaData, 'long')#</kbd></strong>
 			</th>
 		</tr>
 		<tr>
@@ -358,9 +363,9 @@ Class
 				</cfloop>
 				
 				<cfif local.buffer.length()>
-					<code>#local.buffer.toString()#</code>
+					#local.buffer.toString()#
 				<cfelse>
-					<code><em>None</em></code>
+					<span class="label label-warning"><em>None</em></span>
 				</cfif>
 			</td>
 		</tr>

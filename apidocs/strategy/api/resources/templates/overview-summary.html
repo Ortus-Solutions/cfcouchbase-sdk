@@ -33,11 +33,11 @@
 			<th colspan="1"><strong>Package Overview</strong></th>
 		</tr>
 	</thead>
-	<cfoutput query="arguments.qPackages">
+	<cfloop query="arguments.qPackages">
 	<tr>
-		<td width="20%"><b><a href="#replace(package, ".", "/", "all")#/package-summary.html">#package#</a></b></td>
+		<td width="20%"><b><a href="#replace( arguments.qPackages.package, ".", "/", "all")#/package-summary.html">#arguments.qPackages.package#</a></b></td>
 	</tr>
-	</cfoutput>
+	</cfloop>
 </table>
 </div>
 

@@ -25,11 +25,11 @@
 
 	<ul class="list-unstyled">
 		<li><span class="label label-success">all packages</span></li>
-		<cfoutput query="arguments.qpackages">
+		<cfloop query="arguments.qpackages">
 		<li>
-			<a href="#replace(package, ".", "/", "all")#/package-frame.html" target="packageFrame">#package#</a>
+			<a href="#replace( arguments.qpackages.package, ".", "/", "all")#/package-frame.html" target="packageFrame">#arguments.qpackages.package#</a>
 		</li>
-		</cfoutput>
+		</cfloop>
 	</ul>
 </body>
 </html>

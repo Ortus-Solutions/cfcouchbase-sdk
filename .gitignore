@@ -4,4 +4,4 @@ node_modules
 settings.xml
 .project
 .svn
-apidocs
+apidocs/CFCouchbase-APIDocs

@@ -173,8 +173,8 @@ Class
 
 <cfif StructKeyExists(arguments.metadata, "hint")>
 <div id="class-hint">
-	<cfset local.hint = replace( arguments.metadata.hint, chr(10), '<br>' )>
-	<cfset local.hint = replace( local.hint, chr(13), '<br>' )>
+	<cfset local.hint = replace( arguments.metadata.hint, chr(10), '', "all" )>
+	<cfset local.hint = replace( local.hint, chr(13), '', "all" )>
 	<p class="lead">#local.hint#</p>
 </div>
 </cfif>

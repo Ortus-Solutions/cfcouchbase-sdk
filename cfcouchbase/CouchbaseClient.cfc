@@ -1,27 +1,27 @@
 /**
-* Copyright Since 2005 Ortus Solutions, Corp
-* www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
+* <p>Copyright Since 2005 Ortus Solutions, Corp
+* www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org</p>
+* 
+* <p>Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
 * in the Software without restriction, including without limitation the rights
 * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 * copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* furnished to do so, subject to the following conditions:</p>
+* 
+* <p>The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.</p>
+* 
+* <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
-* IN THE SOFTWARE.
+* IN THE SOFTWARE.</p>
 ********************************************************************************
 * @author Luis Majano, Brad Wood
-* This is the main Couchbase client object
+* <p>This is the main Couchbase client object</p>
 */
 component serializable="false" accessors="true"{
 
@@ -159,7 +159,7 @@ component serializable="false" accessors="true"{
 	* successfully if the original document value is unchanged.  This method is not asyncronous and therefore does not return a future since your application code
 	* will need to check the return and handle it appropriatley.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* person = { name: "Brad", age: 33, hair: "red" };
 	* result = client.setWithCAS( 'brad', person, CAS );
 	* </pre>
@@ -217,7 +217,7 @@ component serializable="false" accessors="true"{
 	* This method is the same as set(), except the future that is returned will return true if the ID being set doesn't already exist.  
 	* The future will return false if the item being set does already exist.  It will not throw an error if the ID already exists, you must check the future.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* person = { name: "Brad", age: 33, hair: "red" };
 	* future = client.add( 'brad', person );
 	* </pre>
@@ -259,7 +259,7 @@ component serializable="false" accessors="true"{
 	* Set multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
 	* The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* data = {
 	* &nbsp;&nbsp;brad = { name: "Brad", age: 33, hair: "red" },
 	* &nbsp;&nbsp;luis = { name: "Luis", age: 35, hair: "black" },
@@ -314,7 +314,7 @@ component serializable="false" accessors="true"{
 	/**
 	* This method will set a value only if that ID already exists in Couchbase.  If the document ID doesn't exist, it will do nothing.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* person = { name: "Brad", age: 33, hair: "red" };
 	* future = client.replace( 'brad', person );
 	* future.get();
@@ -354,7 +354,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get an object from couchbase by the ID.  This method will deserialize object automatically and optionally inflate the data into a CFC.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* person = client.get( 'brad' );
 	* </pre>
 	* 
@@ -378,7 +378,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get an object from couchbase asynchronously.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.asyncGet( 'brad' );
 	* future.get();
 	* </pre>
@@ -396,7 +396,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get multiple objects from couchbase.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* results = client.getMulti( ['brad', 'luis', 'bill'] );
 	* </pre>
 	* 
@@ -423,7 +423,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get multiple objects from couchbase asynchronously.  
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* buldFuture = client.asyncGetMulti( ['brad', 'luis', 'bill'] );
 	* </pre>
 	* 
@@ -441,7 +441,7 @@ component serializable="false" accessors="true"{
 	* Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated. 
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* result = client.getWithCAS( 'brad' );
 	* writeOutput(result.cas);
 	* writeOutput(result.value);
@@ -474,7 +474,7 @@ component serializable="false" accessors="true"{
 	* Gets (with CAS support) the given key asynchronously.  This method is meant to be used in conjunction with setWithCAS to be able to 
 	* update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.asyncGetWithCAS( 'brad' );
 	* </pre>
 	* 
@@ -492,7 +492,7 @@ component serializable="false" accessors="true"{
 	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
 	* functionality where you don't want a document to timeout while it is still being accessed.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* result = client.getAndTouch( 'brad' );
 	* writeOutput(result.cas);
 	* writeOutput(result.value);
@@ -537,7 +537,7 @@ component serializable="false" accessors="true"{
 	* Obtain a value for a given ID and update the expiry time for the document at the same time.  This is useful for a sort of "last access timeout" 
 	* functionality where you don't want a document to timeout while it is still being accessed.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.asyncGetAndTouch( 'brad' );
 	* </pre>
 	* 
@@ -561,7 +561,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Shutdown the native client connection
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* client.shutdown( 10 );
 	* </pre>
 	* 
@@ -577,7 +577,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Flush all caches from all servers with a delay of application.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* client.flush( 5 );
 	* </pre>
 	* 
@@ -593,7 +593,7 @@ component serializable="false" accessors="true"{
 	* Get all of the stats from all of the servers in the cluster.
 	* Information on stats available here: http://www.couchbase.com/docs/couchbase-manual-1.8/cbstats-all-bucket-info.html
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* clusterStats = client.getStats();
 	* </pre>
 	* 
@@ -625,7 +625,7 @@ component serializable="false" accessors="true"{
 	* <p>
 	* Information on stats available here: http://www.couchbase.com/docs/couchbase-manual-1.8/cbstats-all-bucket-info.html
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* stats = client.getAggregateStat( 'curr_items' );
 	* </pre>
 	* 
@@ -653,7 +653,7 @@ component serializable="false" accessors="true"{
 	* Decrement the given counter, returning the new value.  This method is thread safe as it decrements and retrives the value in a single operation as opposed to 
 	* getting it, and then setting it again with subsequent calls.  
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* newValue = client.decr( 'passesLeft', 1 );
 	* </pre>
 	* 
@@ -686,7 +686,7 @@ component serializable="false" accessors="true"{
 	* Decrement the given counter asynchronously.  This method is thread safe as it decrements and retrives the value in a single operation as opposed to 
 	* getting it, and then setting it again with subsequent calls.  
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.asyncDecr( 'passesLeft', 1 );
 	* </pre>
 	* 
@@ -709,7 +709,7 @@ component serializable="false" accessors="true"{
 	* Increment the given counter.  This method is thread safe as it increments and retrives the value in a single operation as opposed to 
 	* getting it, and then setting it again with subsequent calls.  
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* newValue = client.incr( 'numErrors', 1 );
 	* </pre>
 	* 
@@ -743,7 +743,7 @@ component serializable="false" accessors="true"{
 	* Increment the given counter asynchronously.  This method is thread safe as it increments and retrives the value in a single operation as opposed to 
 	* getting it, and then setting it again with subsequent calls.  	 
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.asyncIncr( 'numErrors', 1 );
 	* </pre>
 	* 
@@ -765,7 +765,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Touch the given ID to reset its expiration time.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.touch( 'sessionData', 30 );
 	* </pre>
 	* 
@@ -789,7 +789,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Delete a value with durability options. The durability options here operate similarly to those documented in the set method.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.delete( 'brad' );
 	* </pre>
 	* 
@@ -829,7 +829,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get stats for a specific document ID.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* docStats = client.getDocStats( 'brad' );
 	* docStatArray = client.getDocStats( ['brad', 'luis', 'bill'] );
 	* </pre>
@@ -859,7 +859,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get the addresses of available servers.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* serverArray = client.getAvailableServers();
 	* </pre>
 	* 
@@ -877,7 +877,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Get the addresses of unavailable servers
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* serverArray = client.getUnAvailableServers();
 	* </pre>
 	* 
@@ -896,7 +896,7 @@ component serializable="false" accessors="true"{
 	* Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
 	* This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
 	* </pre>
 	* 
@@ -932,7 +932,7 @@ component serializable="false" accessors="true"{
 	* Prepend to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
 	* This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* future = client.prepend( 'hierachyList', parent );
 	* </pre>
 	* 
@@ -972,7 +972,7 @@ component serializable="false" accessors="true"{
 	* <p>
 	* http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* oQuery = client.newQuery( { offset:10, limit:20, group:true, groupLevel:2 } );
 	* </pre>
 	* 
@@ -1019,7 +1019,7 @@ component serializable="false" accessors="true"{
 	* in the native Couchbase query object (com.couchbase.client.protocol.views.Query) 
 	* See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* results = client.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'OK' } );
 	* </pre>
 	* 
@@ -1113,7 +1113,7 @@ component serializable="false" accessors="true"{
 	* Queries a Couchbase view. 
 	* See: http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/ViewResponse.html
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* query = client.newQuery( { limit: 20, stale: 'OK' } );
 	* view = client.getView( 'beer', 'brewery_beers' );
 	* results = client.rawQuery( view, query );
@@ -1132,7 +1132,7 @@ component serializable="false" accessors="true"{
 	* Gets access to a view contained in a design document from the cluster 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* view = client.getView( 'beer', 'brewery_beers' );
 	* </pre>
 	* 
@@ -1149,7 +1149,7 @@ component serializable="false" accessors="true"{
 	* Gets access to a spatial view contained in a design document from the cluster. 
 	* You would usually use this method if you need the raw Java object to do manual queries or updates on a view.
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* spatialView = client.getSpatialView( 'myDoc', 'mySpatialView' );
 	* </pre>
 	* 
@@ -1166,7 +1166,7 @@ component serializable="false" accessors="true"{
 	* Gets a design document.
 	* This method will throw an error if the design document name doesn't exist.  Names are case-sensitive.
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* designDocument = client.getDesignDocument( 'beer' );
 	* </pre>
 	* 
@@ -1181,7 +1181,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Deletes a design document from the server
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* client.deleteDesignDocument( 'beer' );
 	* </pre>
 	* 
@@ -1196,7 +1196,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Initializes a new design document Java object.  The design doc will have no views and will not be saved yet. 
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* designDocument = client.newDesignDocument( 'mynewDoc' );
 	* </pre>
 	* 
@@ -1211,7 +1211,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Checks to see if a design document exists.
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* result = client.designDocumentExists( 'beer' );
 	* </pre>
 	* 
@@ -1235,7 +1235,7 @@ component serializable="false" accessors="true"{
 	* Checks to see if a view exists.
 	* You can check for a view by name, but if you supply a map or reduce function, they will be checked as well.
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* result = client.viewExists( 'beer', 'brewery_beers' );
 	* </pre>
 	* 
@@ -1281,7 +1281,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Creates a new instance of a viewDesign Java object (com.couchbase.client.protocol.views.ViewDesign)
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* viewDesign = client.newViewDesign( viewName, mapFunction, reduceFunction );
 	* </pre>
 	* 
@@ -1299,7 +1299,7 @@ component serializable="false" accessors="true"{
 	* Asynchronously Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  This method
 	* will return immediatley, but the view probalby won't be available to query for a few seconds. 
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* client.asyncSaveView(
 	* &nbsp;&nbsp;'manager',
 	* &nbsp;&nbsp;'listBreweries',
@@ -1365,7 +1365,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.  
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* client.saveView(
 	* &nbsp;&nbsp;'manager',
 	* &nbsp;&nbsp;'listBreweries',
@@ -1423,7 +1423,7 @@ component serializable="false" accessors="true"{
 	/**
 	* Deletes a View.  Will delete the view from the designDocument if it exists.  
 	*	 
-	* <pre>
+	* <pre class='brush: cf'>
 	* client.deleteView( 'myDoc', 'myView' );
 	* </pre>
 	* 

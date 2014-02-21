@@ -89,22 +89,23 @@ component{
 					
 					var currentEpochDate = createObject("java","java.util.Date").init().getTime() / 1000;	
 					var tenMinutesInTheFutureEpoch = round(currentEpochDate + (10 * 60)); 
-					
+					var stats = couchbase.getDocStats( "ten_minutes" ).get();
 					// See if the expiration date (stored as seconds since epoch) matches what I think it should be.
 					//	Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call.
-					expect( round(tenMinutesInTheFutureEpoch/100) ).toBe( round(couchbase.getDocStats("ten_minutes").get().key_exptime/100) );
+					expect( round(tenMinutesInTheFutureEpoch/100) )
+						.toBeCloseTo( round( stats[ "key_exptime" ]/100 ), 50 );
 										
 				});			
 
 				it( "with timeout greater than 30 days", function(){
 					var future = couchbase.set( ID="fortyFive_days", value="I should last 45 days", timeout=45*24*60 ).get();
-					
-					var currentEpochDate = createObject("java","java.util.Date").init().getTime() / 1000;	
-					var fortyFiveDaysInTheFutureEpoch = round(currentEpochDate + (45 * 60 * 60 * 24)); 
-					
+					var currentEpochDate = createObject( "java", "java.util.Date" ).init().getTime() / 1000;	
+					var fortyFiveDaysInTheFutureEpoch = round( currentEpochDate + (45 * 60 * 60 * 24) ); 
+					var stats = couchbase.getDocStats( "fortyFive_days" ).get();
 					// See if the expiration date (stored as seconds since epoch) matches what I think it should be.
 					//	Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call.
-					expect( round(fortyFiveDaysInTheFutureEpoch/100) ).toBe( round(couchbase.getDocStats("fortyFive_days").get().key_exptime/100) );
+					expect( round( fortyFiveDaysInTheFutureEpoch/100 ) )
+						.toBeCloseTo( round( stats[ "key_exptime" ]/100 ), 50 );
 										
 				});	
 

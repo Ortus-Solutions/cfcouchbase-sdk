@@ -116,7 +116,7 @@ component serializable="false" accessors="true"{
 	* To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc. 
 	* A PersistTo.TWO durability setting implies a replication to at least one node.
 	* 
-	* <pre>
+	* <pre class='brush: cf'>
 	* person = { name: "Brad", age: 33, hair: "red" };
 	* future = client.set( 'brad', person );
 	* </pre>

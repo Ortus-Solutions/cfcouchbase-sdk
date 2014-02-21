@@ -1,12 +1,28 @@
-/* ********************************************************************************
-Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+/**
+* Copyright Since 2005 Ortus Solutions, Corp
+* www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
+* IN THE SOFTWARE.
 ********************************************************************************
-
-Author     :	Luis Majano
-Description :
-	This is a bean populator that binds different types of data to an object.
-*********************************************************************************** */
+* @author Luis Majano, Brad Wood
+* This is a bean populator that binds different types of data to an object.
+*/
 component hint="This is an object populator that binds different types of data to a object." {
 
 // ------------------------------------------- CONSTRUCTOR -----------------------------------------
@@ -18,20 +34,19 @@ component hint="This is an object populator that binds different types of data t
 // ------------------------------------------- PUBLIC ------------------------------------------
 
 	/**
-		Populate a named or instantiated bean from a json string
-		
-		@target.hint The target to populate
-		@JSONString.hint The JSON string to populate the object with. It has to be valid JSON and also a structure with name-key value pairs.
-		@scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
-		@trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
-		@include.hint A list of keys to include in the population
-		@exclude.hint A list of keys to exclude in the population
-		@ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
-		@nullEmptyInclude.hint A list of keys to NULL when empty
-		@nullEmptyExclude.hint A list of keys to NOT NULL when empty
-		@composeRelationships.hint Automatically attempt to compose relationships from memento
-		
-		@Return The populated target
+	* Populate a named or instantiated bean from a json string
+	* @target.hint The target to populate
+	* @JSONString.hint The JSON string to populate the object with. It has to be valid JSON and also a structure with name-key value pairs.
+	* @scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
+	* @trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
+	* @include.hint A list of keys to include in the population
+	* @exclude.hint A list of keys to exclude in the population
+	* @ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
+	* @nullEmptyInclude.hint A list of keys to NULL when empty
+	* @nullEmptyExclude.hint A list of keys to NOT NULL when empty
+	* @composeRelationships.hint Automatically attempt to compose relationships from memento
+	* 
+	* @return The populated target
 	*/
 	public any function populateFromJSON( 
 		required any target,
@@ -53,21 +68,20 @@ component hint="This is an object populator that binds different types of data t
 	}
 
 	/**
-		Populate a named or instantiated bean from an XML packet
-		
-		@target.hint The target to populate
-		@xml.hint The XML string or packet
-		@root.hint The XML root element to start from
-		@scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
-		@trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
-		@include.hint A list of keys to include in the population
-		@exclude.hint A list of keys to exclude in the population
-		@ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
-		@nullEmptyInclude.hint A list of keys to NULL when empty
-		@nullEmptyExclude.hint A list of keys to NOT NULL when empty
-		@composeRelationships.hint Automatically attempt to compose relationships from memento
-		
-		@Return The populated target
+	* Populate a named or instantiated bean from an XML packet
+	* @target.hint The target to populate
+	* @xml.hint The XML string or packet
+	* @root.hint The XML root element to start from
+	* @scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
+	* @trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
+	* @include.hint A list of keys to include in the population
+	* @exclude.hint A list of keys to exclude in the population
+	* @ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
+	* @nullEmptyInclude.hint A list of keys to NULL when empty
+	* @nullEmptyExclude.hint A list of keys to NOT NULL when empty
+	* @composeRelationships.hint Automatically attempt to compose relationships from memento
+	* 
+	* @return The populated target
 	*/
 	public any function populateFromXML( 
 		required any target,
@@ -114,21 +128,20 @@ component hint="This is an object populator that binds different types of data t
 	}
 
 	/**
-		Populate a named or instantiated bean from query
-		
-		@target.hint The target to populate
-		@qry.hint The query to popluate the bean object with
-		@rowNumber.hint The query row number to use for population
-		@scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
-		@trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
-		@include.hint A list of keys to include in the population
-		@exclude.hint A list of keys to exclude in the population
-		@ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
-		@nullEmptyInclude.hint A list of keys to NULL when empty
-		@nullEmptyExclude.hint A list of keys to NOT NULL when empty
-		@composeRelationships.hint Automatically attempt to compose relationships from memento
-		
-		@Return The populated target
+	* Populate a named or instantiated bean from query
+	* @target.hint The target to populate
+	* @qry.hint The query to popluate the bean object with
+	* @rowNumber.hint The query row number to use for population
+	* @scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
+	* @trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
+	* @include.hint A list of keys to include in the population
+	* @exclude.hint A list of keys to exclude in the population
+	* @ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
+	* @nullEmptyInclude.hint A list of keys to NULL when empty
+	* @nullEmptyExclude.hint A list of keys to NOT NULL when empty
+	* @composeRelationships.hint Automatically attempt to compose relationships from memento
+	* 
+	* @return The populated target
 	*/
 	public any function populateFromQuery( 
 		required any target,
@@ -161,22 +174,21 @@ component hint="This is an object populator that binds different types of data t
 	}
 
 	/**
-		Populate a named or instantiated bean from query using a prefix
-		
-		@target.hint The target to populate
-		@qry.hint The query to popluate the bean object with
-		@rowNumber.hint The query row number to use for population
-		@scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
-		@trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
-		@include.hint A list of keys to include in the population
-		@exclude.hint A list of keys to exclude in the population
-		@prefix.hint The prefix used to filter, Example: 'user_' would apply to the following columns: 'user_id' and 'user_name' but not 'address_id'
-		@ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
-		@nullEmptyInclude.hint A list of keys to NULL when empty
-		@nullEmptyExclude.hint A list of keys to NOT NULL when empty
-		@composeRelationships.hint Automatically attempt to compose relationships from memento
-		
-		@Return The populated target
+	* Populate a named or instantiated bean from query using a prefix
+	* @target.hint The target to populate
+	* @qry.hint The query to popluate the bean object with
+	* @rowNumber.hint The query row number to use for population
+	* @scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
+	* @trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
+	* @include.hint A list of keys to include in the population
+	* @exclude.hint A list of keys to exclude in the population
+	* @prefix.hint The prefix used to filter, Example: 'user_' would apply to the following columns: 'user_id' and 'user_name' but not 'address_id'
+	* @ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
+	* @nullEmptyInclude.hint A list of keys to NULL when empty
+	* @nullEmptyExclude.hint A list of keys to NOT NULL when empty
+	* @composeRelationships.hint Automatically attempt to compose relationships from memento
+	* 
+	* @return The populated target
 	*/
 	public any function populateFromQueryWithPrefix( 
 		required any target,
@@ -216,21 +228,20 @@ component hint="This is an object populator that binds different types of data t
 	}
 	
 	/**
-		Populate a named or instantiated bean from a struct using a prefix
-		
-		@target.hint The target to populate
-		@memento.hint The structure to populate the object with.
-		@scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
-		@trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
-		@include.hint A list of keys to include in the population
-		@exclude.hint A list of keys to exclude in the population
-		@prefix.hint The prefix used to filter, Example: 'user_' would apply to the following columns: 'user_id' and 'user_name' but not 'address_id'
-		@ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
-		@nullEmptyInclude.hint A list of keys to NULL when empty
-		@nullEmptyExclude.hint A list of keys to NOT NULL when empty
-		@composeRelationships.hint Automatically attempt to compose relationships from memento
-		
-		@Return The populated target
+	* Populate a named or instantiated bean from a struct using a prefix
+	* @target.hint The target to populate
+	* @memento.hint The structure to populate the object with.
+	* @scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
+	* @trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
+	* @include.hint A list of keys to include in the population
+	* @exclude.hint A list of keys to exclude in the population
+	* @prefix.hint The prefix used to filter, Example: 'user_' would apply to the following columns: 'user_id' and 'user_name' but not 'address_id'
+	* @ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
+	* @nullEmptyInclude.hint A list of keys to NULL when empty
+	* @nullEmptyExclude.hint A list of keys to NOT NULL when empty
+	* @composeRelationships.hint Automatically attempt to compose relationships from memento
+	* 
+	* @return The populated target
 	*/
 	public any function populateFromStructWithPrefix( 
 		required any target,
@@ -268,20 +279,19 @@ component hint="This is an object populator that binds different types of data t
 	
 	
 	/**
-		Populate a named or instantiated bean from a structure
-		
-		@target.hint The target to populate
-		@memento.hint The structure to populate the object with.
-		@scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
-		@trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
-		@include.hint A list of keys to include in the population
-		@exclude.hint A list of keys to exclude in the population
-		@ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
-		@nullEmptyInclude.hint A list of keys to NULL when empty
-		@nullEmptyExclude.hint A list of keys to NOT NULL when empty
-		@composeRelationships.hint Automatically attempt to compose relationships from memento
-		
-		@Return The populated target
+	* Populate a named or instantiated bean from a structure
+	* @target.hint The target to populate
+	* @memento.hint The structure to populate the object with.
+	* @scope.hint Use scope injection instead of setters population. Ex: scope=variables.instance
+	* @trustedSetter.hint If set to true, the setter method will be called even if it does not exist in the bean
+	* @include.hint A list of keys to include in the population
+	* @exclude.hint A list of keys to exclude in the population
+	* @ignoreEmpty.hint Ignore empty values on populations, great for ORM population"
+	* @nullEmptyInclude.hint A list of keys to NULL when empty
+	* @nullEmptyExclude.hint A list of keys to NOT NULL when empty
+	* @composeRelationships.hint Automatically attempt to compose relationships from memento
+	* 
+	* @return The populated target
 	*/
 	public any function populateFromStruct( 
 		required any target,
@@ -492,12 +502,10 @@ component hint="This is an object populator that binds different types of data t
 	// ------------------------------------------- PRIVATE ------------------------------------------
 	
 	/**
-		Prepares a structure of target relational meta data
-		
-		@target.hint The target object
-		
-		@Return A struct of metadata about the target's relationships
-	
+	* Prepares a structure of target relational meta data
+	* @target.hint The target object
+	*
+	* @return A struct of metadata about the target's relationships
 	*/
 	private struct function getRelationshipMetaData( required any target ) {
 		var meta = {};
@@ -517,12 +525,10 @@ component hint="This is an object populator that binds different types of data t
 	}
 
 	/**
-		Populates a property if it exists
-		
-		@propertyName.hint The name of the property to inject.
-		@propertyValue.hint The value of the property to inject
-		@scope.hint The scope to which inject the property to.
-			
+	* Populates a property if it exists
+	* @propertyName.hint The name of the property to inject.
+	* @propertyValue.hint The value of the property to inject
+	* @scope.hint The scope to which inject the property to.
 	*/
 	private function populatePropertyMixin( required propertyName, required propertyValue, scope='variables' ) {
 		// Validate Property

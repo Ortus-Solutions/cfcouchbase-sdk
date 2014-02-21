@@ -38,9 +38,8 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	* Constructor
 	*/
 	function init(){
-
-		variables.objectMDCache = createObject( "java", "java.util.HashMap" ).init();
-		variables.ObjectPopulator = new cfcouchbase.data.ObjectPopulator();
+		variables.system 			= createObject( "java", "java.lang.System" );
+		variables.objectPopulator 	= new cfcouchbase.data.ObjectPopulator();
 
 		return this;
 	}
@@ -87,7 +86,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		}
 
 		// Get object info
-		var mdCache = getObjectMD( arguments.data );
+		var mdCache = variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.data );
 
 		// Auto Inflate Mode, store with class information
 		if( structKeyExists( mdCache, "autoInflate" ) AND arrayLen( mdCache.properties ) ){
@@ -116,7 +115,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	* build CFC memento
 	*/
 	private function buildMemento( required any target, required any metaData ){
-		memento = {};
+		var memento = {};
 		// build out a memento from the properties.
 		for( var thisProp in arguments.metaData.properties ){
 			if( !structKeyExists( thisProp, 'inject' ) ) {
@@ -125,7 +124,6 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		}
 		return memento; 
 	}
-
 
 	// ************************ Deserialization ************************ 
 
@@ -137,7 +135,12 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	*/
-	any function deserializeData( required string ID, required string data, any inflateTo="", struct deserializeOptions={} ){
+	any function deserializeData( 
+		required string ID, 
+		required string data, 
+		any inflateTo="", 
+		struct deserializeOptions={} 
+	){
 		var results = arguments.data;
 		
 		if( isJSON( arguments.data ) ){
@@ -177,7 +180,12 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	/**
 	* Does object inflation
 	*/
-	private function deserializeObjects( required string ID, required any data, required any inflateTo, deserializeOptions={} ){
+	private function deserializeObjects( 
+		required string ID, 
+		required any data, 
+		required any inflateTo, 
+		deserializeOptions={} 
+	){
 		var oTarget = '';
 		var propertyIDName = '';
 
@@ -195,13 +203,13 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 			// If it's not already in the struct...
 			if( len( propertyIDName ) && !structKeyExists( arguments.data, propertyIDName ) ) {
 				// ... put it there
-				arguments.data[propertyIDName] = arguments.ID;
+				arguments.data[ propertyIDName ] = arguments.ID;
 			}
 			
 			arguments.deserializeOptions.target = oTarget;
 			arguments.deserializeOptions.memento = arguments.data;
 						
-			return ObjectPopulator.populateFromStruct( argumentCollection = arguments.deserializeOptions );
+			return variables.objectPopulator.populateFromStruct( argumentCollection = arguments.deserializeOptions );
 			
 		} else if( isQuery( arguments.data ) ) {
 			
@@ -240,7 +248,6 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 
 	// ************************ Utility ************************ 
 
-
 	/**
 	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
 	*/
@@ -250,7 +257,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	}
 	
 	/**
-	* Generates inflatable CFC from a class path or closure provider 
+	* Generates inflatable CFC from a class path, object or closure provider 
 	*/
 	private function generateInflatable( required any inflateTo, required any data ){
 		
@@ -268,34 +275,10 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	}
 	
 	/**
-	* Get the md of an object
-	*/
-	struct function getObjectMD( required target ){
-
-		if( !variables.objectMDCache.containsKey( arguments.target ) ){
-			lock name="cfcouchbase.marshallercache" type="exclusive" timeout="10" throwOnTimeout="true"{
-				if( !variables.objectMDCache.containsKey( arguments.target ) ){
-					variables.objectMDCache.put( arguments.target, variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.target ) );	
-				}
-			}
-		}
-
-		return variables.objectMDCache.get( arguments.target );
-	}
-
-	/**
-	* Clear the metadata cache
-	*/
-	any function clearObjectCache(){
-		variables.objectMDCache.clear();
-		return this;
-	}
-
-	/**
 	* Determine which property of the CFC is the primary ID.  Returns empty string if none found.
 	*/
 	private string function determineIDPropertyName( required any target, required struct deserializeOptions ){
-		var md = getObjectMD( arguments.target );
+		var md = variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.target );
 		
 		// Look at the properties in the CFC
 		if( structKeyExists( md, 'properties' ) ){
@@ -317,6 +300,5 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		return '';
 		
 	}
-
 
 }

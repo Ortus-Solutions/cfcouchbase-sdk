@@ -1,4 +1,4 @@
-body{ margin:70px; font-size:13px; font-family: 'Ubuntu',"Helvetica Neue",Helvetica,Arial,sans-serif; 
+body{ margin:70px; font-size:14px; font-family: 'Ubuntu',"Helvetica Neue",Helvetica,Arial,sans-serif; 
 font-weight: 300;}
 #main-navbar{ opacity: 0.9; -moz-opacity: 0.9; -webkit-opacity: 0.9;}
 .jumbotron{ padding: 50px !important;}
@@ -7,7 +7,7 @@ h1, h2{ border-bottom: 1px solid #ccc}
 h1{ font-size: 35px; margin: 20px 0px; }
 h2, h3, h4, h5{ margin: 20px 0px}
 .toc-container h2{ font-size: 35px; border-bottom: none;}
-pre{ margin: 20px 0px; font-size: 11px}
+pre{ margin: 20px 0px; font-size: 12px}
 #header .label{ font-size: 16px; padding: 10px;}
 .footer {
   margin-top: 25px;

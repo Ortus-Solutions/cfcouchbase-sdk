@@ -80,6 +80,10 @@
         <copy todir="${dir.build}/docs/includes" >
             <fileset dir="${dir.docs}/includes" />
         </copy>
+        <copy todir="${dir.build}/docs">
+            <fileset file="${dir.docs}/favicon.ico" />
+            <fileset file="${dir.docs}/.htaccess" />
+        </copy>
         
         <!-- Zip API Docs -->
         <zip destfile="${dir.dist}/CFCouchbase_APIDocs_${cfcouchbase.version}.zip" basedir="${dir.build}/apidocs"></zip>

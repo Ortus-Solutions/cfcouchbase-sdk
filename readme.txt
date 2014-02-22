@@ -49,7 +49,7 @@ Source Code
 Tracker Site (Bug Tracking, Issues)
 - https://ortussolutions.atlassian.net/browse/COUCHBASESDK
 Documentation
-- http://wiki.coldbox.org
+- http://www.ortussolutions.com/docs/cfcouchbase/v1.0.0/index.html
 Blog
 - http://www.ortussolutions.com/blog
 Official Site

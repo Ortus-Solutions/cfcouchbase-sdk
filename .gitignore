@@ -6,3 +6,4 @@ settings.xml
 .svn
 apidocs/CFCouchbase-APIDocs
 test/results
+distributions/docs

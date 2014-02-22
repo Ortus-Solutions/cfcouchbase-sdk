@@ -54,7 +54,7 @@ component serializable="false" accessors="true"{
 
 		// The version of the client and sdk
 		variables.version 		= "1.0.0.@build.number@";
-		variables.SDKVersion 	= "1.2";
+		variables.SDKVersion 	= "1.3.1";
 		// The unique version of this client
 		variables.libID	= createObject('java','java.lang.System').identityHashCode( this );
 		// lib path

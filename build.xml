@@ -7,7 +7,7 @@
         Build a new distribution of the CFCouchbase SDK
     </description>
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
-    <property name="cfcouchbase.version" value="1.0.0.Alpha"/>
+    <property name="cfcouchbase.version" value="1.0.0"/>
     <!-- Build Labels -->
     <tstamp prefix="start"/>
     
@@ -74,16 +74,11 @@
         <delete file="${dir.build}/colddoc.html" />
 
         <!-- Build Documentation -->
-        <mkdir dir="${dir.build}/documentation" />
-        <get dest="${dir.build}/documentation/index.html" src="${url.docs}" verbose="true"/>
+        <mkdir dir="${dir.build}/docs" />
+        <get dest="${dir.build}/docs/index.html" src="${url.docs}" verbose="true"/>
         <!-- Copy assets to docs -->
-        <copy todir="${dir.build}/documentation/includes" >
+        <copy todir="${dir.build}/docs/includes" >
             <fileset dir="${dir.docs}/includes" />
-        </copy>
-
-        <!-- Package Test Results -->
-        <copy todir="${dir.build}/test-results" >
-            <fileset dir="test/results/junitreport" />
         </copy>
         
         <!-- Zip API Docs -->

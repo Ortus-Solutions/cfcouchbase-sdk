@@ -18,7 +18,6 @@ PLEASE NOTE THAT YOU MUST ALTER THE RUNNER'S URL ACCORDING TO YOUR ENVIRONMENT.
 -->
 <project name="testbox-ant-runner" default="run" basedir=".">
 	
-
 	<target name="init" description="Init the tests">
 
         <!-- Default environment check, if not passed via -Denvironment -->

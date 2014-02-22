@@ -5,3 +5,4 @@ settings.xml
 .project
 .svn
 apidocs/CFCouchbase-APIDocs
+test/results

@@ -37,7 +37,7 @@ Interactive applications have changed dramatically over the last 15 years, and s
 <p>&nbsp;</p>
 
 <div class="well well-small text-center">
-<img src="includes/images/monitor_graph.png" class="img-polaroid"/>
+<img src="includes/images/monitor_graph.png" class="img-responsive img-thumbnail"/>
 <p>The web console of a Couchbase cluster</p>
 </div>
 
@@ -84,12 +84,9 @@ Download the SDK from our [http://www.ortussolutions.com/products/cfcouchbase do
 
 <p>&nbsp;</p>
 
-<span class="alert alert-info">
+<div class="alert alert-info">
 '''Note''' : The [<cfoutput>#prc.apidocs#</cfoutput> API Docs] also have descriptions and code samples for every method.  They are a must read as well!  
-</span>
-
-<p>&nbsp;</p>
-
+</div>
 
 The CFCouchase SDK is contained in a single folder.  The easiest way to install it is to copy '''cfcouchbase''' in the web root.  For a more secure installation, place it outside the web root and create a mapping called '''cfcouchbase'''.   
 
@@ -139,19 +136,17 @@ The default configuration for CFCouchbase is located in <span class="label label
 # Pass a config structure
 # Pass a config CFC
 
-<p>&nbsp;</p>
 
-<span class="alert alert-info">
+<div class="alert alert-info">
 '''Note''' : The config CFC is the most contained and portable way to store your configuration.
-</span>
-
-<p>&nbsp;</p>
+</div>
 
 There are a number of configuration otions you can set for the client, but most of them can be left at their default value.  To see a full list of options, look in the <span class="label label-primary">/cfcouchbase/config/CouchbaseConfig.cfc</span> or the user friendly [<cfoutput>#prc.apidocs#</cfoutput> API Docs].
 Here are some of the most common setting you will need to use:
  
 === Common Config Settings ===
 
+<div class="table-responsive">
 {| cellpadding=”5”, class="table table-hover table-striped table-condensed"
 ! '''Setting''' !! '''Type''' !! '''Default''' !! '''Description''' 
 |-
@@ -163,7 +158,7 @@ Here are some of the most common setting you will need to use:
 |-
 || '''dataMarshaller''' || any ||  --- || The data marshaller to use for serializations and deserializations, please put the class path or the instance of the marshaller to use.  Remember that it must implement our interface: cfcouchbase.data.IDataMarshaller  
 |}
-
+</div>
 
 === Config Struct ===
 
@@ -552,6 +547,7 @@ Here are the arguments you can pass into the '''query()''' method.  For the late
 
 <p>&nbsp;</p>
 
+<div class="table-responsive">
 {| cellpadding=”5”, class="table table-hover table-striped table-condensed"
 ! '''Argument''' !! '''Type''' !! '''Default''' !! '''Description''' 
 |-
@@ -576,7 +572,7 @@ Here are the arguments you can pass into the '''query()''' method.  For the late
 * '''native''' - Returns the underlying Java response object containing the results.
 * '''iterator''' - Returns a Java Iterator object containing the results.
 |}
-
+</div>
 
 ==== Results ====
 
@@ -594,6 +590,7 @@ Here are some of the most common keys you can pass in the struct of '''options''
 
 <p>&nbsp;</p>
 
+<div class="table-responsive">
 {| cellpadding=”5”, class="table table-hover table-striped table-condensed"
 ! '''Option''' !! '''Description''' 
 |-
@@ -620,6 +617,7 @@ Here are some of the most common keys you can pass in the struct of '''options''
 * '''FALSE''' - force index of view
 * '''UPDATE_AFTER''' - potentially returns stale data, but starts an asynch re-index.
 |}
+</div>
 
 
 <source lang="javascript">

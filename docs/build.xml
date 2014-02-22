@@ -8,7 +8,7 @@ Export docs
     </description>
     
     <!-- set global properties for this build -->
-	<property name="src.docs" value="http://cf10cboxdev.jfetmac/cfcouchbase-sdk/docs/docs/index.cfm" />
+	<property name="src.docs" value="http://railocboxdev.jfetmac/cfcouchbase-sdk/docs/index.cfm" />
 	<property name="dist.dir" value="../distributions" />
 	<property name="build.dir" value="${dist.dir}/docs" />
     
@@ -16,7 +16,7 @@ Export docs
 	<property name="sdk.version"	value="1.0.0"/>
 		    
 	<!--Deploy-->
-    <target name="deployStandalone">
+    <target name="deploy">
         <echo>Starting to deploy CFCouchbase SDK Docs</echo>
     	
     	<!-- docs -->
@@ -24,28 +24,14 @@ Export docs
     	<get dest="${build.dir}/index.html" src="${src.docs}?version=${sdk.version}" verbose="true"/>
 		<copy todir="${build.dir}" >
 			<fileset file="favicon.ico" />
+			<fileset file=".htaccess" />
 		</copy>
     	<copy todir="${build.dir}/includes" >
     		<fileset dir="includes" />
     	</copy>
 	
-		<zip destfile="${dist.dir}/cfcouchbase_docs_v${sdk.version}.zip" basedir="${build.dir}" />
+		<!--<zip destfile="${dist.dir}/cfcouchbase_docs_v${sdk.version}.zip" basedir="${build.dir}" />-->
 	
     </target>
-	
-	<target name="deploy">
-		<!-- docs -->
-		<mkdir dir="../www/docs" />
-		<get dest="../www/docs/index.html" src="${src.docs}" verbose="true"/>
-    	<copy todir="../www/docs/includes" >
-    		<fileset dir="includes" />
-    	</copy>
-		<copy todir="../www/docs/" >
-			<fileset file="favicon.ico" />
-		</copy>
-		<copy todir="../www/docs/" >
-			<fileset file=".htaccess" />
-		</copy>
-	</target>
     
 </project>

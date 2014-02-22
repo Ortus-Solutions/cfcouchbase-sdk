@@ -1,4 +1,4 @@
-body{ margin:70px; font-size:14px; font-family: 'Ubuntu',"Helvetica Neue",Helvetica,Arial,sans-serif; 
+body{ margin:70px 15px; font-size:14px; font-family: 'Ubuntu',"Helvetica Neue",Helvetica,Arial,sans-serif; 
 font-weight: 300;}
 #main-navbar{ opacity: 0.9; -moz-opacity: 0.9; -webkit-opacity: 0.9;}
 .jumbotron{ padding: 50px !important;}

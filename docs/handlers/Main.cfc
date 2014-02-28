@@ -11,7 +11,7 @@ component{
 		event.paramValue( "sdkversion", "1.3.1" );
 		
 		prc.markuppath = getSetting( "ApplicationPath" ) & "views/markup";
-		prc.apidocs = "http://apidocs.ortussolutions.com/CFCouchbase_APIDocs_1.0.0/index.html";
+		prc.apidocs = "http://apidocs.ortussolutions.com/CFCouchbase_APIDocs_#rc.version#/index.html?cfcouchbase/CouchbaseClient.html";
 
 		// Setup link base URL
 		wikiText.setLinkBaseURL( '' );

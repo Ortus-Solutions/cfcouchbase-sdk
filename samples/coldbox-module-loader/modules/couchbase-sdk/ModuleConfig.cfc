@@ -44,7 +44,7 @@ component {
 
 	function development(){
 		// fired if in development
-		settings.couchbase = { servers="http://127.0.0.1:8091", bucketname="beer-sample" }
+		settings.couchbase = { servers="http://127.0.0.1:8091", bucketname="beer-sample" };
 	}
 	
 	/**

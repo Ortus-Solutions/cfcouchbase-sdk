@@ -11,7 +11,7 @@ component{
 	this.sessionTimeout = createTimeSpan(0,0,30,0);
 	this.setClientCookies = true;
 	
-	this.mappings[ "/root" ] = expandPath( getDirectoryFromPath(getCurrentTemplatePath()) );
+	this.mappings[ "/root" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 	this.mappings[ "/cfcouchbase" ] = expandPath( "../../cfcouchbase" );
 	
 	// application start

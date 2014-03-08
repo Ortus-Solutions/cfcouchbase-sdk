@@ -151,7 +151,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 			}
 
 		}
-		
+
 		// If there's an inflateTo, then we're sending back a CFC!
 		if( !isSimpleValue( arguments.inflateTo ) || len( trim( arguments.inflateTo ) ) ){
 			return deserializeObjects( arguments.ID, results, arguments.inflateTo, arguments.deserializeOptions );
@@ -243,18 +243,16 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	* Generates inflatable CFC from a class path, object or closure provider 
 	*/
 	private function generateInflatable( required any inflateTo, required any data ){
-		
 		if( isSimpleValue( arguments.inflateTo ) ) {
 			// Treat as a class path
 			return new "#arguments.inflateTo#"();
-		} else if( isObject( arguments.inflateTo ) ) {
-			return arguments.inflateTo;
-		} else {
+		} else if( isClosure( arguments.inflateTo) ) {
 			// Call as a provider.  The provider gets to peek at the data
 			// in case that determines what kind of object to build
 			return arguments.inflateTo( arguments.data );
+		} else if( isObject( arguments.inflateTo ) ) {
+			return arguments.inflateTo;
 		}
-		
 	}
 	
 	/**

@@ -18,7 +18,7 @@
 		#brewery.getState()#, 
 		</cfif>
 		#brewery.getCountry()#<br>
-		<cfif len(brewery.getWebsite())>
+		<cfif len( brewery.getWebsite() )>
 			<a href="#brewery.getWebsite()#">website</a><br>
 		</cfif>
 		

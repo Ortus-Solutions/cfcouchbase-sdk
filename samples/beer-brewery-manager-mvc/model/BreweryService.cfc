@@ -5,7 +5,7 @@
 	// Breweries
 
 	function getBreweryCount() {
-		var result = cbClient.query('manager', 'listBreweries');
+		var result = cbClient.query( 'manager', 'listBreweries' );
 		return result[1].value;
 	}
 	
@@ -14,11 +14,11 @@
 			designDocumentName = 'manager',
 			viewName = 'listBreweries',
 			inflateTo = function( doc ) {
-				return wirebox.getInstance( 'brewery' );	
+				return variables.wirebox.getInstance( 'brewery' );	
 			},
 			options = {
 				includeDocs = true,
-				limit=arguments.limit,
+				limit = arguments.limit,
 				offSet = arguments.offset,
 				reduce = false
 			});

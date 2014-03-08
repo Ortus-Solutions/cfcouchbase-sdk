@@ -9,14 +9,20 @@ component{
 		prc.breweries = breweryService.getBreweries( offset=rc.startRecord-1, limit=rc.recordsPerPage );
 		prc.numBreweries = breweryService.getBreweryCount();
 		prc.numBeers = breweryService.getBeerCount();
-	}	function view(event,rc,prc){
+	}
+
+	function view(event,rc,prc){
 		event.paramValue( name='breweryID', value='not_supplied' );		
 		prc.brewery = BreweryService.getBrewery( rc.breweryID );
 		prc.breweryBeers = prc.brewery.getBeers();
-	}	function edit(event,rc,prc){
+	}
+
+	function edit(event,rc,prc){
 		event.paramValue( name='breweryID', value='not_supplied' );		
 		prc.brewery = BreweryService.getBrewery( rc.breweryID );
-	}	function update(event,rc,prc){
+	}
+
+	function update(event,rc,prc){
 		event.paramValue( name='breweryID', value='not_supplied' );
 		var brewery = BreweryService.getBrewery( rc.breweryID );
 		if( !isnull(brewery) ){
@@ -31,6 +37,8 @@ component{
 		
 		setNextEvent( event="brewery.view", queryString="breweryID=#HTMLEditFormat( rc.breweryID )#" );
 		
-	}
+	}
+
+
 	
 }

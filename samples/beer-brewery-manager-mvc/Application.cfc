@@ -4,7 +4,7 @@
 	this.sessionTimeout = createTimeSpan(0,0,30,0);
 	this.setClientCookies = true;
 		
-	this.mappings[ "/root" ] = expandPath( getDirectoryFromPath(getCurrentTemplatePath()) );
+	this.mappings[ "/root" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 	this.mappings[ "/cfcouchbase" ] = expandPath( "../../cfcouchbase" );
 	
 	// COLDBOX STATIC PROPERTY, DO NOT CHANGE UNLESS THIS IS NOT THE ROOT OF YOUR COLDBOX APP

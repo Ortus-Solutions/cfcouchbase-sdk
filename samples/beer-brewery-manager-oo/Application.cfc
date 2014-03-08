@@ -48,7 +48,7 @@ component{
 	}
 	
 	// application stop
-	public boolean function onApplicationStop(){		
+	public boolean function onApplicationEnd(){		
 		application.couchbase.shutdown( 10 );
 		return true;
 	}

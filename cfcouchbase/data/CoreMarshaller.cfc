@@ -246,13 +246,17 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		if( isSimpleValue( arguments.inflateTo ) ) {
 			// Treat as a class path
 			return new "#arguments.inflateTo#"();
-		} else if( isCustomFunction( arguments.inflateTo) or isClosure( arguments.inflateTo) ) {
+		} else if( isCustomFunction( arguments.inflateTo) or $isClosure( arguments.inflateTo) ) {
 			// Call as a provider.  The provider gets to peek at the data
 			// in case that determines what kind of object to build
 			return arguments.inflateTo( arguments.data );
 		} else if( isObject( arguments.inflateTo ) ) {
 			return arguments.inflateTo;
 		}
+	}
+
+	private boolean function $isClosure( required any target ){
+		return ( structkeyExists( GetFunctionList(), "isClosure") ? isClosure( arguments.target ) : false );
 	}
 	
 	/**

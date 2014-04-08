@@ -7,19 +7,19 @@ CFCouchbase is a client library designed to make it easy for applications writte
 
 <source lang="javascript">
 // Create the client
-client  = new cfcouchbase.CouchbaseClient();
+cbClient = new cfcouchbase.CouchbaseClient();
 
 // Create a document in the cluster
-client.set( id='brad', value={ name: 'Brad', age: 33, hair: 'red' } );
+cbClient.set( id='brad', value={ name: 'Brad', age: 33, hair: 'red' } );
 
 // Retrieve that doc
-person = client.get( id='brad' );
+person = cbClient.get( id='brad' );
 
 // Use the document
 writeOutput( '#person.name# is #person.age# years old and has #person.hair# hair.' );
 	
 // Shutdown the client
-client.shutdown();
+cbClient.shutdown();
 </source>
 
 <div class="alert alert-info">

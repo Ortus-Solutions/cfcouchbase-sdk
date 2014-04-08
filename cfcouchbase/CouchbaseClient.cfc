@@ -1066,11 +1066,12 @@ component serializable="false" accessors="true"{
 			if( hasDocs ){
 				thisDocument.document = deserializeData( thisRow.getID(), thisRow.getDocument(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
 			}
+				
+			thisDocument.value = thisRow.getValue();
+			thisDocument.key = thisRow.getKey();
+				
 			// check for reduced
-			if( isReduced ){
-				thisDocument.key = thisRow.getKey();
-				thisDocument.value = thisRow.getValue();
-			} else {
+			if( !isReduced ){
 				thisDocument.id = thisRow.getID();
 			}
 			

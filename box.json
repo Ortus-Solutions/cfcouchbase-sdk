@@ -1,0 +1,34 @@
+{
+	"name" 				: "CFCouchbase SDK",
+	"version"			: "1.0.0",
+	"author" 			: "Ortus Solutions <info@ortussolutions.com>",
+	"slug"				: "cfcouchbase",
+	"type"				: "nosql",
+	"keywords"			: "nosql,couchbase,sdk",
+	"directory"			: "/",
+	"homepage"			: "http://www.ortussolutions.com/products/cfcouchbase",
+	"documentation"		: "http://www.ortussolutions.com/products/cfcouchbase",
+	"repository"		: { "type" : "git", "url" : "https://github.com/Ortus-Solutions/cfcouchbase-sdk" },
+	"bugs"				: "https://ortussolutions.atlassian.net/browse/COUCHBASESDK",
+	"shortDescription"	: "A CFML Library for interacting with Couchbase NoSQL Server",
+	"engines"			: [
+		{ "type" : "railo", "version" : ">4.1" },
+		{ "type" : "adobe", "version" : ">9.0.2" }
+	],
+	"license"			: [ 
+		{ "type" : "Apache2", "url" : "http://www.apache.org/licenses/LICENSE-2.0.html" } 
+	],
+	"contributors"		: [
+		"Brad Wood <bdw429s@gmail.com>"
+	],
+	"ignore"			: [
+		"apidocs/*", "docs/*", "LICENSE"
+	],
+	"testbox"			: {
+		"runner" : [
+			{ "cf10" 	: "http://cf10cboxdev.jfetmac/cfcouchbase-sdk/test/runner.cfm" },
+			{ "cf11" 	: "http://cf11cboxdev.jfetmac/cfcouchbase-sdk/test/runner.cfm" },
+			{ "railo" 	: "http://railocboxdev.jfetmac/cfcouchbase-sdk/test/runner.cfm" }
+		]
+	}
+}

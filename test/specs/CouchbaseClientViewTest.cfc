@@ -142,7 +142,7 @@ component{
 				var results = couchbase.query( 'beer', 'by_location', { limit: 10, reduce:false, group:true, groupLevel:1 }, false );
 				// The fact that this doesn't error is a test in itself since setting group options when reduce is false will normally blow stuff up.
 				expect(	results ).toBeArray();
-				expect(	results[1].value ).toHaveLength( 0 );
+				expect(	results[1].value ).toBe( 1 );
 			});
 
 			it( "can return native results", function(){

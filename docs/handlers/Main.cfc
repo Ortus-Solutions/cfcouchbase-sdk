@@ -7,7 +7,7 @@ component{
 	
 	function index( event, rc, prc ){
 		
-		event.paramValue( "version", "1.0.0" );
+		event.paramValue( "version", "1.1.0" );
 		event.paramValue( "sdkversion", "1.3.1" );
 		
 		prc.markuppath = getSetting( "ApplicationPath" ) & "views/markup";

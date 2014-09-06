@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== 
+    CFCouchbase SDK build (www.ortussolutions.com)                                                 
+     ====================================================================== -->
+<project name="logbox-build" default="build" basedir="../">
+    <description>
+        Build a new distribution of the CFCouchbase SDK
+    </description>
+    <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
+    <property name="groupID"                value="ortussolutions" />
+    <property name="cfcouchbase.version"    value="1.1.0"/>
+    <property name="cfcouchbase.slug"       value="cfcouchbase"/>
+    <!-- Build Labels -->
+    <tstamp prefix="start"/>
+    <!-- Load Contrib Tasks -->
+    <path id="cp">
+        <fileset dir="build/lib">
+            <include name="**/*.jar" />
+        </fileset>
+    </path>
+    <!-- Define Tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="cp" />
+    <!-- Import Box-Repo Tasks -->
+    <import><url url="https://raw.githubusercontent.com/Ortus-Solutions/box-tasks/master/box-repo.xml"/></import>
+    
+    <!-- Init -->
+    <target name="init" description="Init" unless="src.isInit">
+        <!-- Default environment check, if not passed via -Denvironment -->
+        <condition property="environment" value="local">
+            <not><isset property="environment" /></not>
+        </condition>
+        <if>
+            <available file="build/build-${environment}.properties" />
+            <then>
+                <!-- Load env properties -->
+                <echo>Loading properties from environment: ${environment}</echo>
+                <loadproperties srcFile="build/build-${environment}.properties"/>
+            </then>
+        </if>
+        <!-- Load root properties -->
+        <echo>Loading base properties</echo>
+        <loadproperties srcFile="build/build.properties"/>
+
+        <!-- Build Number -->
+        <propertyfile file="build/build.number" comment="Build Number for ANT. Edit not!">
+            <entry key="build.number" 
+                    type="int" 
+                    operation="+"
+                    pattern="00000"
+                    default="1" />
+        </propertyfile>
+        <property file="build/build.number"/>
+
+        <!-- Build Label -->
+        <property name="build.label" value="cfcouchbase-${cfcouchbase.version}.${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
+        
+        <!-- Cleanup + Init -->
+        <delete dir="${dir.build}" />
+        <delete dir="${dir.cfcouchbase.exports}" />
+        <mkdir dir="${dir.build}"/>
+        <chmod file="${dir.build}/**" perm="og+wrs" type="both" />
+        <!-- Mark as init -->
+        <property name="src.isInit" value="true" />
+    </target>
+
+    <!-- update permissions on reports -->
+    <target name="update.permissions" description="Update staging server permissions">
+        <!-- Integration permissions -->
+        <if>
+            <equals arg1="${environment}" arg2="auto" />
+            <then>
+                <chmod file="${dir.build}/**" perm="go+wrs" type="both" verbose="true" />
+                <chown owner="stg-ortus" verbose="true">
+                    <fileset dir="${dir.build}" />
+                </chown>
+            </then>
+            <else>
+            </else>
+        </if>
+    </target>
+
+    <!-- Build test reports -->
+    <target name="build-tests">
+        <trycatch property="testcatch">
+            <try>
+                <subant target="run-junit">
+                  <fileset dir="test" includes="test.xml"/>
+                    <property name="environment" value="${environment}" />
+                </subant>
+            </try>
+            <catch>
+                <echo>Error Executing tests: ${testcatch}</echo>
+            </catch>
+        </trycatch>
+    </target>
+        
+    <!--build-->
+    <target name="build" description="Build a new CFCouchbase distribution" depends="init,build-tests">
+        
+        <!-- Copy src -->    
+        <copy todir="${dir.build}/cfcouchbase" encoding="UTF-8">
+            <fileset dir="cfcouchbase" />
+        </copy>
+        <!-- Copy build ID -->
+        <concat destfile="${dir.build}/cfcouchbase/${build.label}">Built on ${start.TODAY}</concat>
+
+        <!-- copy box.json -->
+        <copy tofile="${dir.build}/box.json" file="box.json"  encoding="UTF-8"/>
+
+        <!--Copy text files to root folder-->
+        <copy todir="${dir.build}/cfcouchbase" encoding="UTF-8">
+            <fileset file="LICENSE" />
+            <fileset file="readme.txt" />                        
+        </copy>
+
+        <!-- Replace Build Numbers -->
+        <replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
+          <fileset dir="${dir.build}">
+          </fileset>
+        </replaceregexp>
+        
+        <!-- Execute APIDocs -->
+        <mkdir dir="${dir.api}"/>
+        <!-- Update Permissions -->
+        <antcall target="update.permissions" />
+        <get dest="${dir.build}/colddoc.html" src="${url.api}${cfcouchbase.version}&amp;path=${dir.api}" verbose="true"/>
+        <delete file="${dir.build}/colddoc.html" />
+
+        <!-- Build Documentation -->
+        <mkdir dir="${dir.build}/cfcouchbase/docs" />
+        <get dest="${dir.build}/cfcouchbase/docs/index.html" src="${url.docs}" verbose="true"/>
+        <!-- Copy assets to docs -->
+        <copy todir="${dir.build}/cfcouchbase/docs/includes"  encoding="UTF-8">
+            <fileset dir="${dir.docs}/includes" />
+        </copy>
+        <copy todir="${dir.build}/cfcouchbase/docs" encoding="UTF-8">
+            <fileset file="${dir.docs}/favicon.ico" />
+            <fileset file="${dir.docs}/.htaccess" />
+        </copy>
+        
+        <!-- Zip API Docs -->
+        <zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-apidocs-${cfcouchbase.version}.zip" basedir="${dir.build}/cfcouchbase/apidocs"></zip>
+        <!-- Zip Docs -->
+        <zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-docs-${cfcouchbase.version}.zip" basedir="${dir.build}/cfcouchbase/docs"></zip>
+        <!-- Zip Distro -->
+        <zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>
+        <!-- Fix permissions just in case -->
+        <chmod file="${dir.build}/**" perm="g+wxrs" type="both" />
+        <!-- Cleanup -->
+        <delete dir="${dir.build}" />
+
+        <!-- Create Box Repo From macrodef -->
+        <box-repo location="${dir.exports}/${cfcouchbase.slug}" 
+                  artifactID="${cfcouchbase.slug}" 
+                  groupID="${groupID}"
+                  buildID="${build.number}"
+                  latest="${cfcouchbase.version}"
+                  classifiers="apidocs,docs"/>
+        
+    </target>
+</project>

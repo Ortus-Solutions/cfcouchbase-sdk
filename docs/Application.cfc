@@ -24,6 +24,9 @@ component{
 	COLDBOX_CONFIG_FILE 	= "";
 	COLDBOX_APP_KEY 		= "";
 	
+	// THE LOCATION OF EMBEDDED COLDBOX
+	this.mappings[ "/coldbox" ] = COLDBOX_APP_ROOT_PATH & "/coldbox";
+
 	// Mapping Imports
 	import coldbox.system.*;
 	

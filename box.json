@@ -5,7 +5,6 @@
 	"slug"				: "cfcouchbase",
 	"type"				: "nosql",
 	"keywords"			: "nosql,couchbase,sdk",
-	"directory"			: "/",
 	"homepage"			: "http://www.ortussolutions.com/products/cfcouchbase",
 	"documentation"		: "http://www.ortussolutions.com/products/cfcouchbase",
 	"repository"		: { "type" : "git", "url" : "https://github.com/Ortus-Solutions/cfcouchbase-sdk" },

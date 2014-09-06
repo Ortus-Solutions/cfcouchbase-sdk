@@ -53,7 +53,7 @@ component serializable="false" accessors="true"{
 		/****************** Setup SDK dependencies & properties ******************/
 
 		// The version of the client and sdk
-		variables.version 		= "1.0.0.@build.number@";
+		variables.version 		= "1.1.0.@build.number@";
 		variables.SDKVersion 	= "1.3.1";
 		// The unique version of this client
 		variables.libID	= createObject('java','java.lang.System').identityHashCode( this );

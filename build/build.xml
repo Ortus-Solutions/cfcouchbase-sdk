@@ -2,7 +2,7 @@
 <!-- ====================================================================== 
     CFCouchbase SDK build (www.ortussolutions.com)                                                 
      ====================================================================== -->
-<project name="logbox-build" default="build.sdk" basedir="../">
+<project name="logbox-build" default="build.all" basedir="../">
     <description>
         Build a new distribution of the CFCouchbase SDK
     </description>

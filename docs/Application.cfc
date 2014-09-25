@@ -9,29 +9,26 @@ Description :
 	This is the bootstrapper Application.cfc for ColdBox Applications.
 	It uses inheritance on the CFC, so if you do not want inheritance
 	then use the Application_noinheritance.cfc instead.
-**/	
+**/
 component{
 
 	// Application Properties
 	this.name = "CFCouchbase SDK Docs" & hash( getCurrentTemplatePath() );
-	this.sessionManagement = true;
-	this.sessionTimeout = createTimeSpan(0,0,30,0);
-	this.setClientCookies = true;
-	
+	this.sessionManagement 	= true;
+	this.sessionTimeout 	= createTimeSpan(0,0,30,0);
+	this.setClientCookies 	= true;
+
 	// ColdBox Settings
 	COLDBOX_APP_ROOT_PATH = getDirectoryFromPath( getCurrentTemplatePath() );
 	COLDBOX_APP_MAPPING		= "";
 	COLDBOX_CONFIG_FILE 	= "";
 	COLDBOX_APP_KEY 		= "";
-	
+
 	// THE LOCATION OF EMBEDDED COLDBOX
 	this.mappings[ "/coldbox" ] = COLDBOX_APP_ROOT_PATH & "/coldbox";
 
-	// Mapping Imports
-	import coldbox.system.*;
-	
 	public boolean function onApplicationStart(){
-		application.cbBootstrap = new Coldbox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY);
+		application.cbBootstrap = new coldbox.system.Coldbox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY);
 		application.cbBootstrap.loadColdbox();
 		return true;
 	}
@@ -45,7 +42,7 @@ component{
 		if( not structKeyExists(application,"cbBootstrap") or application.cbBootStrap.isfwReinit() ){
 			lock name="coldbox.bootstrap_#this.name#" type="exclusive" timeout="5" throwonTimeout=true{
 				structDelete(application,"cbBootStrap");
-				application.cbBootstrap = new ColdBox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY,COLDBOX_APP_MAPPING);
+				application.cbBootstrap = new coldbox.system.ColdBox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY,COLDBOX_APP_MAPPING);
 			}
 		}
 
@@ -71,5 +68,5 @@ component{
 	public boolean function onMissingTemplate(template){
 		return application.cbBootstrap.onMissingTemplate(argumentCollection=arguments);
 	}
-	
+
 }

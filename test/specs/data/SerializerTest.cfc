@@ -23,7 +23,7 @@
 ********************************************************************************
 * This test requires there to be a default bucket installed in the Couchbase server
 */
-component{
+component extends="testbox.system.BaseSpec"{
 	
 /*********************************** LIFE CYCLE Methods ***********************************/
 

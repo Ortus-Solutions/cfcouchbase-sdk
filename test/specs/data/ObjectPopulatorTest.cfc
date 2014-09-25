@@ -23,7 +23,7 @@
 ********************************************************************************
 * This test requires the beer-sample to be installed in the Couchbase server
 */
-component{
+component extends="testbox.system.BaseSpec"{
 	
 /*********************************** LIFE CYCLE Methods ***********************************/
 

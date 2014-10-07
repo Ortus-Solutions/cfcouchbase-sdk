@@ -4,7 +4,7 @@
 | (__|  _| (_| (_) | |_| | (__| | | | |_) | (_| \__ \  __/
  \___|_|  \___\___/ \__,_|\___|_| |_|_.__/ \__,_|___/\___| 
 
-SDK v1.0.0.@build.number@
+SDK v1.1.0+@build.number@
                                                           
 ********************************************************************************
 WELCOME TO THE CFCOUCHBASE SDK
@@ -21,7 +21,7 @@ CFCouchbase SDK is maintained under the Semantic Versioning guidelines as much a
 
 Releases will be numbered with the following format:
 
-<major>.<minor>.<patch>
+<major>.<minor>.<patch>+<build.number>
 
 And constructed with the following guidelines:
 

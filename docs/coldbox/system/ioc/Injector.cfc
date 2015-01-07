@@ -48,7 +48,7 @@ Description :
 				// Scope Storages
 				scopeStorage = createObject("component","coldbox.system.core.collections.ScopeStorage").init(),
 				// Version
-				version  = "1.6.0",
+				version  = "2.0.0+00002",
 				// The Configuration Binder object
 				binder   = "",
 				// ColdBox Application Link
@@ -179,12 +179,12 @@ Description :
 			instance.eventManager.processState("beforeInjectorShutdown",iData);
 
 			// Is parent linked
-			if( isObject(instance.parent) ){
+			if( isObject( instance.parent ) ){
 				instance.parent.shutdown();
 			}
 
 			// standalone cachebox? Yes, then shut it down baby!
-			if( NOT isColdBoxLinked() ){
+			if( isCacheBoxLinked() ){
 				instance.cacheBox.shutdown();
 			}
 
@@ -206,6 +206,7 @@ Description :
     	<cfargument name="name" 			required="false" 	hint="The mapping name or CFC instance path to try to build up"/>
 		<cfargument name="dsl"				required="false" 	hint="The dsl string to use to retrieve the instance model object, mutually exclusive with 'name'"/>
 		<cfargument name="initArguments" 	required="false" 	default="#structnew()#" hint="The constructor structure of arguments to passthrough when initializing the instance" colddoc:generic="struct"/>
+		<cfargument name="targetObject" 	required="false"	default="" 	hint="The object requesting the dependency, usually only used by DSL lookups"/>
 		<cfscript>
 			var instancePath 	= "";
 			var mapping 		= "";
@@ -213,8 +214,8 @@ Description :
 			var iData			= {};
 
 			// Get by DSL?
-			if( structKeyExists(arguments,"dsl") ){
-				return instance.builder.buildSimpleDSL( arguments.dsl, "ExplicitCall" );
+			if( structKeyExists( arguments,"dsl" ) ){
+				return instance.builder.buildSimpleDSL( dsl=arguments.dsl, targetID="ExplicitCall", targetObject=arguments.targetObject );
 			}
 
 			// Check if Mapping Exists?
@@ -231,7 +232,7 @@ Description :
 				// If Empty Throw Exception
 				if( NOT len(instancePath) ){
 					instance.log.error("Requested instance:#arguments.name# was not located in any declared scan location(s): #structKeyList(instance.binder.getScanLocations())# or full CFC path");
-					getUtil().throwit(message="Requested instance not found: '#arguments.name#'",
+					throw(message="Requested instance not found: '#arguments.name#'",
 									  detail="The instance could not be located in any declared scan location(s) (#structKeyList(instance.binder.getScanLocations())#) or full path location",
 									  type="Injector.InstanceNotFoundException");
 				}
@@ -251,7 +252,7 @@ Description :
 			// scope persistence check
 			if( NOT structKeyExists(instance.scopes, mapping.getScope()) ){
 				instance.log.error("The mapping scope: #mapping.getScope()# is invalid and not registered in the valid scopes: #structKeyList(instance.scopes)#");
-				getUtil().throwit(message="Requested mapping scope: #mapping.getScope()# is invalid for #mapping.getName()#",
+				throw(message="Requested mapping scope: #mapping.getScope()# is invalid for #mapping.getName()#",
 								  detail="The registered valid object scopes are #structKeyList(instance.scopes)#",
 								  type="Injector.InvalidScopeException");
 			}
@@ -275,6 +276,7 @@ Description :
     		var thisMap = arguments.mapping;
 			var oModel	= "";
 			var iData	= "";
+			var closure = "";
 
 			// before construction event
 			iData = {mapping=arguments.mapping,injector=this};
@@ -298,20 +300,28 @@ Description :
 					oModel = instance.builder.buildFeed( thisMap ); break;
 				}
 				case "dsl" : {
-					oModel = instance.builder.buildSimpleDSL( thisMap.getDSL(), thisMap.getName() ); break;
+					oModel = instance.builder.buildSimpleDSL( dsl=thisMap.getDSL(), targetID=thisMap.getName() ); break;
 				}
 				case "factory" : {
 					oModel = instance.builder.buildFactoryMethod( thisMap, arguments.initArguments ); break;
 				}
 				case "provider" : {
-					oModel = getInstance( thisMap.getPath() ).get(); break;
+					// verify if it is a simple value or closure/UDF
+					if( isSimpleValue( thisMap.getPath() ) ){
+						oModel = getInstance( thisMap.getPath() ).get();
+					}
+					else{
+						closure = thisMap.getPath();
+						oModel = closure();
+					}
+					break;
 				}
-				default: { getUtil().throwit(message="Invalid Construction Type: #thisMap.getType()#",type="Injector.InvalidConstructionType"); }
+				default: { throw(message="Invalid Construction Type: #thisMap.getType()#",type="Injector.InvalidConstructionType"); }
 			}
 
 			// log data
 			if( instance.log.canDebug() ){
-				instance.log.debug("Instance object built: #arguments.mapping.getName()#:#arguments.mapping.getPath()#");
+				instance.log.debug("Instance object built: #arguments.mapping.getName()#:#arguments.mapping.getPath().toString()#");
 			}
 
 			// announce afterInstanceInitialized
@@ -346,6 +356,15 @@ Description :
 			</cfscript>
 		</cflock>
 		<cfreturn instance.binder.getMapping( arguments.name )>
+    </cffunction>
+
+    <!--- registerDSL --->
+    <cffunction name="registerDSL" output="false" access="public" returntype="any" hint="A direct way of registering custom DSL namespaces">
+    	<cfargument name="namespace" 	required="true" hint="The namespace you would like to register"/>
+		<cfargument name="path" 		required="true" hint="The instantiation path to the CFC that implements this scope, it must have an init() method and implement: coldbox.system.ioc.dsl.IDSLBuilder"/>
+		<cfscript>
+			instance.builder.registerDSL( argumentCollection=arguments );
+		</cfscript>
     </cffunction>
 
 	<!--- containsInstance --->
@@ -581,7 +600,7 @@ Description :
 				// else check if dsl is used?
 				else if( structKeyExists(arguments.DIData[x], "dsl") ){
 					// Get DSL dependency by sending entire DI structure to retrieve
-					refLocal.dependency = instance.builder.buildDSLDependency( arguments.DIData[x], arguments.targetID, arguments.targetObject );
+					refLocal.dependency = instance.builder.buildDSLDependency( definition=arguments.DIData[ x ], targetID=arguments.targetID, targetObject=arguments.targetObject );
 				}
 				// else we have to have a reference ID or a nasty bug has ocurred
 				else{
@@ -691,6 +710,11 @@ Description :
 		<cfreturn instance.binder>
 	</cffunction>
 
+	<!--- Get the builder object --->
+	<cffunction name="getBuilder" access="public" returntype="any" output="false" hint="Get the Injector's builder object" colddoc:generic="coldbox.system.ioc.Builder">
+		<cfreturn instance.builder>
+	</cffunction>
+
 	<!--- getInjectorID --->
     <cffunction name="getInjectorID" output="false" access="public" returntype="any" hint="Get the unique ID of this injector">
     	<cfreturn instance.injectorID>
@@ -753,7 +777,7 @@ Description :
 				return instance.scopeStorage.get(scopeInfo.key, scopeInfo.scope);
 			}
 
-			instance.utility.throwit(message="The injector has not be registered in any scope",detail="The scope info is: #scopeInfo.toString()#",type="Injector.InvalidScopeRegistration");
+			throw(message="The injector has not be registered in any scope",detail="The scope info is: #scopeInfo.toString()#",type="Injector.InvalidScopeRegistration");
 		</cfscript>
     </cffunction>
 
@@ -814,7 +838,7 @@ Description :
 				}
 				catch(Any e){
 					instance.log.error("Error creating listener: #listeners[x].toString()#", e);
-					getUtil().throwit(message="Error creating listener: #listeners[x].toString()#",
+					throw(message="Error creating listener: #listeners[x].toString()#",
 									  detail="#e.message# #e.detail# #e.stackTrace#",
 									  type="Injector.ListenerCreationException");
 				}
@@ -936,7 +960,7 @@ Description :
 				instance.eventManager.appendInterceptionPoints( arrayToList(instance.eventStates) );
 				return;
 			}
-    		
+
     		// create event manager
 			instance.eventManager = createObject("component","coldbox.system.core.events.EventPoolManager").init( instance.eventStates );
 			// Debugging
@@ -964,7 +988,7 @@ Description :
 			}
 
 			// Check if data CFC or binder family
-			if( NOT instance.utility.isInstanceCheck(arguments.binder, "coldbox.system.ioc.config.Binder") ){
+			if( NOT isInstanceOf( arguments.binder, "coldbox.system.ioc.config.Binder" ) ){
 				// simple data cfc, create native binder and decorate data CFC
 				nativeBinder = createObject("component","coldbox.system.ioc.config.Binder").init(injector=this,config=arguments.binder,properties=arguments.properties);
 			}

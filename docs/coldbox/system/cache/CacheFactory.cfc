@@ -16,7 +16,7 @@ Description :
 
 	<!--- init --->
 	<cffunction name="init" access="public" returntype="CacheFactory" hint="Constructor" output="false" >
-		<cfargument name="config"  		required="false" hint="The CacheBoxConfig object to use to configure this instance of CacheBox. If not passed then CacheBox will instantiate the default configuration." colddoc:generic="coldbox.system.cache.config.CacheBoxConfig"/>
+		<cfargument name="config"  		required="false" hint="The CacheBoxConfig object or path to use to configure this instance of CacheBox. If not passed then CacheBox will instantiate the default configuration." colddoc:generic="coldbox.system.cache.config.CacheBoxConfig"/>
 		<cfargument name="coldbox" 		required="false" hint="A coldbox application that this instance of CacheBox can be linked to, if not using it, just ignore it." colddoc:generic="coldbox.system.web.Controller"/>
 		<cfargument name="factoryID" 	required="false" default="" hint="A unique ID or name for this factory. If not passed I will make one up for you."/>
 		<cfscript>
@@ -27,7 +27,7 @@ Description :
 				// CacheBox Factory UniqueID
 				factoryID = createObject('java','java.lang.System').identityHashCode(this),
 				// Version
-				version = "1.4",
+				version = "2.0.0+00002",
 				// Configuration object
 				config  = "",
 				// ColdBox Application Link
@@ -85,9 +85,12 @@ Description :
 			}
 
 			// Passed in configuration?
-			if( NOT structKeyExists(arguments,"config") ){
+			if( NOT structKeyExists( arguments, "config" ) ){
 				// Create default configuration
-				arguments.config = createObject("component","coldbox.system.cache.config.CacheBoxConfig").init(CFCConfigPath=defaultConfigPath);
+				arguments.config = createObject( "component", "coldbox.system.cache.config.CacheBoxConfig" ).init( CFCConfigPath=defaultConfigPath );
+			}
+			else if( isSimpleValue( arguments.config ) ){
+				arguments.config = createObject( "component", "coldbox.system.cache.config.CacheBoxConfig" ).init( CFCConfigPath=arguments.config );
 			}
 
 			// Configure Logging for the Cache Factory
@@ -119,9 +122,9 @@ Description :
 					thisListener.configure( this, listeners[x].properties);
 				}
 				catch(Any e){
-					getUtil().throwit(message="Error creating listener: #listeners[x].toString()#",
-									  detail="#e.message# #e.detail# #e.stackTrace#",
-									  type="CacheBox.ListenerCreationException");
+					throw(message="Error creating listener: #listeners[x].toString()#",
+						  detail="#e.message# #e.detail# #e.stackTrace#",
+						  type="CacheBox.ListenerCreationException");
 				}
 
 				// Now register listener
@@ -207,16 +210,16 @@ Description :
 
 			// Check length
 			if( len(arguments.name) eq 0 ){
-				getUtil().throwit(message="Invalid Cache Name",
-								  detail="The name you sent in is invalid as it was blank, please send in a name",
-								  type="CacheFactory.InvalidNameException");
+				throw(message="Invalid Cache Name",
+					  detail="The name you sent in is invalid as it was blank, please send in a name",
+					  type="CacheFactory.InvalidNameException");
 			}
 
 			// Check it does not exist already
 			if( cacheExists( arguments.name ) ){
-				getUtil().throwit(message="Cache #arguments.name# already exists",
-								  detail="Cannot register named cache as it already exists in the registry",
-								  type="CacheFactory.CacheExistsException");
+				throw(message="Cache #arguments.name# already exists",
+					  detail="Cannot register named cache as it already exists in the registry",
+					  type="CacheFactory.CacheExistsException");
 			}
 
 			// Create default cache instance
@@ -237,8 +240,8 @@ Description :
 			var i 		   = 1;
 
 			// Log startup
-			if( instance.log.canInfo() ){
-    			instance.log.info("Shutdown of cache factory: #getFactoryID()# requested and started.");
+			if( instance.log.canDebug() ){
+    			instance.log.debug("Shutdown of cache factory: #getFactoryID()# requested and started.");
     		}
 
 			// Notify Listeners
@@ -283,8 +286,8 @@ Description :
 			instance.eventManager.processState("afterCacheFactoryShutdown",iData);
 
 			// Log shutdown complete
-			if( instance.log.canInfo() ){
-				instance.log.info("Shutdown of cache factory: #getFactoryID()# completed.");
+			if( instance.log.canDebug() ){
+				instance.log.debug("Shutdown of cache factory: #getFactoryID()# completed.");
 			}
 		</cfscript>
     </cffunction>
@@ -309,8 +312,8 @@ Description :
 			cache = getCache(arguments.name);
 
 			// log it
-			if( instance.log.canInfo() ){
-				instance.log.info("Shutdown of cache: #arguments.name# requested and started on factoryID: #getFactoryID()#");
+			if( instance.log.canDebug() ){
+				instance.log.debug("Shutdown of cache: #arguments.name# requested and started on factoryID: #getFactoryID()#");
 			}
 
 			// Notify Listeners

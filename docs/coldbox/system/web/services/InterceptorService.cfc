@@ -28,17 +28,14 @@ Description :
 				// On Actions
 				"onException", "onRequestCapture", "onInvalidEvent",
 				// After FW Object Creations
-				"afterHandlerCreation", "afterInstanceCreation", "afterPluginCreation",
+				"afterHandlerCreation", "afterInstanceCreation",
 				// Life-cycle
 				"applicationEnd" , "sessionStart", "sessionEnd", "preProcess", "preEvent", "postEvent", "postProcess", "preProxyResults",
 				// Layout-View Events
 				"preLayout", "preRender", "postRender", "preViewRender", "postViewRender", "preLayoutRender", "postLayoutRender",
 				// Module Events
-				"preModuleLoad", "postModuleLoad", "preModuleUnload", "postModuleUnload",
-				// Debugger
-				"beforeDebuggerPanel", "afterDebuggerPanel",
-				// ORM Bridge Events
-				"ORMPostNew", "ORMPreLoad", "ORMPostLoad", "ORMPostDelete", "ORMPreDelete", "ORMPreUpdate", "ORMPostUpdate", "ORMPreInsert", "ORMPostInsert", "ORMPreSave", "ORMPostSave" ];
+				"preModuleLoad", "postModuleLoad", "preModuleUnload", "postModuleUnload"
+			];
 
 			// Init Container of interception states
 			instance.interceptionStates = {};
@@ -66,7 +63,7 @@ Description :
     		instance.interceptorConfig = controller.getSetting("InterceptorConfig");
 			// Register CFC Configuration Object
 			registerInterceptor(interceptorObject=controller.getSetting('coldboxConfig'), interceptorName="coldboxConfig");
-			
+
 			return this;
 		</cfscript>
 	</cffunction>
@@ -79,7 +76,7 @@ Description :
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 <!------------------------------------------- PUBLIC ------------------------------------------->
 
 	<!--- Register all the interceptors --->
@@ -125,18 +122,20 @@ Description :
 		<cfargument name="asyncPriority" 	required="false" 	type="string"	default="NORMAL" hint="The thread priority to be used. Either LOW, NORMAL or HIGH. The default value is NORMAL"/>
 		<cfargument name="asyncJoinTimeout"	required="false" 	type="numeric"	default="0" hint="The timeout in milliseconds for the join thread to wait for interceptor threads to finish.  By default there is no timeout."/>
 		<!--- ************************************************************* --->
-		<cfsilent>
+		<cfset var loc = {}><cfsilent>
 		<cfscript>
-		var loc = {};
 		// Validate Incoming State
 		if( instance.interceptorConfig.throwOnInvalidStates AND NOT listFindNoCase( arrayToList( instance.interceptionPoints ), arguments.state ) ){
-			getUtil().throwit("The interception state sent in to process is not valid: #arguments.state#", "Valid states are #instance.interceptionPoints.toString()#", "InterceptorService.InvalidInterceptionState");
+			throw( message="The interception state sent in to process is not valid: #arguments.state#", 
+				   detail="Valid states are #instance.interceptionPoints.toString()#", 
+				   type="InterceptorService.InvalidInterceptionState");
 		}
 
 		// Process The State if it exists, else just exit out
 		if( structKeyExists( instance.interceptionStates, arguments.state ) ){
 			// Execute Interception in the state object
 			arguments.event = controller.getRequestService().getContext();
+			arguments.buffer = instance.requestBuffer;
 			loc.results = structFind( instance.interceptionStates, arguments.state ).process(argumentCollection=arguments);
 		}
 		// Process Output Buffer: looks weird, but we are outputting stuff and CF loves its whitespace
@@ -180,9 +179,9 @@ Description :
 				oInterceptor = arguments.interceptorObject;
 			}
 			else{
-				getUtil().throwit(message="Invalid registration.",
-								  detail="You did not send in an interceptorClass or interceptorObject argument for registration",
-					  			  type="InterceptorService.InvalidRegistration");
+				throw( message="Invalid registration.",
+				 	   detail="You did not send in an interceptorClass or interceptorObject argument for registration",
+					   type="InterceptorService.InvalidRegistration" );
 			}
 		</cfscript>
 
@@ -197,7 +196,7 @@ Description :
 					}
 					catch(Any e){
 						instance.log.error("Error creating interceptor: #arguments.interceptorClass#. #e.detail# #e.message# #e.stackTrace#",e.tagContext);
-						getUtil().rethrowit( e );
+						rethrow;
 					}
 
 					// Configure the Interceptor
@@ -211,12 +210,12 @@ Description :
 				// Parse Interception Points
 				interceptionPointsFound = structnew();
 				interceptionPointsFound = parseMetadata( getMetaData( oInterceptor ), interceptionPointsFound );
-				
+
 				// Register this Interceptor's interception point with its appropriate interceptor state
 				for(stateKey in interceptionPointsFound){
 					// Register the point
-					registerInterceptionPoint(interceptorKey=objectName, 
-											  state=stateKey, 
+					registerInterceptionPoint(interceptorKey=objectName,
+											  state=stateKey,
 											  oInterceptor=oInterceptor,
 											  interceptorMD=interceptionPointsFound[ stateKey ]);
 					// Debug log
@@ -279,8 +278,8 @@ Description :
 			}
 
 			// Throw Exception
-			getUtil().throwit(message="Interceptor: #arguments.interceptorName# not found in any state: #structKeyList(states)#.",
-				  			  type="InterceptorService.InterceptorNotFound");
+			throw( message="Interceptor: #arguments.interceptorName# not found in any state: #structKeyList(states)#.",
+				   type="InterceptorService.InterceptorNotFound");
 
 		</cfscript>
 	</cffunction>
@@ -378,7 +377,7 @@ Description :
 		<!--- ************************************************************* --->
 		<cfscript>
 			var oInterceptorState = "";
-			
+
 			// Init md if not passed
 			if( not structKeyExists( arguments, "interceptorMD") ){
 				arguments.interceptorMD = newPointRecord();
@@ -408,19 +407,19 @@ Description :
 
 <!------------------------------------------- PRIVATE ------------------------------------------->
 
-	<!--- newPointRecord --->    
-    <cffunction name="newPointRecord" output="false" access="private" returntype="any" hint="Create a new interception point record">    
+	<!--- newPointRecord --->
+    <cffunction name="newPointRecord" output="false" access="private" returntype="any" hint="Create a new interception point record">
     	<cfscript>
 			var pointRecord = { async = false, asyncPriority = "normal", eventPattern = "" };
-			return pointRecord;    
-    	</cfscript>    
+			return pointRecord;
+    	</cfscript>
     </cffunction>
 
 	<!--- wireboxSetup --->
     <cffunction name="wireboxSetup" output="false" access="private" returntype="any" hint="Verifies the setup for interceptor classes is online">
     	<cfscript>
 			var wirebox = controller.getWireBox();
-			
+
 			// Check if handler mapped?
 			if( NOT wirebox.getBinder().mappingExists( instance.INTERCEPTOR_BASE_CLASS ) ){
 				// feed the base class
@@ -456,7 +455,7 @@ Description :
 						currentList = arrayToList( appendInterceptionPoints( arguments.metadata.functions[ x ].name ) );
 					}
 
-					// verify its a plugin point by comparing it to the local defined interception points
+					// verify its an interception point by comparing it to the local defined interception points
 					// Also verify it has not been found already
 					if ( listFindNoCase( currentList, arguments.metadata.functions[ x ].name ) AND
 						 NOT structKeyExists( pointsFound, arguments.metadata.functions[ x ].name ) ){
@@ -476,13 +475,12 @@ Description :
 			// Start Registering inheritances
 			if ( structKeyExists( arguments.metadata, "extends" ) and
 				 (arguments.metadata.extends.name neq "coldbox.system.Interceptor" and
-				  arguments.metadata.extends.name neq "coldbox.system.Plugin" and
 				  arguments.metadata.extends.name neq "coldbox.system.EventHandler" )
 			){
 				// Recursive lookup
 				parseMetadata( arguments.metadata.extends, pointsFound );
 			}
-			
+
 			//return the interception points found
 			return pointsFound;
 		</cfscript>

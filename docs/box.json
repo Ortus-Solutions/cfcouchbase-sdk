@@ -1,0 +1,58 @@
+{
+    "name":"DataBoss Docs",
+    "version":"1.0.0.0000",
+    "author":"Luis Majano",
+    "location":"",
+    "directory":"",
+    "createPackageDirectory":false,
+    "packageDirectory":"",
+    "homepage":"",
+    "documentation":"",
+    "repository":{
+        "type":"",
+        "url":""
+    },
+    "bugs":"",
+    "slug":"databoss-docs",
+    "shortDescription":"",
+    "description":"",
+    "instructions":"",
+    "changelog":"",
+    "type":"",
+    "keywords":[
+        
+    ],
+    "private":true,
+    "engines":[
+        {
+            "type":"railo",
+            "version":">=4.1.x"
+        }
+    ],
+    "defaultEngine":"",
+    "defaultPort":8510,
+    "projectURL":"",
+    "license":[
+        {
+            "type":"",
+            "url":""
+        }
+    ],
+    "contributors":[
+        
+    ],
+    "dependencies":{
+        "coldbox-be":"4.0.0",
+        "cbjavaloader":"1.0.0"
+    },
+    "devDependencies":{
+        
+    },
+    "installPaths":{
+        "coldbox-be":"coldbox",
+        "cbjavaloader":"modules/cbjavaloader"
+    },
+    "ignore":[
+        
+    ]
+}

@@ -13,10 +13,10 @@ Description :
 component{
 
 	// Application Properties
-	this.name = "CFCouchbase SDK Docs" & hash( getCurrentTemplatePath() );
-	this.sessionManagement 	= true;
-	this.sessionTimeout 	= createTimeSpan(0,0,30,0);
-	this.setClientCookies 	= true;
+	this.name = "DataBoss Docs" & hash( getCurrentTemplatePath() );
+	this.sessionManagement = true;
+	this.sessionTimeout = createTimeSpan(0,0,30,0);
+	this.setClientCookies = true;
 
 	// ColdBox Settings
 	COLDBOX_APP_ROOT_PATH = getDirectoryFromPath( getCurrentTemplatePath() );
@@ -25,34 +25,19 @@ component{
 	COLDBOX_APP_KEY 		= "";
 
 	// THE LOCATION OF EMBEDDED COLDBOX
-	this.mappings[ "/coldbox" ] = COLDBOX_APP_ROOT_PATH & "/coldbox";
+	this.mappings["/coldbox"] = COLDBOX_APP_ROOT_PATH & "/coldbox";
 
+	// application start
 	public boolean function onApplicationStart(){
-		application.cbBootstrap = new coldbox.system.Coldbox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY);
+		application.cbBootstrap = new coldbox.system.Bootstrap( COLDBOX_CONFIG_FILE, COLDBOX_APP_ROOT_PATH, COLDBOX_APP_KEY, COLDBOX_APP_MAPPING );
 		application.cbBootstrap.loadColdbox();
 		return true;
 	}
 
+	// request start
 	public boolean function onRequestStart(String targetPage){
-
-		//if( structKeyExists(url,"ormReload") ){ ormReload(); }
-		//applicationstop();abort;
-
-		// Bootstrap Reinit
-		if( not structKeyExists(application,"cbBootstrap") or application.cbBootStrap.isfwReinit() ){
-			lock name="coldbox.bootstrap_#this.name#" type="exclusive" timeout="5" throwonTimeout=true{
-				structDelete(application,"cbBootStrap");
-				application.cbBootstrap = new coldbox.system.ColdBox(COLDBOX_CONFIG_FILE,COLDBOX_APP_ROOT_PATH,COLDBOX_APP_KEY,COLDBOX_APP_MAPPING);
-			}
-		}
-
-		// ColdBox Reload Checks
-		application.cbBootStrap.reloadChecks();
-
-		//Process a ColdBox request only
-		if( findNoCase('index.cfm',listLast(arguments.targetPage,"/")) ){
-			application.cbBootStrap.processColdBoxRequest();
-		}
+		// Process ColdBox Request
+		application.cbBootstrap.onRequestStart( arguments.targetPage );
 
 		return true;
 	}
@@ -61,12 +46,13 @@ component{
 		application.cbBootStrap.onSessionStart();
 	}
 
-	public void function onSessionEnd(struct sessionScope, struct appScope){
-		arguments.appScope.cbBootStrap.onSessionEnd(argumentCollection=arguments);
+	public void function onSessionEnd( struct sessionScope, struct appScope ){
+		arguments.appScope.cbBootStrap.onSessionEnd( argumentCollection=arguments );
 	}
 
-	public boolean function onMissingTemplate(template){
-		return application.cbBootstrap.onMissingTemplate(argumentCollection=arguments);
+	public boolean function onMissingTemplate( template ){
+		return application.cbBootstrap.onMissingTemplate( argumentCollection=arguments );
 	}
+
 
 }

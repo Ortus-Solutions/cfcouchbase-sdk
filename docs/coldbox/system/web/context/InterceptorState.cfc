@@ -100,24 +100,25 @@ Description :
 	<!--- Process the Interceptors --->
 	<cffunction name="process" access="public" returntype="any" hint="Process this state's interceptors. If you use the asynchronous facilities, you will get a thread structure report as a result." output="false" >
 		<!--- ************************************************************* --->
-		<cfargument name="event" 		 	required="true" 	type="any"  hint="The event context object.">
+		<cfargument name="event" 		 		required="true" 	type="any"  hint="The event context object.">
 		<cfargument name="interceptData"	required="true" 	type="any" 	hint="A data structure used to pass intercepted information.">
-		<cfargument name="async" 			required="false" 	type="boolean" 	default="false" hint="If true, the entire interception chain will be ran in a separate thread."/>
-		<cfargument name="asyncAll" 		required="false" 	type="boolean" 	default="false" hint="If true, each interceptor in the interception chain will be ran in a separate thread and then joined together at the end."/>
+		<cfargument name="async" 				required="false" 	type="boolean" 	default="false" hint="If true, the entire interception chain will be ran in a separate thread."/>
+		<cfargument name="asyncAll" 			required="false" 	type="boolean" 	default="false" hint="If true, each interceptor in the interception chain will be ran in a separate thread and then joined together at the end."/>
 		<cfargument name="asyncAllJoin"		required="false" 	type="boolean" 	default="true" hint="If true, each interceptor in the interception chain will be ran in a separate thread and joined together at the end by default.  If you set this flag to false then there will be no joining and waiting for the threads to finalize."/>
 		<cfargument name="asyncPriority" 	required="false" 	type="string"	default="NORMAL" hint="The thread priority to be used. Either LOW, NORMAL or HIGH. The default value is NORMAL"/>
 		<cfargument name="asyncJoinTimeout"	required="false" 	type="numeric"	default="0" hint="The timeout in milliseconds for the join thread to wait for interceptor threads to finish.  By default there is no timeout."/>
+		<cfargument name="buffer" 		 		required="true" 	type="any"  hint="The request buffer object that can be used to produce output from interceptor chains">
 		<!--- ************************************************************* --->
 		
 		<!--- Process master asynchronously if not already in thread, if already in thread it will process in synch --->
 		<cfif arguments.async AND NOT instance.utility.inThread()>
-			<cfreturn processAsync( arguments.event, arguments.interceptData, arguments.asyncPriority )>
+			<cfreturn processAsync( event=arguments.event, interceptData=arguments.interceptData, asyncPriority=arguments.asyncPriority, buffer=arguments.buffer )>
 		<!---Process all asynchronously if not already in a thread --->
 		<cfelseif arguments.asyncAll AND NOT instance.utility.inThread()>
 			<cfreturn processAsyncAll(argumentCollection=arguments)>
 		<!--- Process synchronously --->
 		<cfelse>
-			<cfset processSync( arguments.event, arguments.interceptData )>
+			<cfset processSync( event=arguments.event, interceptData=arguments.interceptData, buffer=arguments.buffer )>
 		</cfif>
 	</cffunction>
 	
@@ -126,6 +127,8 @@ Description :
     	<cfargument name="event" 		 	hint="The event context object.">
 		<cfargument name="interceptData"	hint="A data structure used to pass intercepted information.">
 		<cfargument name="asyncPriority" 	required="false" default="NORMAL" hint="The thread priority to be used. Either LOW, NORMAL or HIGH. The default value is NORMAL"/>
+		<cfargument name="buffer" 		 	hint="The request buffer object that can be used to produce output from interceptor chains">
+		
 		<!--- Prepare thread safe name --->
 		<cfset var threadName = "cbox_ichain_#replace( instance.uuidHelper.randomUUID(), "-", "", "all" )#">
 		<!--- Log It --->
@@ -133,10 +136,15 @@ Description :
 			<cfset instance.log.debug("Threading interceptor chain: '#getState()#' with thread name: #threadName#, priority: #arguments.asyncPriority#")>
 		</cfif>
 		<!--- Thread master chain --->
-		<cfthread name="#threadName#" action="run" priority="#arguments.asyncPriority#" 
-				  event="#arguments.event#" interceptData="#arguments.interceptData#" threadName="#threadName#">
+		<cfthread name="#threadName#" 
+				  action="run" 
+				  priority="#arguments.asyncPriority#" 
+				  event="#arguments.event#" 
+				  interceptData="#arguments.interceptData#" 
+				  threadName="#threadName#"
+				  buffer="#arguments.buffer#">
 			<!--- Process interception --->
-			<cfset variables.processSync( attributes.event, attributes.interceptData )>
+			<cfset variables.processSync( event=attributes.event, interceptData=attributes.interceptData, buffer=attributes.buffer )>
 			<!--- Log It --->
 			<cfif instance.log.canDebug()>
 				<cfset instance.log.debug("Finished threaded interceptor chain: #getState()# with thread name: #attributes.threadName#", thread)>
@@ -148,11 +156,12 @@ Description :
     
     <!--- processAsyncAll --->    
     <cffunction name="processAsyncAll" output="false" access="private" returntype="any" hint="Process an execution asynchronously for each interceptor state">    
-    	<cfargument name="event" 		 	hint="The event context object.">
-		<cfargument name="interceptData"	hint="A data structure used to pass intercepted information.">
-		<cfargument name="asyncAllJoin"		required="false" 	default="true" 		hint="If true, each interceptor in the interception chain will be ran in a separate thread and joined together at the end by default.  If you set this flag to false then there will be no joining and waiting for the threads to finalize."/>
-		<cfargument name="asyncPriority" 	required="false" 	default="NORMAL" 	hint="The thread priority to be used. Either LOW, NORMAL or HIGH. The default value is NORMAL"/>
-		<cfargument name="asyncJoinTimeout"	required="false" 	default="0" 		hint="The timeout in milliseconds for the join thread to wait for interceptor threads to finish.  By default there is no timeout."/>
+    	<cfargument name="event" 		 		hint="The event context object.">
+		<cfargument name="interceptData"		hint="A data structure used to pass intercepted information.">
+		<cfargument name="asyncAllJoin"			required="false" 	default="true" 		hint="If true, each interceptor in the interception chain will be ran in a separate thread and joined together at the end by default.  If you set this flag to false then there will be no joining and waiting for the threads to finalize."/>
+		<cfargument name="asyncPriority" 		required="false" 	default="NORMAL" 	hint="The thread priority to be used. Either LOW, NORMAL or HIGH. The default value is NORMAL"/>
+		<cfargument name="asyncJoinTimeout" 	required="false" 	default="0" 		hint="The timeout in milliseconds for the join thread to wait for interceptor threads to finish.  By default there is no timeout."/>
+		<cfargument name="buffer" 		 		hint="The request buffer object that can be used to produce output from interceptor chains">
 		
 		<!--- Get reference to all interceptors --->
 		<cfset var interceptors 	= getInterceptors()>
@@ -174,15 +183,21 @@ Description :
 			<cfset arrayAppend( threadNames, thisThreadName )>
 			
 			<!--- Thread Interceptor Call --->
-			<cfthread name="#thisThreadName#" action="run" priority="#arguments.asyncPriority#" 
-					  event="#arguments.event#" interceptData="#arguments.interceptData#" threadName="#thisThreadName#" key="#key#">
+			<cfthread name="#thisThreadName#" 
+					  action="run" 
+					  priority="#arguments.asyncPriority#" 
+					  event="#arguments.event#" 
+					  interceptData="#arguments.interceptData#" 
+					  threadName="#thisThreadName#"
+					  buffer="#arguments.buffer#" 
+					  key="#key#">
 			<cfscript>
 				// Retrieve interceptor to fire.
 				var thisInterceptor = this.getInterceptors().get( attributes.key );
 				// Check if we can execute this Interceptor
 				if( variables.isExecutable( thisInterceptor, attributes.event, attributes.key ) ){
 					// Invoke the execution point
-					variables.invoker(interceptor=thisInterceptor, event=attributes.event, interceptData=attributes.interceptData, interceptorKey=attributes.key); 
+					variables.invoker(interceptor=thisInterceptor, event=attributes.event, interceptData=attributes.interceptData, interceptorKey=attributes.key, buffer=attributes.buffer); 
 					// Debug interceptions
 					if( instance.log.canDebug() ){
 						instance.log.debug("Interceptor '#getMetadata( thisInterceptor ).name#' fired in asyncAll chain: '#this.getState()#'");
@@ -216,8 +231,9 @@ Description :
 	
 	<!--- processSync --->    
     <cffunction name="processSync" output="false" access="private" returntype="any" hint="Process an execution synchronously">    
-    	<cfargument name="event" 		 	hint="The event context object.">
-		<cfargument name="interceptData"	hint="A data structure used to pass intercepted information.">
+    	<cfargument name="event" 		 		hint="The event context object.">
+		<cfargument name="interceptData"		hint="A data structure used to pass intercepted information.">
+		<cfargument name="buffer" 		 		hint="The request buffer object that can be used to produce output from interceptor chains">
 		<cfscript>	
 			var key 			= "";
 			var interceptors 	= getInterceptors();
@@ -236,12 +252,12 @@ Description :
 				// Check if we can execute this Interceptor
 				if( isExecutable( thisInterceptor, arguments.event, key ) ){
 					
-					// Async Execution only if not in a thread already
+					// Async Execution only if not in a thread already, no buffer sent for async calls
 					if( instance.metadataMap[ key ].async AND NOT instance.utility.inThread() ){
 						invokerAsync(event=arguments.event, interceptData=arguments.interceptData, interceptorKey=key, asyncPriority=instance.metadataMap[ key ].asyncPriority);
 					}
 					// Invoke the execution point synchronously
-					else if( invoker(interceptor=thisInterceptor, event=arguments.event, interceptData=arguments.interceptData, interceptorKey=key) ){ 
+					else if( invoker(interceptor=thisInterceptor, event=arguments.event, interceptData=arguments.interceptData, interceptorKey=key, buffer=arguments.buffer) ){ 
 						break; 
 					}
 				}
@@ -306,12 +322,17 @@ Description :
 		</cfif>
 		
 		<!--- Thread Interceptor Call --->
-		<cfthread name="#thisThreadName#" action="run" priority="#arguments.asyncPriority#" 
-				  event="#arguments.event#" interceptData="#arguments.interceptData#" threadName="#thisThreadName#" key="#arguments.interceptorKey#">
+		<cfthread name="#thisThreadName#" 
+				  action="run" 
+				  priority="#arguments.asyncPriority#" 
+				  event="#arguments.event#"
+				  interceptData="#arguments.interceptData#" 
+				  threadName="#thisThreadName#" 
+				  key="#arguments.interceptorKey#">
 			
 			<!--- Invoke the interceptor --->
 			<cfinvoke component="#this.getInterceptors().get( attributes.key )#" method="#this.getstate()#">
-				<cfinvokeargument name="event" 			value="#attributes.event#">
+				<cfinvokeargument name="event" 				value="#attributes.event#">
 				<cfinvokeargument name="interceptData" 	value="#attributes.interceptData#">
 			</cfinvoke>
 			
@@ -328,9 +349,10 @@ Description :
 	<cffunction name="invoker" access="private" returntype="any" hint="Execute an interceptor execution point" output="false" >
 		<!--- ************************************************************* --->
 		<cfargument name="interceptor" 		required="true" type="any" 		hint="The interceptor reference from cache">
-		<cfargument name="event" 		 	required="true" type="any" 		hint="The event context">
+		<cfargument name="event" 		 		required="true" type="any" 		hint="The event context">
 		<cfargument name="interceptData" 	required="true" type="any" 		hint="A metadata structure used to pass intercepted information.">
 		<cfargument name="interceptorKey" 	required="true" type="any" 		hint="The interceptor key to invoke">
+		<cfargument name="buffer" 		 		required="true" type="any"		hint="The request buffer object that can be used to produce output from interceptor chains">
 		<!--- ************************************************************* --->
 		<!--- Results reference --->
 		<cfset var refLocal = structnew()>
@@ -342,8 +364,9 @@ Description :
 		
 		<!--- Invoke the interceptor --->
 		<cfinvoke component="#arguments.interceptor#" method="#getstate()#" returnvariable="refLocal.results">
-			<cfinvokeargument name="event" 			value="#arguments.event#">
+			<cfinvokeargument name="event" 				value="#arguments.event#">
 			<cfinvokeargument name="interceptData" 	value="#arguments.interceptData#">
+			<cfinvokeargument name="buffer" 				value="#arguments.buffer#">
 		</cfinvoke>
 		
 		<!--- Log It --->

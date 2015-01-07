@@ -239,18 +239,33 @@ Description :
 
 	<!--- mapPath --->
     <cffunction name="mapPath" output="false" access="public" returntype="any" hint="Directly map to a path by using the last part of the path as the alias. This is equivalent to map('MyService').to('model.MyService'). Only use if the name of the alias is the same as the last part of the path.">
-    	<cfargument name="path" required="true" hint="The class path to the object to map"/>
+    	<cfargument name="path" 		required="true" hint="The class path to the object to map"/>
+		<cfargument name="namespace"	required="false"	default=""		hint="Provide namespace to merge it in"/>
+    	<cfargument name="prepend"		required="false"	default="false" hint="Where to attach the namespace"/>
+    	<cfargument name="force" 		required="false" 	default="false" hint="Forces the registration of the mapping in case it already exists"/>
 		<cfscript>
+			var cName = listlast( arguments.path, "." );
+
+			if( arguments.prepend ){
+				cName = arguments.namespace & cName;
+			} else {
+				cName = cName & arguments.namespace;
+			}
+
 			// directly map to a path
-			return map( listlast(arguments.path,".") ).to(arguments.path);
+			return map( cName, arguments.force ).to( arguments.path );
 		</cfscript>
     </cffunction>
 
 	<!--- mapDirectory --->
     <cffunction name="mapDirectory" output="false" access="public" returntype="any" hint="Maps an entire instantiation path directory, please note that the unique name of each file will be used and also processed for alias inspection">
-    	<cfargument name="packagePath"  required="true" hint="The instantiation packagePath to map"/>
-		<cfargument name="include" 		required="true" default="" hint="An include regex that if matches will only include CFCs that match this case insensitive regex"/>
-		<cfargument name="exclude" 		required="true" default="" hint="An exclude regex that if matches will exclude CFCs that match this case insensitive regex"/>
+    	<cfargument name="packagePath"  required="true" 	hint="The instantiation packagePath to map"/>
+		<cfargument name="include" 		required="true" 	default="" hint="An include regex that if matches will only include CFCs that match this case insensitive regex"/>
+		<cfargument name="exclude" 		required="true" 	default="" hint="An exclude regex that if matches will exclude CFCs that match this case insensitive regex"/>
+		<cfargument name="influence" 	required="false" 	hint="The influence closure or UDF that will receive the currently working mapping so you can influence it during the iterations"/>
+		<cfargument name="filter" 		required="false" 	hint="The filter closure or UDF that will receive the path of the CFC to process and returns TRUE to continue processing or FALSE to skip processing"/>
+		<cfargument name="namespace"	required="false"	default="" hint="Provide namespace to merge it in"/>
+    	<cfargument name="prepend"		required="false"	default="false" hint="where to attach the namespace"/>
 		<cfscript>
 			var directory 		= expandPath("/#replace(arguments.packagePath,".","/","all")#");
 			var qObjects		= "";
@@ -267,16 +282,28 @@ Description :
 
 		<!--- Loop and Register --->
 		<cfloop query="qObjects">
+
+			<!--- Skip hidden dirs (like .Appledouble) --->
+ 			<cfif left( qObjects.name ,1 ) eq ".">
+ 				<cfcontinue />
+ 			</cfif>
+
 			<!--- Remove .cfc and /\ with . notation--->
-			<cfset thisTargetPath = arguments.packagePath & "." & reReplace( replaceNoCase(qObjects.name,".cfc","") ,"(/|\\)",".","all")>
+			<cfset thisTargetPath = arguments.packagePath & "." & reReplace( replaceNoCase( qObjects.name, ".cfc", ""), "(/|\\)", ".", "all")>
 
 			<!--- Include/Exclude --->
-			<cfif ( len(arguments.include) AND reFindNoCase(arguments.include, thisTargetPath) )
-			      OR ( len(arguments.exclude) AND NOT reFindNoCase(arguments.exclude,thisTargetPath) )
-				  OR ( NOT len(arguments.include) AND NOT len(arguments.exclude) )>
+			<cfif ( len( arguments.include ) AND reFindNoCase( arguments.include, thisTargetPath ) )
+			      OR ( len( arguments.exclude ) AND NOT reFindNoCase( arguments.exclude,thisTargetPath ) )
+				  OR ( structKeyExists( arguments, "filter" ) AND arguments.filter( thisTargetPath ) )
+				  OR ( NOT len( arguments.include ) AND NOT len( arguments.exclude ) AND NOT structKeyExists( arguments, "filter") )>
 
 				<!--- Map the Path --->
-				<cfset mapPath( thisTargetPath )>
+				<cfset mapPath( path=thisTargetPath, namespace=arguments.namespace, prepend=arguments.prepend )>
+
+				<!--- Influence --->
+				<cfif structKeyExists( arguments, "influence" )>
+					<cfset arguments.influence( this, thisTargetPath )>
+				</cfif>
 
 			</cfif>
 
@@ -288,6 +315,7 @@ Description :
 	<!--- map --->
     <cffunction name="map" output="false" access="public" returntype="any" hint="Create a mapping to an object">
     	<cfargument name="alias" required="true" hint="A single alias or a list or an array of aliases for this mapping. Remember an object can be refered by many names"/>
+    	<cfargument name="force" required="false" default="false" hint="Forces the registration of the mapping in case it already exists"/>
 		<cfscript>
 			// generate mapping entry for this dude.
 			var name 	= "";
@@ -299,6 +327,12 @@ Description :
 
 			// first entry
 			name = arguments.alias[1];
+
+			// check if mapping exists, if so, just use and return.
+			if( structKeyExists( instance.mappings, name) and !arguments.force ){
+				currentMapping = instance.mappings[ name ];
+				return this;
+			}
 
 			// generate the mapping for the first name passed
 			instance.mappings[ name ] = createObject("component","coldbox.system.ioc.config.Mapping").init( name );
@@ -399,7 +433,7 @@ Description :
     </cffunction>
 
 	<!--- toProvider --->
-    <cffunction name="toProvider" output="false" access="public" returntype="any" hint="Map to a provider object that must implement coldbox.system.ioc.IProvider">
+    <cffunction name="toProvider" output="false" access="public" returntype="any" hint="Map to a provider object that must implement coldbox.system.ioc.IProvider or a closure or UDF">
     	<cfargument name="provider" required="true" hint="The provider to map to"/>
 		<cfscript>
 			currentMapping.setPath( arguments.provider ).setType( this.TYPES.PROVIDER );
@@ -477,9 +511,9 @@ Description :
 				currentMapping = instance.mappings[arguments.alias];
 				return this;
 			}
-			this.utility.throwit(message="The mapping '#arguments.alias# has not been initialized yet.'",
-							detail="Please use the map('#arguments.alias#') first to start working with a mapping",
-							type="Binder.InvalidMappingStateException");
+			throw(message="The mapping '#arguments.alias# has not been initialized yet.'",
+				  detail="Please use the map('#arguments.alias#') first to start working with a mapping",
+				  type="Binder.InvalidMappingStateException");
 		</cfscript>
     </cffunction>
 
@@ -490,7 +524,8 @@ Description :
 		<cfargument name="dsl" 		required="false" hint="The construction dsl this argument references. If used, the name value must be used."/>
 		<cfargument name="value" 	required="false" hint="The value of the constructor argument, if passed."/>
     	<cfargument name="javaCast" required="false" hint="The type of javaCast() to use on the value of the argument. Only used if using dsl or ref arguments"/>
-    	<cfscript>
+    	<cfargument name="required" required="false" default="true" hint="If the argument is required or not, by default we assume required DI arguments."/>
+		<cfscript>
     		currentMapping.addDIConstructorArgument(argumentCollection=arguments);
     		return this;
     	</cfscript>
@@ -518,7 +553,8 @@ Description :
 		<cfargument name="value" 	required="false" hint="The value of the property, if passed."/>
     	<cfargument name="javaCast" required="false" hint="The type of javaCast() to use on the value of the property. Only used if using dsl or ref arguments"/>
     	<cfargument name="scope" 	required="false" default="variables" hint="The scope in the CFC to inject the property to. By default it will inject it to the variables scope"/>
-    	<cfscript>
+    	<cfargument name="required" required="false" default="true" hint="If the property is required or not, by default we assume required DI properties."/>
+		<cfscript>
     		currentMapping.addDIProperty(argumentCollection=arguments);
     		return this;
     	</cfscript>
@@ -552,9 +588,9 @@ Description :
     	<cfscript>
     		// check if invalid scope
 			if( NOT this.SCOPES.isValidScope(arguments.scope) AND NOT structKeyExists(instance.customScopes,arguments.scope) ){
-				this.utility.throwit(message="Invalid WireBox Scope: '#arguments.scope#'",
-								detail="Please make sure you are using a valid scope, valid scopes are: #arrayToList(this.SCOPES.getValidScopes())# AND custom scopes: #structKeyList(instance.customScopes)#",
-								type="Binder.InvalidScopeMapping");
+				throw( message="Invalid WireBox Scope: '#arguments.scope#'",
+					   detail="Please make sure you are using a valid scope, valid scopes are: #arrayToList(this.SCOPES.getValidScopes())# AND custom scopes: #structKeyList(instance.customScopes)#",
+					   type="Binder.InvalidScopeMapping" );
 			}
 			currentMapping.setScope( arguments.scope );
 			return this;
@@ -792,6 +828,11 @@ Description :
 			// Register LogBox Configuration
 			if( structKeyExists( wireBoxDSL, "logBoxConfig") ){
 				logBoxConfig(wireBoxDSL.logBoxConfig);
+			}
+
+			// Register Parent Injector
+			if( structKeyExists( wireBoxDSL, "parentInjector") ){
+				parentInjector( wireBoxDSL.parentInjector );
 			}
 
 			// Register Server Scope Registration

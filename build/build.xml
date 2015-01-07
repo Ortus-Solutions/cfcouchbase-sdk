@@ -113,6 +113,11 @@
             <fileset file="LICENSE" />
             <fileset file="readme.txt" />                        
         </copy>
+    	
+    	<!--Copy samples-->
+        <copy todir="${dir.build}/samples" encoding="UTF-8">
+        	<fileset dir="samples" />                    
+        </copy>
 
         <!-- Replace Build Numbers -->
         <replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">

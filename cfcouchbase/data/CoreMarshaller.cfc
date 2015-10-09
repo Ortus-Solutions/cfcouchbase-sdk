@@ -26,16 +26,16 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 
 		return this;
 	}
-	
-	
-	// ************************ Serialization ************************ 
+
+
+	// ************************ Serialization ************************
 
 	/**
 	* This method serializes incoming data according to our rules and it returns a string representation usually JSON
 	* @data.hint The data to serialize
 	*/
 	string function serializeData( required any data ){
-		
+
 		// if json, or string, just return back no serialization needed
 		if( isJSON( arguments.data ) OR isSimpleValue( arguments.data ) ){ return arguments.data; }
 
@@ -45,11 +45,11 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		}
 		// if query, then do native serialization
 		else if( isQuery( arguments.data ) ){
-			var nativeQuery = { 
+			var nativeQuery = {
 				"binary" : toBase64( objectSave( arguments.data ) ),
-				"type"="cfcouchbase-query", 
-				"recordcount"=arguments.data.recordcount, 
-				"columnlist"="#arguments.data.columnlist#" 
+				"type"="cfcouchbase-query",
+				"recordcount"=arguments.data.recordcount,
+				"columnlist"="#arguments.data.columnlist#"
 			};
 			return serializeJSON( nativeQuery );
 		}
@@ -73,13 +73,13 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 
 		// Auto Inflate Mode, store with class information
 		if( structKeyExists( mdCache, "autoInflate" ) AND arrayLen( mdCache.properties ) ){
-			var nativeObject = { 
+			var nativeObject = {
 				"type"		= "cfcouchbase-cfcdata",
 				"data" 		= buildMemento( arguments.data, mdCache ),
-				"classpath" = mdCache.name 
+				"classpath" = mdCache.name
 			};
 			return serializeJSON( nativeObject );
-		} 
+		}
 		// else just store properties as data
 		else if( structKeyExists( mdCache, "properties" ) and arrayLen( mdCache.properties ) ){
 			var nativeData = buildMemento( arguments.data, mdCache );
@@ -87,7 +87,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		}
 
 		// Do native serialization, by default
-		return serializeJSON( { 
+		return serializeJSON( {
 			"type" = "cfcouchbase-cfc",
 			"binary" = toBase64( objectSave( arguments.data ) ),
 			"classpath" = mdCache.name
@@ -105,39 +105,39 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 				memento[ "#thisProp.name#" ] = evaluate( "arguments.target.get#thisProp.name#()" );
 			}
 		}
-		return memento; 
+		return memento;
 	}
 
-	// ************************ Deserialization ************************ 
+	// ************************ Deserialization ************************
 
 	/**
-	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
+	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	* @ID.hint The ID of the document being deserialized
 	* @data.hint A JSON document to deserialize according to our rules
 	* @inflateTo.hint The object that will be used to inflate the data with according to our conventions
 	* @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
 	*/
-	any function deserializeData( 
-		required string ID, 
-		required string data, 
-		any inflateTo="", 
-		struct deserializeOptions={} 
+	any function deserializeData(
+		required string id,
+		required string data,
+		any inflateTo="",
+		struct deserializeOptions={}
 	){
 		var results = arguments.data;
-		
+
 		if( isJSON( arguments.data ) ){
 			// Deserialize JSON
 			results = deserializeJSON( arguments.data );
-			
+
 			// Do we have a cfcouchbase CFC memento to inflate?
 			if( isStruct( results ) and structkeyExists( results, "type" ) and results.type eq "cfcouchbase-cfcdata" ){
-				
+
 				// Use class path from JSON unless it's being overridden
 				if( isSimpleValue( arguments.inflateTo ) && !len( trim( arguments.inflateTo ) ) ) {
 					arguments.inflateTo = results.classpath;
 				}
-				
+
 				return deserializeObjects( arguments.ID, results.data, arguments.inflateTo, arguments.deserializeOptions );
 			}
 			// Do we have a cfcouchbase native CFC?
@@ -155,32 +155,32 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		// If there's an inflateTo, then we're sending back a CFC!
 		if( !isSimpleValue( arguments.inflateTo ) || len( trim( arguments.inflateTo ) ) ){
 			return deserializeObjects( arguments.ID, results, arguments.inflateTo, arguments.deserializeOptions );
-		}		
-		
+		}
+
 		// We reach this if it's not JSON, or we're not inflating to a CFC
 		return results;
 	}
 	/**
 	* Does object inflation
 	*/
-	private function deserializeObjects( 
-		required string ID, 
-		required any data, 
-		required any inflateTo, 
-		deserializeOptions={} 
+	private function deserializeObjects(
+		required string ID,
+		required any data,
+		required any inflateTo,
+		deserializeOptions={}
 	){
 		var oTarget = '';
 		var propertyIDName = '';
 
-		if( isStruct( arguments.data ) ) {			
+		if( isStruct( arguments.data ) ) {
 			oTarget = generateInflatable( arguments.inflateTo, arguments.data );
-			
+
 			// Check if the object has a method called "$deserialize", if it does, call it and return
 			if( structKeyExists( oTarget, "$deserialize" ) ){
 				oTarget.$deserialize( arguments.ID, arguments.data );
 				return oTarget;
 			}
-						
+
 			// Determine what this CFC calls its ID
 			propertyIDName = determineIDPropertyName( oTarget, arguments.deserializeOptions );
 			// If it's not already in the struct...
@@ -188,34 +188,34 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 				// ... put it there
 				arguments.data[ propertyIDName ] = arguments.ID;
 			}
-			
+
 			arguments.deserializeOptions.target = oTarget;
 			arguments.deserializeOptions.memento = arguments.data;
-						
+
 			return variables.objectPopulator.populateFromStruct( argumentCollection = arguments.deserializeOptions );
-			
+
 		} else if( isQuery( arguments.data ) ) {
-			
+
 			// Loop over query and inflate a CFC for each row
 			var results = [];
 			var i = 0;
-			
+
 			while( ++i <= arguments.data.recordCount ) {
-				
+
 				arguments.deserializeOptions.target = generateInflatable( arguments.inflateTo, arguments.data );
 				arguments.deserializeOptions.qry = arguments.data;
 				arguments.deserializeOptions.rowNumber = i;
-				
+
 				arrayAppend( results, ObjectPopulator.populateFromQuery( argumentCollection = arguments.deserializeOptions ) );
 			}
-			
+
 			return results;
-			
+
 		// Non-JSON string
 		} else {
-			
+
 			oTarget = generateInflatable( arguments.inflateTo, arguments.data );
-			
+
 			// Check if the object has a method called "$deserialize", if it does, call it and return
 			if( structKeyExists( oTarget, "$deserialize" ) ){
 				oTarget.$deserialize( arguments.ID, arguments.data );
@@ -224,12 +224,12 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 
 			// They gave us an inflateTo, but we don't know how to use this data type
 			return arguments.data;
-			
+
 		}
-		
+
 	}
 
-	// ************************ Utility ************************ 
+	// ************************ Utility ************************
 
 	/**
 	* A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
@@ -238,9 +238,9 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 		variables.couchbaseClient = arguments.couchcbaseClient;
 		return this;
 	}
-	
+
 	/**
-	* Generates inflatable CFC from a class path, object or closure provider 
+	* Generates inflatable CFC from a class path, object or closure provider
 	*/
 	private function generateInflatable( required any inflateTo, required any data ){
 		if( isSimpleValue( arguments.inflateTo ) ) {
@@ -258,13 +258,13 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	private boolean function $isClosure( required any target ){
 		return ( structkeyExists( GetFunctionList(), "isClosure") ? isClosure( arguments.target ) : false );
 	}
-	
+
 	/**
 	* Determine which property of the CFC is the primary ID.  Returns empty string if none found.
 	*/
 	private string function determineIDPropertyName( required any target, required struct deserializeOptions ){
 		var md = variables.couchbaseClient.getUtil().getInheritedMetaData( arguments.target );
-		
+
 		// Look at the properties in the CFC
 		if( structKeyExists( md, 'properties' ) ){
 			// Search for a fieldtype of ID
@@ -275,15 +275,15 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 				}
 			}
 		}
-		
-		// If none found, allow the IDPropertyName to be passed via the deserializeOptions 
+
+		// If none found, allow the IDPropertyName to be passed via the deserializeOptions
 		if( structKeyExists( deserializeOptions, 'IDPropertyName' ) ){
 			return deserializeOptions.IDPropertyName;
 		}
-		
+
 		// Not found
 		return '';
-		
+
 	}
 
 }

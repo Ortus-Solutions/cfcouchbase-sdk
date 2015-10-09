@@ -13,7 +13,7 @@ interface {
 	any function setCouchbaseClient( required couchcbaseClient );
 
 	/**
-	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional 
+	* This method deserializes an incoming data string via JSON and according to our rules. It can also accept an optional
 	* inflateTo parameter wich can be an object we should inflate our data to.
 	* @ID.hint The ID of the document being deserialized
 	* @data.hint A JSON document to deserialize according to our rules

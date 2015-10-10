@@ -84,12 +84,12 @@ component serializable="false" accessors="true"{
     // LOAD ENUMS
 		this['persistTo'] = newJava("com.couchbase.client.java.PersistTo");
 		this['replicateTo'] = newJava("com.couchbase.client.java.ReplicateTo");
+    this['stale'] = newJava("com.couchbase.client.java.view.Stale");
 
     // Establish a connection to the Couchbase bucket
     variables['couchbaseClient'] = buildCouchbaseClient(variables.couchbaseConfig);
     // Build the data marshaler
     variables['dataMarshaller'] = buildDataMarshaller(variables.couchbaseConfig).setCouchbaseClient(this);
-
     return this;
   }
 
@@ -530,7 +530,7 @@ component serializable="false" accessors="true"{
   * @return A bulk Java Future. (net.spy.memcached.internal.BulkFuture)  Any document IDs not found will not exist in the future object.
   */
   public any function asyncGetMulti(required array id){
-   throw(message="asyncGetMulti not supported", detail="The asyncGetMulti method is not supported as it requires observables to issue separate gets.", type="Not Supported");
+   throw(message="asyncGetMulti not supported", detail="The asyncGetMulti method is not supported as it requires observables to issue separate gets.", type="CouchbaseClient.NotSupported");
   }
 
   /**
@@ -578,19 +578,11 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * Gets (with CAS support) the given key asynchronously.  This method is meant to be used in conjunction with setWithCAS to be able to
-  * update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
-  *
-  * <pre class='brush: cf'>
-  * future = client.asyncGetWithCAS( 'brad' );
-  * </pre>
-  *
-  * @ID.hint The ID of the document to retrieve.
-  *
-  * @return A Java Future. (net.spy.memcached.internal.OperationFuture) The future has methods that will return the "CAS" and "value" keys.
+  * (deprecated)
+  * asyncGetWithCAS() is no longer supported
   */
   any function asyncGetWithCAS(required string id){
-    throw(message="asyncGetWithCAS not supported", detail="The asyncGetWithCAS method is not supported as it requires observables to issue separate gets.", type="Not Supported");
+    throw(message="asyncGetWithCAS not supported", detail="The asyncGetWithCAS method is not supported as it requires observables to issue separate gets.", type="CouchbaseClient.NotSupported");
   }
 
   /**
@@ -709,24 +701,13 @@ component serializable="false" accessors="true"{
   * clusterStats = client.getStats();
   * </pre>
   *
-  * @return A struct containing a key for each server in the cluster.  The value for each server is a Java Map of stats.
+  * @username A valid username for the admin console
+  * @password A valid password for the admin console
+  * @return An array for each server in the cluster with a structure of stats
   */
-  any function getStats(){
-    var stats = variables.couchbaseClient.getStats();
-    var entrySetIterator = stats.entrySet().iterator();
-    var results = {};
-    var entrySet = '';
-
-    // Convert from a Map keyed by java.net.InetSocketAddress objects,
-    // to a CFML struct keyed by the string representation of each server
-    // For some reason Map.get() is returning null, so using an entrySet iterator instead.
-    while( entrySetIterator.hasNext() ){
-      entrySet = entrySetIterator.next();
-      results[ entrySet.getKey().toString() ] = entrySet.getValue();
-    }
-
-    return results;
-
+  public any function getStats(required string username, required string password){
+    var stats = deserializeJSON(variables.cluster.clusterManager("Administrator", "password").info().raw().toString());
+    return stats.nodes;
   }
 
   /**
@@ -741,137 +722,154 @@ component serializable="false" accessors="true"{
   * stats = client.getAggregateStat( 'curr_items' );
   * </pre>
   *
+  * @username A valid username for the admin console
+  * @password A valid password for the admin console
   * @stat.hint The key of an individual stat to return
   *
   * @return An integer representing the aggregation of the stat specified acrossed the cluster.
   */
-  any function getAggregateStat( required string stat ){
-    var stats = getStats();
+  public numeric function getAggregateStat(required string username, required string password, required string stat){
+    var nodes = getStats(arguments.username, arguments.password);
     var statValue = 0;
-
-    // Loop over all the servers...
-    for( var thisServer in stats ){
-      var serverStats = stats[ thisServer ];
-
-      // ... and add up the values if they exist for that server
-      if( structKeyExists( serverStats, arguments.stat ) ){
-        statValue += val( serverStats[ arguments.stat ] );
+    // Loop over all the servers and add up the values if they exist for that server
+    for(var node in nodes){
+      // if the stat exists in the top-level structure
+      if(structKeyExists(node, arguments.stat) && isNumeric(node[arguments.stat])){
+        statValue += val(serverStats[arguments.stat]);
+      }
+      // if the stat is in the interestingStats property
+      else if(structKeyExists(node.interestingStats, arguments.stat) && isNumeric(node.interestingStats[arguments.stat])){
+        statValue += val(node.interestingStats[arguments.stat]);
+      }
+      // if the stat is in the systemStats property
+      else if(structKeyExists(node.systemStats, arguments.stat) && isNumeric(node.systemStats[arguments.stat])){
+        statValue += val(node.systemStats[arguments.stat]);
       }
     }
     return statValue;
   }
 
   /**
-  * Decrement the given counter, returning the new value.  This method is thread safe as it decrements and retrives the value in a single operation as opposed to
-  * getting it, and then setting it again with subsequent calls.
+  * Increment or Decrement the given counter, returning the new value.  This method is thread safe as it decrements and
+  * retrives the value in a single operation as opposed to getting it, and then setting it again with subsequent calls.
   *
   * <pre class='brush: cf'>
   * newValue = client.decr( 'passesLeft', 1 );
   * </pre>
   *
-  * @ID.hint The id of the document to decrement
+  * @id.hint The id of the document to decrement
   * @value.hint The amount to decrement
   * @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   *
   * @return The new value, or -1 if we were unable to decrement or add
   */
-  any function decr(
-    required string ID,
+  public any function counter(
+    required string id,
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
   ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-
     // default timeouts
-    defaultTimeout( arguments );
-
-    // store it
-    return variables.couchbaseClient.decr( arguments.ID,
-                           javaCast( "long", arguments.value ),
-                           javaCast( "long", arguments.defaultValue ),
-                           javaCast( "int", arguments.timeout ) );
+    defaultTimeout(arguments);
+    var document = variables.couchbaseClient.counter(
+                                                    variables.util.normalizeID(arguments.id),
+                                                    javaCast("long", arguments.value),
+                                                    javaCast("long", arguments.defaultValue),
+                                                    javaCast("long", arguments.timeout),
+                                                    javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                                    variables.timeUnit.MILLISECONDS
+                                                  );
+    return document.content();
   }
 
   /**
-  * Decrement the given counter asynchronously.  This method is thread safe as it decrements and retrives the value in a single operation as opposed to
-  * getting it, and then setting it again with subsequent calls.
+  * Increment or Decrement the given counter, returning the new value.  This method is thread safe as it decrements and
+  * retrives the value in a single operation as opposed to getting it, and then setting it again with subsequent calls.
   *
   * <pre class='brush: cf'>
-  * future = client.asyncDecr( 'passesLeft', 1 );
+  * newValue = client.decr( 'passesLeft', 1 );
   * </pre>
   *
-  * @ID.hint The id of the document to decrement
+  * @id.hint The id of the document to decrement
   * @value.hint The amount to decrement
-  *
-  * @return A future with the decremented value, or -1 if the decrement failed.
-  */
-  any function asyncDecr(
-    required string ID,
-    required numeric value
-  ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-
-    // store it
-    return variables.couchbaseClient.asyncDecr( arguments.ID, javaCast( "long", arguments.value ) );
-  }
-
-  /**
-  * Increment the given counter.  This method is thread safe as it increments and retrives the value in a single operation as opposed to
-  * getting it, and then setting it again with subsequent calls.
-  *
-  * <pre class='brush: cf'>
-  * newValue = client.incr( 'numErrors', 1 );
-  * </pre>
-  *
-  * @ID.hint The id of the document to increment
-  * @value.hint The amount to increment
   * @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   *
-  * @return The new value, or -1 if we were unable to increment
+  * @return A Java Observable (rx.Observable)
   */
-  any function incr(
-    required string ID,
+  public any function asyncCounter(
+    required string id,
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
   ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-
     // default timeouts
-    defaultTimeout( arguments );
-
-    // store it
-    return variables.couchbaseClient.incr( arguments.ID,
-                           javaCast( "long", arguments.value ),
-                           javaCast( "long", arguments.defaultValue ),
-                           javaCast( "int", arguments.timeout ) );
-
+    defaultTimeout(arguments);
+    return variables.couchbaseClient
+                                    .async()
+                                    .counter(
+                                              variables.util.normalizeID(arguments.id),
+                                              javaCast("long", arguments.value),
+                                              javaCast("long", arguments.defaultValue),
+                                              javaCast("long", arguments.timeout)
+                                            );
   }
 
   /**
-  * Increment the given counter asynchronously.  This method is thread safe as it increments and retrives the value in a single operation as opposed to
-  * getting it, and then setting it again with subsequent calls.
-  *
-  * <pre class='brush: cf'>
-  * future = client.asyncIncr( 'numErrors', 1 );
-  * </pre>
-  *
-  * @ID.hint The id of the document to increment
-  * @value.hint The amount to imcrement
-  *
-  * @return A future with the incremented value, or -1 if the increment failed.
+  * (deprecated)
+  * decr() is no longer supported, it has been replaced with counter(), leaving here for backwards compatibility
   */
-  any function asyncIncr(
-    required string ID,
-    required numeric value
+  public any function decr(
+    required string id,
+    required numeric value,
+    numeric defaultValue=0,
+    numeric timeout
   ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
+    // since it is being passed to counter the value needs to be negative
+    arguments['value'] *= -1;
+    return counter(argumentCollection=arguments);
+  }
 
-    // store it
-    return variables.couchbaseClient.asyncIncr( arguments.ID, javaCast( "long", arguments.value ) );
+  /**
+  * (deprecated)
+  * asyncDecr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
+  */
+  public any function asyncDecr(
+    required string id,
+    required numeric value,
+    numeric defaultValue=0,
+    numeric timeout
+  ){
+    // since it is being passed to counter the value needs to be negative
+    arguments['value'] *= -1;
+    return asyncCounter(argumentCollection=arguments);
+  }
+
+  /**
+  * (deprecated)
+  * incr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
+  */
+  public any function incr(
+    required string id,
+    required numeric value,
+    numeric defaultValue=0,
+    numeric timeout
+  ){
+    return counter(argumentCollection=arguments);
+  }
+
+  /**
+  * (deprecated)
+  * asyncIncr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
+  */
+  public any function asyncIncr(
+    required string id,
+    required numeric value,
+    numeric defaultValue=0,
+    numeric timeout
+  ){
+    return asyncCounter(argumentCollection=arguments);
   }
 
   /**
@@ -886,16 +884,16 @@ component serializable="false" accessors="true"{
   *
   * @return A future object (net.spy.memcached.internal.OperationFuture)
   */
-  any function touch(
-    required string ID,
+  public any function touch(
+    required string id,
     required numeric timeout
   ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-    // Default timeout
-    defaultTimeout( arguments );
-
-    // store it
-    return variables.couchbaseClient.touch( arguments.ID, javaCast( "int", arguments.timeout ) );
+    return variables.couchbaseClient.counter(
+                                              variables.util.normalizeID(arguments.id),
+                                              javaCast("long", arguments.timeout),
+                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                              variables.timeUnit.MILLISECONDS
+                                            );
   }
 
   /**
@@ -905,67 +903,47 @@ component serializable="false" accessors="true"{
   * future = client.delete( 'brad' );
   * </pre>
   *
-  * @ID The ID of the document to delete, or an array of ID's to delete
+  * @id The ID of the document to delete, or an array of ID's to delete
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or a struct of futures depending on whether a single ID or an array of IDs are passed,
+  * @return void
   */
-  any function delete(
-    required any ID,
+  public void function remove(
+    required any id,
     string persistTo,
     string replicateTo
   ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-
     // default persist and replicate
-    defaultPersistReplicate( arguments );
-
-    // simple or array
-    arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
-
-    // iterate and prepare futures
-    var futures = {};
-    for( var thisKey in arguments.id ){
-      // store it
-      futures[ thisKey ] = variables.couchbaseClient.delete( thisKey,
-                                   arguments.persistTo,
-                                   arguments.replicateTo );
-
-    }
-
-    // if > 1 futures, return struct, else return the only one future
-    return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
+    defaultPersistReplicate(arguments);
+    var document = variables.couchbaseClient.remove(
+                                                      variables.util.normalizeID(arguments.id),
+                                                      arguments.persistTo,
+                                                      arguments.replicateTo,
+                                                      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                                      variables.timeUnit.MILLISECONDS
+                                                    );
+    return document.content();
   }
 
   /**
-  * Get stats for a specific document ID.
-  *
-  * <pre class='brush: cf'>
-  * docStats = client.getDocStats( 'brad' );
-  * docStatArray = client.getDocStats( ['brad', 'luis', 'bill'] );
-  * </pre>
-  *
-  * @ID.hint The id of the document to get the stats for or a list or an array
-  *
-  * @return A future or a struct of futures depending on whether a single ID or an array of IDs are passed,
+  * (deprecated)
+  * delete() is no longer supported, it has been replaced with remove(), leaving here for backwards compatibility
   */
-  any function getDocStats( required any ID ){
-    arguments.ID = variables.util.normalizeID( arguments.ID );
+  public any function delete(
+    required any id,
+    string persistTo,
+    string replicateTo
+  ){
+    return remove(argumentCollection=arguments);
+  }
 
-    // simple or array
-    arguments.id = ( isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id );
-
-    // iterate and prepare futures
-    var futures = {};
-    for( var thisKey in arguments.id ){
-      // store it
-      futures[ thisKey ] = variables.couchbaseClient.getKeyStats( thisKey );
-
-    }
-
-    // if > 1 futures, return struct, else return the only one future
-    return ( structCount( futures ) > 1 ? futures : futures[ arguments.id[ 1 ] ] );
+  /**
+  * (deprecated)
+  * getDocStats() is no longer supported
+  */
+  any function getDocStats(required any id){
+   throw(message="getDocStats not supported", detail="The getDocStats method is not supported as it has been removed from the SDK.", type="CouchbaseClient.NotSupported");
   }
 
   /**
@@ -975,13 +953,18 @@ component serializable="false" accessors="true"{
   * serverArray = client.getAvailableServers();
   * </pre>
   *
+  * @username A valid username for the admin console
+  * @password A valid password for the admin console
+  *
   * @return An array containing an item for each server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString()
   */
-  array function getAvailableServers(){
-    var servers = variables.couchbaseClient.getAvailableServers();
-    var index  = 1;
-    for( var thisServer in servers ){
-      servers[ index++ ] = thisServer.toString();
+  public array function getAvailableServers(required string username, required string password){
+    var stats = getStats(arguments.username, arguments.password);
+    var servers = [];
+    for(var node in stats){
+      if(node.status == "healthy" && node.clusterMembership == "active"){
+        arrayAppend(servers, node.hostname);
+      }
     }
     return servers;
   }
@@ -1088,13 +1071,124 @@ component serializable="false" accessors="true"{
   * oQuery = client.newQuery( { offset:10, limit:20, group:true, groupLevel:2 } );
   * </pre>
   *
+  * @designDocumentName.hint The name of the design document
+  * @viewName.hint The name of the view to get
   * @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. This only does the simple 1 value options
   *
-  * @return A Java query object (com.couchbase.client.protocol.views.Query)
+  * @return A Java query object (com.couchbase.client.java.view.ViewQuery)
   */
-  any function newQuery( struct options={} ){
-    var oQuery = newJava( "com.couchbase.client.protocol.views.Query" ).init();
-    return variables.queryHelper.processOptions( arguments.options, oQuery );
+  public any function newViewQuery(
+    required string designDocumentName,
+    required string viewName,
+    struct options={}
+  ){
+    var viewQuery = newJava("com.couchbase.client.java.view.ViewQuery");
+    arguments['options'] = variables.queryHelper.processOptions(arguments.options, this.stale);
+    // set the design document and view name
+    viewQuery = viewQuery.from(arguments.designDocumentName, arguments.viewName);
+    // set debug
+    if(structKeyExists(arguments.options, "debug")){
+      viewQuery = viewQuery.debug(arguments.options.debug);
+    }
+    // set descending
+    if(structKeyExists(arguments.options, "descending")){
+      viewQuery = viewQuery.descending(arguments.options.descending);
+    }
+    // set development
+    if(structKeyExists(arguments.options, "development")){
+      viewQuery = viewQuery.development(arguments.options.development);
+    }
+    // set the endKey
+    if(structKeyExists(arguments.options, "endKey")){
+      viewQuery = viewQuery.endKey(arguments.options.endKey);
+    }
+    // set the endKeyDocId
+    if(structKeyExists(arguments.options, "endKeyDocId")){
+      viewQuery = viewQuery.endKeyDocId(arguments.options.endKeyDocId);
+    }
+    // set the group
+    if(structKeyExists(arguments.options, "group")){
+      viewQuery = viewQuery.group(arguments.options.group);
+    }
+    // set the groupLevel
+    if(structKeyExists(arguments.options, "groupLevel")){
+      viewQuery = viewQuery.groupLevel(arguments.options.groupLevel);
+    }
+    // set includeDocs
+    if(structKeyExists(arguments.options, "includeDocs")){
+      viewQuery = viewQuery.includeDocs(arguments.options.includeDocs);
+    }
+    // set inclusiveEnd
+    if(structKeyExists(arguments.options, "inclusiveEnd")){
+      viewQuery = viewQuery.inclusiveEnd(arguments.options.inclusiveEnd);
+    }
+    // set the key
+    if(structKeyExists(arguments.options, "key")){
+      viewQuery = viewQuery.key(arguments.options.key);
+    }
+    // set the limit
+    if(structKeyExists(arguments.options, "keys")){
+      viewQuery = viewQuery.keys(arguments.options.keys);
+    }
+    // set the limit
+    if(structKeyExists(arguments.options, "limit")){
+      viewQuery = viewQuery.limit(arguments.options.limit);
+    }
+    // set skip
+    if(structKeyExists(arguments.options, "skip")){
+      viewQuery = viewQuery.skip(arguments.options.skip);
+    }
+    // set stale
+    if(structKeyExists(arguments.options, "stale")){
+      viewQuery = viewQuery.stale(arguments.options.stale);
+    }
+    // set startKey
+    if(structKeyExists(arguments.options, "startKey")){
+      viewQuery = viewQuery.startKey(arguments.options.startKey);
+    }
+    // set startKeyDocId
+    if(structKeyExists(arguments.options, "startKeyDocId")){
+      viewQuery = viewQuery.startKeyDocId(arguments.options.startKeyDocId);
+    }
+    return viewQuery;
+  }
+
+  /**
+  * (deprecated)
+  * newQuery() is no longer supported, it has been replaced with newViewQuery(), leaving here for backwards compatibility
+  */
+  public any function newQuery(
+    required string designDocumentName,
+    required string viewName,
+    struct options={}
+  ){
+    return newViewQuery(argumentCollection=arguments);
+  }
+
+  /**
+  * Performs a Couchbase View Query or N1QL Query
+  * The default structure for views is in tact added new properties for n1ql queries
+  * See the viewQuery and n1qlQuery methods for parameter descriptions
+  */
+  public any function query(
+    string designDocumentName,
+    string viewName,
+    any options={},
+    boolean deserialize=true,
+    struct deserializeOptions={},
+    any inflateTo="",
+    any filter,
+    any transform,
+    string returnType="array",
+    string type="view"
+  ){
+    // the sdk supports both View Queries and N1QL queries from the view method
+    if(arguments.type == "n1ql"){
+      return n1qlQuery(argumentCollection=arguments);
+    }
+    else{
+      return viewQuery(argumentCollection=arguments)
+    }
   }
 
   /**
@@ -1147,7 +1241,7 @@ component serializable="false" accessors="true"{
   *
   * @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.  <br>Each struct contains the following items: id, document, key, value  <br>If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)  <br>If returnType is iterator, a Java iterator object will be returned
   */
-  any function query(
+  public any function viewQuery(
     required string designDocumentName,
     required string viewName,
     any options={},
@@ -1158,74 +1252,84 @@ component serializable="false" accessors="true"{
     any transform,
     string returnType="array"
   ){
+    var start = GetTickCount();
     // if options is struct, then build out the query, else use it as an object.
-    var oQuery = ( isStruct( arguments.options ) ? newQuery( arguments.options ) : arguments.options );
-    var oView    = getView( arguments.designDocumentName, arguments.viewName );
-    var results = rawQuery( oView, oQuery );
+    var oQuery = newViewQuery(arguments.designDocumentName, arguments.viewName, arguments.options);
+    var results = rawQuery(oQuery);
 
+    if(!results.success()){
+      throw(message="Query Failed", detail="The query failed to execute", type="CouchbaseClient.ViewException");
+    }
     // Native return type?
-    if( arguments.returnType eq "native" ){ return results; }
+    if(arguments.returnType == "native"){
+      return results;
+    }
 
-    // Were there errors
-      if( arrayLen( results.getErrors() ) ){
-        // PLEASE NOTE, the response received may not include all documents if one or more nodes are offline
-        // and not yet failed over.  Couchbase basically sends back what docs it _can_ access and ignores the other nodes.
-        variables.util.handleRowErrors( message='There was an error executing the view: #arguments.viewName#',
-                        rowErrors=results.getErrors(),
-                        type='CouchbaseClient.ViewException' );
-      }
+    // Iterator results?
+    if(arguments.returnType == "iterator"){
+      return results.iterator();
+    }
 
-      // Iterator results?
-      if( arguments.returnType eq "iterator" ){ return results.iterator(); }
-
-      // iterate and build it out with or without desrializations
-    var iterator   = results.iterator();
-    var cfresults   = [];
-    while( iterator.hasNext() ){
-      var thisRow    = iterator.next();
-      var isReduced   = ( results.getClass().getName() eq "com.couchbase.client.protocol.views.ViewResponseReduced"  ? true : false );
-      var hasDocs     = ( results.getClass().getName() eq "com.couchbase.client.protocol.views.ViewResponseWithDocs" ? true : false );
+    // iterate and build it out with or without desrializations
+    var iterator = results.iterator();
+    var cfresults = [];
+    while(iterator.hasNext()){
+      var row = iterator.next();
+      // if there is no id then the results are reduced
+      var isReduced = isNull(row.id());
+      // if there is no id there will be no document
+      var hasDocs = !isReduced && !isNull(row.document());
       /**
       * ID: The id of the document in Couchbase, but only available if the query is NOT reduced
       * Document: Only available if the query is NOT reduced
       * Key: This is always available, but null if the query has been reduced, If un-redunced it is the first value passed into emit()
       * Value: This is always available. If reduced, this is the value returned by the reduce(), if not reduced it is the second value passed into emit()
       **/
-      var thisDocument = { id : "", document : "", key="", value="" };
-
-      // Did we get a document or none?
-      if( hasDocs ){
-        thisDocument.document = deserializeData( thisRow.getID(), thisRow.getDocument(), arguments.inflateTo, arguments.deserialize, arguments.deserializeOptions );
-      }
-
+      var document = {
+        'id' = "",
+        'document' = "",
+        'key' = "",
+        'value' = ""
+      };
       // Add value if not null
-      if( !isNull( thisRow.getValue() ) ) {
-        thisDocument.value = thisRow.getValue();
+      if(!isNull(row.value())){
+        document['value'] = row.value();
       }
 
       // Add key if not null
-      if( !isNull( thisRow.getKey() ) ) {
-      thisDocument.key = thisRow.getKey();
+      if(!isNull(row.key())){
+        document['key'] = row.key().toString();
       }
 
       // check for reduced
-      if( !isReduced ){
-        thisDocument.id = thisRow.getID();
+      if(!isReduced){
+        document['id'] = row.id();
+      }
+
+      // Did we get a document or none?
+      if(hasDocs && structKeyExists(arguments.options, "includeDocs") && arguments.options.includeDocs){
+        document['document'] = deserializeData(
+                                                document.id,
+                                                row.document().content(),
+                                                arguments.inflateTo,
+                                                arguments.deserialize,
+                                                arguments.deserializeOptions
+                                              );
       }
 
       // Do we have a transformer?
-      if( structKeyExists( arguments, "transform" ) AND isClosure( arguments.transform ) ){
-        arguments.transform( thisDocument );
+      if(structKeyExists(arguments, "transform") && isClosure(arguments.transform)){
+        arguments.transform(document);
       }
 
       // Do we have a filter?
-      if( !structKeyExists( arguments, "filter" ) OR
-        ( isClosure( arguments.filter ) AND arguments.filter( thisDocument ) )
+      if(
+        !structKeyExists(arguments, "filter" ) ||
+        (isClosure(arguments.filter) && arguments.filter(document))
       ){
-        arrayAppend( cfresults, thisDocument );
+        arrayAppend(cfresults, document);
       }
     }
-
     return cfresults;
   }
 
@@ -1244,8 +1348,8 @@ component serializable="false" accessors="true"{
   *
   * @return A raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse).
   */
-  any function rawQuery( required any view, required any query ){
-    return variables.couchbaseClient.query( arguments.view, arguments.query );
+  public any function rawQuery(required any queryObject){
+    return variables.couchbaseClient.query(arguments.queryObject, javaCast("long", variables.couchbaseConfig.getOpTimeout()), variables.timeUnit.MILLISECONDS);
   }
 
   /**
@@ -1261,7 +1365,7 @@ component serializable="false" accessors="true"{
   *
   * @return A View Java object (com.couchbase.client.protocol.views.View).
   */
-  any function getView( required string designDocumentName, required string viewName ){
+  public any function getView( required string designDocumentName, required string viewName ){
     return variables.couchbaseClient.getView( arguments.designDocumentName, arguments.viewName );
   }
 

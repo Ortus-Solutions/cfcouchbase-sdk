@@ -1116,7 +1116,7 @@ component serializable="false" accessors="true"{
     }
     // set includeDocs
     if(structKeyExists(arguments.options, "includeDocs")){
-      viewQuery = viewQuery.includeDocs(arguments.options.includeDocs);
+      viewQuery = viewQuery.includeDocs(javaCast("boolean", arguments.options.includeDocs));
     }
     // set inclusiveEnd
     if(structKeyExists(arguments.options, "inclusiveEnd")){
@@ -1126,13 +1126,17 @@ component serializable="false" accessors="true"{
     if(structKeyExists(arguments.options, "key")){
       viewQuery = viewQuery.key(arguments.options.key);
     }
-    // set the limit
+    // set the keys
     if(structKeyExists(arguments.options, "keys")){
       viewQuery = viewQuery.keys(arguments.options.keys);
     }
     // set the limit
     if(structKeyExists(arguments.options, "limit")){
       viewQuery = viewQuery.limit(arguments.options.limit);
+    }
+    // set reduce
+    if(structKeyExists(arguments.options, "reduce")){
+      viewQuery = viewQuery.reduce(arguments.options.reduce);
     }
     // set skip
     if(structKeyExists(arguments.options, "skip")){
@@ -1181,7 +1185,7 @@ component serializable="false" accessors="true"{
     any transform,
     string returnType="array",
     string type="view",
-    required string statement,
+    string statement,
     any parameters
   ){
     // the sdk supports both View Queries and N1QL queries from the view method
@@ -1476,7 +1480,7 @@ component serializable="false" accessors="true"{
     if(!cfresults.success){
       return cfresults;
     }
-    
+
     // iterate and build it out with or without desrializations
     var iterator = n1qlResult.iterator();
     while(iterator.hasNext()){
@@ -1524,33 +1528,68 @@ component serializable="false" accessors="true"{
 
   /**
   * Gets a design document.
-  * This method will throw an error if the design document name doesn't exist.  Names are case-sensitive.
+  * The returned value will be null if it does not exist.  Names are case-sensitive.
   *
   * <pre class='brush: cf'>
   * designDocument = client.getDesignDocument( 'beer' );
   * </pre>
   *
   * @designDocumentName.hint The name of the design document
+  * @development.hint Whether or not to get the development or production view
+  * @timeout.hint The timeout in milliseconds
   *
-  * @return A DesignDocument Java object (com.couchbase.client.protocol.views.DesignDocument).
+  * @return A DesignDocument Java object (com.couchbase.client.java.view.DesignDocument).
   */
-  any function getDesignDocument( required string designDocumentName ){
-    return variables.couchbaseClient.getDesignDoc( arguments.designDocumentName );
+  public any function getDesignDocument(
+    required string designDocumentName,
+    boolean development=false,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+  ){
+    return variables.couchbaseClient
+                                    .bucketManager()
+                                                    .getDesignDocument(
+                                                                        arguments.designDocumentName,
+                                                                        javaCast("boolean", arguments.development),
+                                                                        javaCast("long", arguments.timeout),
+                                                                        variables.timeUnit.MILLISECONDS
+                                                                      );
   }
 
   /**
   * Deletes a design document from the server
   *
   * <pre class='brush: cf'>
-  * client.deleteDesignDocument( 'beer' );
+  * client.removeDesignDocument( 'beer' );
   * </pre>
   *
   * @designDocumentName.hint The name of the design document
+  * @development.hint Whether or not to get the development or production view
+  * @timeout.hint The timeout in milliseconds
   *
   * @return True if successsful, false if unsuccessful
   */
-  any function deleteDesignDocument( required string designDocumentName ){
-    return variables.couchbaseClient.deleteDesignDoc( arguments.designDocumentName );
+  public boolean function removeDesignDocument(
+    required string designDocumentName,
+    boolean development=false,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+
+  ){
+    return variables.couchbaseClient
+                                    .bucketManager()
+                                                    .removeDesignDocument(
+                                                                        arguments.designDocumentName,
+                                                                        javaCast("boolean", arguments.development),
+                                                                        javaCast("long", arguments.timeout),
+                                                                        variables.timeUnit.MILLISECONDS
+                                                                      );
+  }
+
+  /**
+  * (deprecated)
+  * deleteDesignDocument() is no longer supported, it has been replaced with removeDesignDocument(), leaving here for backwards compatibility
+  */
+  public boolean function deleteDesignDocument(required string designDocumentName){
+    return removeDesignDocument(argumentCollection=arguments);
   }
 
   /**
@@ -1562,10 +1601,13 @@ component serializable="false" accessors="true"{
   *
   * @designDocumentName.hint The name of the design document to initialize
   *
-  * @return An instance of com.couchbase.client.protocol.views.DesignDocument.
+  * @return An instance of com.couchbase.client.java.view.DesignDocument
   */
-  any function newDesignDocument( required string designDocumentName ){
-    return newJava( "com.couchbase.client.protocol.views.DesignDocument" ).init( arguments.designDocumentName );
+  public any function newDesignDocument(required string designDocumentName, required array views=[]){
+    return newJava("com.couchbase.client.java.view.DesignDocument").create(
+                                                                            arguments.designDocumentName,
+                                                                            arguments.views
+                                                                          );
   }
 
   /**
@@ -1576,19 +1618,17 @@ component serializable="false" accessors="true"{
   * </pre>
   *
   * @designDocumentName.hint The name of the design document to check for
+  * @development.hint Whether or not to get the development or production view
+  * @timeout.hint The timeout in milliseconds
   *
   * @Return True if the design document is found and false if it is not found.
   */
-  boolean function designDocumentExists( required string designDocumentName ){
-
-    // Couchbase doesn't provide a way to check for DesignDocuments, so try to retrieve it and catch the error.
-      try {
-        var designDocument = getDesignDocument( arguments.designDocumentName );
-        return true;
-      }
-      catch(Any e) {
-      return false;
-    }
+  public boolean function designDocumentExists(
+    required string designDocumentName,
+    boolean development=false,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+  ){
+    return !isNull(getDesignDocument(argumentCollection=arguments));
   }
 
   /**
@@ -1603,40 +1643,47 @@ component serializable="false" accessors="true"{
   * @viewName.hint The name of the view to check for
   * @mapFunction.hint The map function to check for.  Must be an exact match.
   * @reduceFunction.hint The reduce function to check for.  Must be an exact match.
+  * @development.hint Whether or not to get the development or production view
+  * @timeout.hint The timeout in milliseconds
   *
   * @Return 0 if the design document doesn't exist as well as if the design document exists, but there is no view by that name.<br> If the view does exist, it will return the index of the view in the designDocument's view array.
   */
-  any function viewExists( required string designDocumentName, required string viewName, string mapFunction, string reduceFunction ){
+  public numeric function viewExists(
+    required string designDocumentName,
+    required string viewName,
+    string mapFunction,
+    string reduceFunction,
+    boolean development=false,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+  ){
+    var designDocument = getDesignDocument(arguments.designDocumentName);
     // If the design doc doesn't exist, bail.
-    if( !designDocumentExists( arguments.designDocumentName ) ) {
+    if(isNull(designDocument)){
       return 0;
     }
-      var designDocument = getDesignDocument( arguments.designDocumentName );
-    var views = designDocument.getViews();
-
+    // get the views for the design document
+    var views = designDocument.views();
     var i = 0;
     // Search to see if this view is already in the design document
-    for( var view in views ) {
+    for(var view in views){
       i++;
       // If we find it (by name)
-      if( view.getName() == arguments.viewName ) {
+      if(view.name() == arguments.viewName){
         // If there was a mapFunction specified, enforce the match
-        if( structKeyExists(arguments, 'mapFunction') && arguments.mapFunction != view.getMap()) {
+        if(structKeyExists(arguments, "mapFunction") && arguments.mapFunction != view.map()){
           return 0;
         }
         // If there was a reduceFunction specified, enforce the match
-        if( structKeyExists(arguments, 'reduceFunction') && arguments.reduceFunction != view.getReduce()) {
+        if( structKeyExists(arguments, "reduceFunction") && arguments.reduceFunction != view.reduce()){
           return 0;
         }
         // Passed all the tests
         return i;
       }
     }
-
     // Exhausted the array with no match
     return 0;
   }
-
 
   /**
   * Creates a new instance of a viewDesign Java object (com.couchbase.client.protocol.views.ViewDesign)
@@ -1648,11 +1695,35 @@ component serializable="false" accessors="true"{
   * @viewName.hint The name of the view to be created
   * @mapFunction.hint The map function for the view represented as a string
   * @reduceFunction.hint The reduce function for the view represented as a string
+  * @viewType.hint The type of view to create values are "default" or "spatial"
   *
-  * @Return An instance of the Java class com.couchbase.client.protocol.views.ViewDesign
+  * @Return An instance of the Java class com.couchbase.client.java.view.DefaultView or com.couchbase.client.java.view.SpatialView
   */
-  any function newViewDesign( required string viewName, required string mapFunction, string reduceFunction = ''  ){
-    return newJava( "com.couchbase.client.protocol.views.ViewDesign" ).init( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );
+  public any function newViewDesign(
+    required string viewName,
+    required string mapFunction,
+    string reduceFunction="",
+    string viewType="default"
+  ){
+    var view = "";
+    if(arguments.viewType == "default"){
+      view = newJava("com.couchbase.client.java.view.DefaultView").create(
+                                                                            arguments.viewName,
+                                                                            arguments.mapFunction,
+                                                                            arguments.reduceFunction
+                                                                          );
+    }
+    else if(arguments.viewType == "spatial"){
+      view = newJava("com.couchbase.client.java.view.SpatialView").create(
+                                                                            arguments.viewName,
+                                                                            arguments.mapFunction
+                                                                          );
+    }
+    else{
+      throw(message="Invalid viewType Value", detail="Invalid viewType value, valid values are: default, spatial", type="CouchbaseClient.ViewTypeException");
+    }
+
+    return view;
   }
 
   /**
@@ -1676,51 +1747,62 @@ component serializable="false" accessors="true"{
   * @viewName.hint The name of the view to be saved
   * @mapFunction.hint The map function for the view represented as a string
   * @reduceFunction.hint The reduce function for the view represented as a string
+  * @development.hint Whether or not to create the view in development or production
+  * @viewType.hint The type of view to create values are "default" or "spatial"
   *
   * @Return True if the view was saved, false if no save occurred due to the view already existing.
   */
-  boolean function asyncSaveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '' ){
+  public any function asyncSaveView(
+    required string designDocumentName,
+    required string viewName,
+    required string mapFunction,
+    string reduceFunction = "",
+    boolean development=false,
+    string viewType="default"
+  ){
 
     // This is required to clean up carriage returns
-    arguments.mapFunction = variables.util.normalizeViewFunction(arguments.mapFunction);
-    arguments.reduceFunction = variables.util.normalizeViewFunction(arguments.reduceFunction);
+    arguments['mapFunction'] = variables.util.normalizeViewFunction(arguments.mapFunction);
+    arguments['reduceFunction'] = variables.util.normalizeViewFunction(arguments.reduceFunction);
 
     // If this exact view already exists, we've nothing to do here
-    if( viewExists( argumentCollection=arguments ) ) {
+    if(viewExists(argumentCollection=arguments)){
       return false;
     }
 
-    // Does the design doc exist?
-      if( designDocumentExists( arguments.designDocumentName ) ) {
-        // Get it
-        var designDocument = getDesignDocument( arguments.designDocumentName );
-      } else {
-        // Create it
-      var designDocument = newDesignDocument( arguments.designDocumentName );
+    // get the design document
+    var designDocument = getDesignDocument(arguments.designDocumentName);
+    // if designDocument is null create it
+    if(isNull(designDocument)){
+      designDocument = newDesignDocument(arguments.designDocumentName);
     }
 
     // Create a representation of our new view
-    var viewDesign = newViewDesign( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );
-
-    var views = designDocument.getViews();
+    var viewDesign = newViewDesign(arguments.viewName, arguments.mapFunction, arguments.reduceFunction);
+    // get the views
+    var views = designDocument.views();
     // Check for this view by name (A less specific check than the one at the top of this method)
-    var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
+    var matchIndex = viewExists(arguments.designDocumentName, arguments.viewName);
     // And update or add it into the array as neccessary
-    if( matchIndex ) {
+    if(matchIndex){
       // Update existing
       views[matchIndex] = viewDesign;
-    } else {
-      // Insert new
-      views.add( viewDesign );
     }
-
-    // Even though this method is called "create", it will turn the design document into JSON
-    // and PUT it into the REST API which will also update existing design docs
-    variables.couchbaseClient.createDesignDoc( designDocument );
-
+    else {
+      // Insert new
+      views.add(viewDesign);
+    }
+    // recreate the entire design document with the new view
+    designDocument = newDesignDocument(arguments.designDocumentName, views);
+    // create or update the design document
+    variables.couchbaseClient
+                              .bucketManager()
+                                              .upsertDesignDocument(
+                                                                      designDocument,
+                                                                      javaCast("boolean", arguments.development)
+                                                                    );
     return true;
   }
-
 
   /**
   * Saves a View.  Will save the view and or designDocument if they don't exist.  Will update if they already exist.
@@ -1744,25 +1826,41 @@ component serializable="false" accessors="true"{
   * @mapFunction.hint The map function for the view represented as a string
   * @reduceFunction.hint The reduce function for the view represented as a string
   * @waitFor.hint How many seconds to wait for the view to save before giving up.  Defaults to 20, but may need to be higher for larger buckets.
+  * @development.hint Whether or not to create the view in development or production
+  * @viewType.hint The type of view to create values are "default" or "spatial"
   *
   * @Return True when the view is ready.  If the view is still not accessable after the number of seconds specified in the "waitFor" parameter, the method will return false.
   */
-  boolean function saveView( required string designDocumentName, required string viewName, required string mapFunction, string reduceFunction = '', waitFor = 20 ){
+  public boolean function saveView(
+    required string designDocumentName,
+    required string viewName,
+    required string mapFunction,
+    string reduceFunction="",
+    waitFor=20,
+    boolean development=false,
+    string viewType="default"
+  ){
+    // save the view
+    var viewSaved = asyncSaveView(argumentCollection=arguments);
 
-      var viewSaved = asyncSaveView( argumentCollection=arguments );
-
-      // Bail now if no save actually occurred
-      if( !viewSaved ) {
+    // Bail now if no save actually occurred
+    if(!viewSaved){
       return true;
     }
 
-      // View creation and population is asynchronous so we'll wait a while until it's ready.
+    // View creation and population is asynchronous so we'll wait a while until it's ready.
     var attempts = 0;
-    while(++attempts <= arguments.waitFor) {
-      try {
+    while(++attempts <= arguments.waitFor){
+      try{
         // Access the view
-        this.query( designDocumentName=arguments.designDocumentName, viewName=arguments.viewName, options={ limit: 20, stale: 'FALSE' } );
-
+        this.query(
+          designDocumentName=arguments.designDocumentName,
+          viewName=arguments.viewName,
+          options={
+            limit = 20,
+            stale = "FALSE"
+          }
+        );
         // The view is ready to be used!
         return true;
       }
@@ -1778,8 +1876,6 @@ component serializable="false" accessors="true"{
 
   }
 
-
-
   /**
   * Deletes a View.  Will delete the view from the designDocument if it exists.
   *
@@ -1788,36 +1884,47 @@ component serializable="false" accessors="true"{
   * </pre>
   *
   * @designDocumentName.hint The name of the design document for the view to be deleted from
+  * @viewName.hint The name of the view to be deleted from
+  * @development.hint Whether or not to get the development or production view
+  * @timeout.hint The timeout in milliseconds
+  * @removeIfEmpty.hint If there are no views should the design doc be created as empty or deleted?
   *
   * @viewName.hint The name of the view to be created
   */
-  void function deleteView( required string designDocumentName, required string viewName ){
-
+  public void function deleteView(
+    required string designDocumentName,
+    required string viewName,
+    boolean development=false,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout(),
+    removeIfEmpty=true
+  ){
     // Check for this view by name
-    var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
+    var matchIndex = viewExists(arguments.designDocumentName, arguments.viewName);
 
     // Only bother continuing if it exists
-    if( matchIndex ) {
-
-        var designDocument = getDesignDocument( arguments.designDocumentName );
-        var views = designDocument.getViews();
+    if(matchIndex){
+      var designDocument = getDesignDocument(arguments.designDocumentName);
+      var views = designDocument.views();
 
       // Remove the view from the array
-      ArrayDeleteAt( views, matchIndex );
+      arrayDeleteAt(views, matchIndex);
 
-      // If there are other views left, then save
-      if( arrayLen(views) ) {
-        // Even though this method is called "create", it will turn the design document into JSON
-        // and PUT it into the REST API which will also update existing design docs
-        variables.couchbaseClient.createDesignDoc( designDocument );
-      } else {
-        // If this was the last view, nuke the entire design document.
-        // This is a limitation of the Java client as it will refuse to save a design doc with no views.
-        deletedesigndocument( arguments.designDocumentName );
+      if(!arrayLen(views) && arguments.removeIfEmpty){
+        this.removeDesignDocument(argumentCollection=arguments);
       }
-
-
-    } // end view exists?
+      else{
+        // recreate the entire design document with the view removed
+        designDocument = newDesignDocument(arguments.designDocumentName, views);
+        // create or update the design document
+        variables.couchbaseClient
+                                  .bucketManager()
+                                                  .upsertDesignDocument(
+                                                                          designDocument,
+                                                                          javaCast("boolean", arguments.development)
+                                                                        );
+      }
+    }
+    return;
   }
 
 
@@ -1863,33 +1970,35 @@ component serializable="false" accessors="true"{
   *
   * @Return A string representation, usually JSON.
   */
-  string function serializeData( required any data ){
+  public string function serializeData(required any data){
     // Go to data marshaler
-    return variables.dataMarshaller.serializeData( arguments.data );
+    return variables.dataMarshaller.serializeData(arguments.data);
   }
 
   /************************* JAVA INTEGRATION ***********************************/
 
   /**
-    * Get the java loader instance
+  * Get the java loader instance
   *
-    * @Return The javaLoader CFC.
-    */
-    any function getJavaLoader() {
-      if( ! structKeyExists( server, variables.javaLoaderID ) ){ loadSDK(); }
-    return server[ variables.javaLoaderID ];
+  * @Return The javaLoader CFC.
+  */
+  public any function getJavaLoader(){
+    if(!structKeyExists(server, variables.javaLoaderID)){
+      loadSDK();
+    }
+    return server[variables.javaLoaderID];
   }
 
   /**
-    * Get a java class using either the JavaLoader or createOject() based on the "useClassloader" config value.
-    * You will need to call init() if you want to run the class constructor and get an instance of it.
+  * Get a java class using either the JavaLoader or createOject() based on the "useClassloader" config value.
+  * You will need to call init() if you want to run the class constructor and get an instance of it.
   *
-    * @className.hint The class to get
+  * @className.hint The class to get
   *
-    * @Return The java class specified.
-    */
-    any function newJava( required className ) {
-      return ( variables.couchbaseConfig.getUseClassloader() ? getJavaLoader().create( arguments.className ) : createObject( "java", arguments.className ) );
+  * @Return The java class specified.
+  */
+  public any function newJava(required string className){
+      return (variables.couchbaseConfig.getUseClassloader() ? getJavaLoader().create(arguments.className) : createObject("java", arguments.className));
   }
 
   /************************* PRIVATE ***********************************/
@@ -1903,13 +2012,14 @@ component serializable="false" accessors="true"{
   */
   private any function buildDataMarshaller( required any config ){
     var marshaller = arguments.config.getDataMarshaller();
-
     // Build the data marshaller
-    if( isSimpleValue( marshaller ) and len( marshaller ) ){
+    if(isSimpleValue(marshaller) && len(marshaller)){
       return new "#marshaller#"();
-    } else if( isObject( marshaller ) ){
+    }
+    else if(isObject(marshaller)){
       return marshaller;
-    } else {
+    }
+    else {
       // build core marshaller.
       return new data.CoreMarshaller();
     }
@@ -1948,38 +2058,38 @@ component serializable="false" accessors="true"{
   */
   private any function validateConfig( required any config ){
     // do we have a simple path to inflate
-    if( isSimpleValue( arguments.config ) ){
+    if(isSimpleValue(arguments.config)){
       // build out cfc
       arguments.config = new "#arguments.config#"();
     }
 
     // We've been given a CFC instance
-    if( isObject( arguments.config ) ){
+    if(isObject( arguments.config)){
 
       // Validate the configure() method
-      if( !structKeyExists( arguments.config, 'configure' ) ) {
-        throw( message='Config file must have a configure() method', detail='Valid config CFCs must set their config settings into the variables scope in a configure() method.', type='InvalidConfig' );
+      if(!structKeyExists( arguments.config, "configure")){
+        throw(message="Config file must have a configure() method", detail="Valid config CFCs must set their config settings into the variables scope in a configure() method.", type="InvalidConfig");
       }
 
       // Configure the CFC
       arguments.config.configure();
 
       // check family, for memento injection
-      if( isInstanceOf( arguments.config, "cfcouchbase.config.CouchbaseConfig" ) ) {
+      if(isInstanceOf(arguments.config, "cfcouchbase.config.CouchbaseConfig")){
         return arguments.config;
-      } else {
+      }
+      else {
         // get memento out via mixin
         var oConfig = new config.CouchbaseConfig();
         arguments.config.getMemento = oConfig.getMemento;
-        return oConfig.init( argumentCollection=arguments.config.getMemento() );
+        return oConfig.init(argumentCollection=arguments.config.getMemento());
       }
-
     }
 
     // check if its a struct literal of config options
-    if( isStruct( arguments.config ) ){
+    if(isStruct(arguments.config)){
       // init config object with memento
-      return new config.CouchbaseConfig( argumentCollection=arguments.config );
+      return new config.CouchbaseConfig(argumentCollection=arguments.config);
     }
 
   }
@@ -2000,19 +2110,19 @@ component serializable="false" accessors="true"{
     try{
 
       // verify if not in server scope
-      if( ! structKeyExists( server, variables.javaLoaderID ) ){
+      if(!structKeyExists(server, variables.javaLoaderID)){
         lock name="#variables.javaLoaderID#" throwOnTimeout="true" timeout="15" type="exclusive"{
-          if( ! structKeyExists( server, variables.javaLoaderID ) ){
+          if(!structKeyExists( server, variables.javaLoaderID)){
             // Create and load
-            server[ variables.javaLoaderID ] = new util.javaloader.JavaLoader( loadPaths=getLibJars() );
+            server[variables.javaLoaderID] = new util.javaloader.JavaLoader(loadPaths=getLibJars());
           }
         }
       } // end if static server check
 
     }
-    catch( Any e ){
+    catch(any e){
       e.printStackTrace();
-      throw( message='Error Loading Couchbase Client Jars: #e.message# #e.detail#', detail=e.stacktrace );
+      throw(message="Error Loading Couchbase Client Jars: #e.message# #e.detail#", detail=e.stacktrace);
     }
   }
 
@@ -2050,7 +2160,6 @@ component serializable="false" accessors="true"{
     return args;
   }
 
-
   /**
   * Default timeout in arguments.  Will create "timeout" with a default value specified in settings
   * Also accounts for timeouts over 30 days which must be represented as epoch date.
@@ -2059,26 +2168,25 @@ component serializable="false" accessors="true"{
   *
   * @Return The argument collection with the defaulted values.
   */
-  private any function defaultTimeout( required args ) {
+  private any function defaultTimeout(required args){
     var secondsIn30Days = 30 * 24 * 60 * 60;
 
-    args.timeout = ( !structKeyExists( args, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout );
+    args['timeout'] = (!structKeyExists(args, "timeout") ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout);
 
     // Validate timeout
-    if( !isNumeric(args.timeout) || args.timeout < 0 ) {
-      throw( message='Invalid timeout value of [#args.timeout#]', detail='Valid values are positive integers', type='InvalidTimeout' );
+    if(!isNumeric(args.timeout) || args.timeout < 0){
+      throw(message="Invalid timeout value of [" & args.timeout & "]", detail="Valid values are positive integers", type="InvalidTimeout");
     }
 
     // Convert minutes to seconds
-    args.timeout = args.timeout*60;
+    args['timeout'] = args.timeout*60;
 
     // Timeouts over 30 days must be treated as epoch dates (seconds since 1970)
     // If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
-    if( args.timeout > secondsIn30Days ) {
-      var secondsSinceEpoch = datediff( 's', createdatetime( '1970','01','01','00','00','00' ), dateConvert( "local2Utc", now() ) );
-      args.timeout += secondsSinceEpoch;
+    if(args.timeout > secondsIn30Days){
+      var secondsSinceEpoch = datediff("s", createdatetime("1970","01","01","00","00","00"), dateConvert("local2Utc", now()));
+      args['timeout'] += secondsSinceEpoch;
     }
-
     return args;
   }
 

@@ -9,14 +9,22 @@ component accessors="true"{
   * Constructor
   */
   QueryHelper function init( required client ){
-    variables.client = arguments.client;
+    variables['client'] = arguments.client;
+
+    // load enums
+    this['stale'] = variables.client.newJava("com.couchbase.client.java.view.Stale");
+    this['scanConsistency'] = variables.client.newJava("com.couchbase.client.java.query.consistency.ScanConsistency");
+
+    // Java Time Units
+    variables['timeUnit'] = createObject("java", "java.util.concurrent.TimeUnit");
     return this;
   }
+
   /**
   * Process query options
   * @options.hint the options structure
   */
-  public struct function processOptions(required struct options, required any stale){
+  public struct function processOptions(required struct options){
     var opts = {};
     // loop over each of the options
     for(var key in arguments.options){
@@ -64,7 +72,7 @@ component accessors="true"{
           }
           // set the stale value to the key enum, the value "ok" is no longer supported
           // so normalize it to "true"
-          opts[key] = arguments.stale[uCase(key == "ok" ? "true" : arguments.options[key])];
+          opts[key] = this.stale[uCase(key == "ok" ? "true" : arguments.options[key])];
           break;
         }
         // validate / set the sortOrder option
@@ -84,18 +92,18 @@ component accessors="true"{
         // startKeys
         case "startKey":
         case "rangeStart": {
-          opts['startKey'] = isSimpleValue(arguments.options[key]) ? """" & arguments.options[key] & """" : serializeJSON(arguments.options[key]);
+          opts['startKey'] = isSimpleValue(arguments.options[key]) ? arguments.options[key] : serializeJSON(arguments.options[key]);
           break;
         }
         // endKeys
         case "endKey":
         case "rangeEnd": {
-          opts['endKey'] = isSimpleValue(arguments.options[key]) ? """" & arguments.options[key] & """" : serializeJSON(arguments.options[key]);
+          opts['endKey'] = isSimpleValue(arguments.options[key]) ? arguments.options[key] : serializeJSON(arguments.options[key]);
           break;
         }
         // keys
         case "key": {
-          opts['key'] = isSimpleValue(arguments.options[key]) ? """" & arguments.options[key]& """" : serializeJSON(arguments.options[key]);
+          opts['key'] = isSimpleValue(arguments.options[key]) ? arguments.options[key] : serializeJSON(arguments.options[key]);
           break;
         }
         case "keys": {
@@ -113,4 +121,125 @@ component accessors="true"{
     }
     return opts;
   }
+
+  /**
+  * Process N1ql Parameterized values
+  * @parameters.hint The positional or named parameters to the N1ql Query
+  */
+  public any function processN1qlParameters(required any parameters){
+    var n1qlParams = "";
+    var index = 1;
+    // parameters can only be an array or structures
+    if(!isArray(arguments.parameters) && !isStruct(arguments.parameters)){
+      throw(message="Invalid Parameter Type", detail="N1ql query parameters must an be an array or structure", type="CouchbaseClient.N1qlParamsException");
+    }
+
+    if(isArray(arguments.parameters)){ // we are dealing with positional params
+      // loop over all of the params and javaCast them as the sdk expects explicit types
+      for(var param in arguments.parameters){
+        arguments['parameters'][index++] = castN1qlParameter(param);
+      }
+      n1qlParams = variables.client.newJava("com.couchbase.client.java.document.json.JsonArray").from(arguments.parameters);
+    }
+    else{ // we are dealing with named params
+      // loop over all of the params and javaCast them as the sdk expects explicit types
+      for(var param in arguments.parameters){
+        arguments['parameters'][param] = castN1qlParameter(arguments.parameters[param]);
+      }
+      n1qlParams = variables.client.newJava("com.couchbase.client.java.document.json.JsonObject").from(arguments.parameters);
+    }
+    return n1qlParams;
+  }
+
+  /**
+  * JavaCast N1ql param values
+  * @value.hint The value to cast
+  */
+  public any function castN1qlParameter(required any value){
+    var castValue = arguments.value;
+    if(!isSimpleValue(castValue)){
+      throw(message="Invalid Parameter Value", detail="A N1ql query parameter value must be a string, number or boolean.", type="CouchbaseClient.N1qlParamException");
+    }
+    // is it a number?
+    if(isNumeric(castValue)){
+      // is it a float / double?
+      if(find(".", castValue)){
+        castValue = javaCast("double", castValue);
+      }
+      else{
+        castValue = javaCast("long", castValue);
+      }
+    }
+    // is it a boolean?
+    else if(isBoolean(castValue)){
+      castValue = javaCast("boolean", castValue);
+    }
+    else{
+      castValue = javaCast("string", castValue);
+    }
+    return castValue;
+  }
+
+  /**
+  * Process N1ql Query Options
+  * @options.hint The query level options for the N1ql query
+  */
+  public any function processN1qlOptions(required any options){
+    var n1qlParams = variables.client.newJava("com.couchbase.client.java.query.N1qlParams").build();
+    // is there adhoc?
+    if(structKeyExists(arguments.options, "adhoc")){
+      // make sure the consistency is value
+      if(!isBoolean(arguments.options.adhoc)){
+        throw(message="Invalid adhoc Value", detail="Invalid adhoc value, must be TRUE or FALSE", type="CouchbaseClient.N1qlParamException");
+      }
+      // set the adhoc value
+      n1qlParams = n1qlParams.adhoc(javaCast("boolean", arguments.options.adhoc));
+    }
+    // is there consistency?
+    if(structKeyExists(arguments.options, "consistency")){
+      // make sure the consistency is value
+      if(!listFindNoCase("NOT_BOUNDED,REQUEST_PLUS,STATEMENT_PLUS", arguments.options.consistency)){
+        throw(message="Invalid consistency Value", detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, STATEMENT_PLUS", type="CouchbaseClient.N1qlParamException");
+      }
+      // set the consistency from the enum
+      n1qlParams = n1qlParams.consistency(this.stale[uCase(arguments.options.consistency)]);
+    }
+    // is there maxParallelism?
+    if(structKeyExists(arguments.options, "maxParallelism")){
+      if(!isNumeric(arguments.options.maxParallelism)){
+        throw(message="Invalid maxParallelism Value", detail="The value for maxParallelism must be numeric", type="CouchbaseClient.N1qlParamException");
+      }
+      // set the maxParallelism
+      n1qlParams = n1qlParams.maxParallelism(javaCast("int", arguments.options.maxParallelism));
+    }
+    // is there a scanWait?
+    if(structKeyExists(arguments.options, "scanWait")){
+      if(!isNumeric(arguments.options.scanWait)){
+        throw(message="Invalid scanWait Value", detail="The value for scanWait must be numeric", type="CouchbaseClient.N1qlParamException");
+      }
+      // set the scanWait
+      n1qlParams = n1qlParams.scanWait(
+                                        javaCast("long", arguments.options.scanWait),
+                                        variables.timeUnit.MILLISECONDS
+                                      );
+    }
+    // is there a serverSideTimeout?
+    if(structKeyExists(arguments.options, "serverSideTimeout")){
+      if(!isNumeric(arguments.options.serverSideTimeout)){
+        throw(message="Invalid serverSideTimeout Value", detail="The value for serverSideTimeout must be numeric", type="CouchbaseClient.N1qlParamException");
+      }
+      // set the serverSideTimeout
+      n1qlParams = n1qlParams.serverSideTimeout(
+                                        javaCast("long", arguments.options.serverSideTimeout),
+                                        variables.timeUnit.MILLISECONDS
+                                      );
+    }
+    // is there a clientContextId?
+    if(structKeyExists(arguments.options, "clientContextId")){
+      // set the clientContextId
+      n1qlParams = n1qlParams.withContextId(arguments.options.clientContextId);
+    }
+    return n1qlParams;
+  }
+
 }

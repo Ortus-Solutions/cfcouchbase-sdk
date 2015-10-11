@@ -71,8 +71,6 @@ component serializable="false" accessors="true"{
     variables['timeUnit'] = createObject("java", "java.util.concurrent.TimeUnit");
     // SDK Utility class
     variables['util'] = new util.Utility();
-    // Query Helper Utility
-    variables['queryHelper'] = new util.QueryHelper(this);
     // validate configuration
     variables['couchbaseConfig'] = validateConfig(arguments.config);
 
@@ -84,12 +82,14 @@ component serializable="false" accessors="true"{
     // LOAD ENUMS
 		this['persistTo'] = newJava("com.couchbase.client.java.PersistTo");
 		this['replicateTo'] = newJava("com.couchbase.client.java.ReplicateTo");
-    this['stale'] = newJava("com.couchbase.client.java.view.Stale");
 
     // Establish a connection to the Couchbase bucket
     variables['couchbaseClient'] = buildCouchbaseClient(variables.couchbaseConfig);
     // Build the data marshaler
     variables['dataMarshaller'] = buildDataMarshaller(variables.couchbaseConfig).setCouchbaseClient(this);
+
+    // Query Helper Utility
+    variables['queryHelper'] = new util.QueryHelper(this);
     return this;
   }
 
@@ -980,9 +980,9 @@ component serializable="false" accessors="true"{
   */
   array function getUnAvailableServers(){
     var servers = variables.couchbaseClient.getUnAvailableServers();
-    var index  = 1;
-    for( var thisServer in servers ){
-      servers[ index++ ] = thisServer.toString();
+    var index = 1;
+    for(var node in servers){
+      servers[index++] = node.toString();
     }
     return servers;
   }
@@ -1083,7 +1083,7 @@ component serializable="false" accessors="true"{
     struct options={}
   ){
     var viewQuery = newJava("com.couchbase.client.java.view.ViewQuery");
-    arguments['options'] = variables.queryHelper.processOptions(arguments.options, this.stale);
+    arguments['options'] = variables.queryHelper.processOptions(arguments.options);
     // set the design document and view name
     viewQuery = viewQuery.from(arguments.designDocumentName, arguments.viewName);
     // set debug
@@ -1180,14 +1180,16 @@ component serializable="false" accessors="true"{
     any filter,
     any transform,
     string returnType="array",
-    string type="view"
+    string type="view",
+    required string statement,
+    any parameters
   ){
     // the sdk supports both View Queries and N1QL queries from the view method
     if(arguments.type == "n1ql"){
       return n1qlQuery(argumentCollection=arguments);
     }
     else{
-      return viewQuery(argumentCollection=arguments)
+      return viewQuery(argumentCollection=arguments);
     }
   }
 
@@ -1252,7 +1254,6 @@ component serializable="false" accessors="true"{
     any transform,
     string returnType="array"
   ){
-    var start = GetTickCount();
     // if options is struct, then build out the query, else use it as an object.
     var oQuery = newViewQuery(arguments.designDocumentName, arguments.viewName, arguments.options);
     var results = rawQuery(oQuery);
@@ -1367,6 +1368,141 @@ component serializable="false" accessors="true"{
   */
   public any function getView( required string designDocumentName, required string viewName ){
     return variables.couchbaseClient.getView( arguments.designDocumentName, arguments.viewName );
+  }
+
+  /**
+  * Queries a Couchbase Bucket using N1QL a SQL like syntax
+  *<p>
+  * Valid options are:
+  *<p>
+  * <ul>
+  *  <li><b>adhoc</b> - A boolean to specify if this query is adhoc or not.  If it is not adhoc (so performed often), the client will try to perform optimizations transparently based on the server capabilities, like preparing the statement and then executing a query plan instead of the raw query.</li>
+  *  <li>
+  *    <b>consistency</b> - Sets scan consistency. Valid values are:
+  *    <ul>
+  *       <li>NOT_BOUNDED - This is the default (for single-statement requests). No timestamp vector is used in the index scan. This is also the fastest mode, because we avoid the cost of obtaining the vector, and we also avoid any wait for the index to catch up to the vector.</li>
+  *       <li>REQUEST_PLUS - This implements strong consistency per request. Before processing the request, a current vector is obtained. The vector is used as a lower bound for the statements in the request. If there are DML statements in the request, RYOW is also applied within the request.</li>
+  *       <li>STATEMENT_PLUS - This implements strong consistency per statement. Before processing each statement, a current vector is obtained and used as a lower bound for that statement.</li>
+  *    </ul>
+  *  </li>
+  *  <li><b>maxParallelism</b> - Allows to override the default maximum parallelism for the query execution on the server side.</li>
+  *  <li><b>scanWait</b> - Sets the maximum time in milliseconds the client is willing to wait for an index to catch up to the vector timestamp in the request.  If the NOT_BOUNDED scan consistency has been chosen, does nothing.</li>
+  *  <li><b>serverSideTimeout</b> - Sets a maximum timeout for processing on the server side</li>
+  *  <li><b>contextId</b> - Adds a client context ID to the request, that will be sent back in the response, allowing clients to meaningfully trace requests/responses when many are exchanged.</li>
+  * </ul>
+  * <p>
+  * The options struct maps to the set of options found
+  * in the native Couchbase query object (com.couchbase.client.java.query.N1qlParams)
+  * See http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.0/com/couchbase/client/java/query/N1qlParams.html
+  *
+  * <pre class='brush: cf'>
+  * results = client.n1qlQuery(
+  *   statement = "
+  *     SELECT t.callsign, t.country, t.iata, t.icao, t.id, t.name, t.type
+  *     FROM `travel-sample` AS t
+  *     WHERE t.country = $1
+  *     LIMIT 10
+  *   ",
+  *   parameters = ["United Kingdom"]
+  * );
+  * </pre>
+  *
+  * @statement.hint The N1QL/SQL statement
+  * @parameters.hint An array of parameters or an object of named parameters
+  * @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
+  * @deserialize.hint If true, it will deserialize the documents if they are valid JSON, else they are ignored.
+  * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
+  * @inflateTo.hint A path to a CFC or closure that produces an object to try to inflate the document results on NON-Reduced views only!
+  * @filter.hint A closure or UDF that must return boolean to use to filter out results from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). A true will add the row to the final results.
+  * @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). Since the struct is by reference, you do not need to return anything.
+  * @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
+  *
+  * @return If returnType is "struct", will return struct containing the results, requestID, signature, and metrics. <br>If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)  <br>If returnType is iterator, a Java iterator object will be returned
+  */
+  public any function n1qlQuery(
+    required string statement,
+    any parameters,
+    struct options={},
+    boolean deserialize=true,
+    struct deserializeOptions={},
+    any inflateTo="",
+    any filter,
+    any transform,
+    string returnType="struct"
+  ){
+    var n1qlQuery = newJava("com.couchbase.client.java.query.N1qlQuery");
+
+    // this isn't the best flow but based on the method signatures this will have to do for now
+    if(structKeyExists(arguments, "parameters")){
+      // we are performing a parameterized query with parameters
+      n1qlQuery = n1qlQuery.parameterized(
+                                            arguments.statement,
+                                            variables.queryHelper.processN1qlParameters(arguments.parameters),
+                                            variables.queryHelper.processN1qlOptions(arguments.options)
+                                          );
+    }
+    else{
+      // we are performing a simple query without parameters
+      n1qlQuery = n1qlQuery.simple(
+                                    arguments.statement,
+                                    variables.queryHelper.processN1qlOptions(arguments.options)
+                                  );
+    }
+
+    // run the query
+    var n1qlResult = variables.couchbaseClient.query(n1qlQuery);
+
+    // Native return type?
+    if(arguments.returnType == "native"){
+      return results;
+    }
+
+    // Iterator results?
+    if(arguments.returnType == "iterator"){
+      return results.iterator();
+    }
+
+    // build the output
+    var cfresults = {
+      'requestId' = n1qlResult.requestId(),
+      'clientContextId' = n1qlResult.clientContextId(),
+      'errors' = deserializeJSON(n1qlResult.errors().toString()),
+      'metrics' = deserializeJSON(n1qlResult.info().asJsonObject().toString()),
+      'results' = []
+    };
+    cfresults['success'] = arrayLen(cfresults.errors) == 0;
+
+    // if there were errors just return
+    if(!cfresults.success){
+      return cfresults;
+    }
+    
+    // iterate and build it out with or without desrializations
+    var iterator = n1qlResult.iterator();
+    while(iterator.hasNext()){
+      var row = iterator.next();
+      var document = deserializeData(
+                                      "",
+                                      row.value().toString(),
+                                      arguments.inflateTo,
+                                      arguments.deserialize,
+                                      arguments.deserializeOptions
+                                    );
+
+      // Do we have a transformer?
+      if(structKeyExists(arguments, "transform") && isClosure(arguments.transform)){
+        arguments.transform(document);
+      }
+
+      // Do we have a filter?
+      if(
+        !structKeyExists(arguments, "filter" ) ||
+        (isClosure(arguments.filter) && arguments.filter(document))
+      ){
+        arrayAppend(cfresults.results, document);
+      }
+    }
+    return cfresults;
   }
 
   /**

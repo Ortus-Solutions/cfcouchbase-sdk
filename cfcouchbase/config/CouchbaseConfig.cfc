@@ -38,20 +38,13 @@ component accessors="true"{
   * Time in millisecs for an operation to Timeout
   */
   property name="opTimeout" default="2500" type="numeric";
+  /**
+  * The data marshaller to use for serializations and deserializations, please put the class path or the instance of the marshaller to use.
+  * Please remember that it must implement our interface: cfcouchbase.data.IDataMarshaller
+  */
+  property name="dataMarshaller" default="";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+  // none of the properties declared below this are currently used
 
   /**
   * The maximum time to block waiting for op queue operations to complete, in milliseconds.
@@ -85,11 +78,6 @@ component accessors="true"{
   * Time in millisecs for a view operation to Timeout
   */
   property name="viewTimeout" default="75000" type="numeric";
-  /**
-  * The data marshaller to use for serializations and deserializations, please put the class path or the instance of the marshaller to use.
-  * Please remember that it must implement our interface: cfcouchbase.data.IDataMarshaller
-  */
-  property name="dataMarshaller" default="";
 
   // Default params, just in case using cf9
   variables.servers = "127.0.0.1:8091";
@@ -113,12 +101,12 @@ component accessors="true"{
   * Constructor
   * You can pass any name-value pair as arguments to the constructor that matches the properties in this configuration object to be set.
   */
-  function init(){
+  public function init(){
 
     // Check incoming arguments
-    for( var thisArg in arguments ){
-      if( structKeyExists( arguments, thisArg ) ){
-        variables[ thisArg ] = arguments[ thisArg ];
+    for(var thisArg in arguments){
+      if(structKeyExists(arguments, thisArg)){
+        variables[thisArg] = arguments[thisArg];
       }
     }
 
@@ -138,9 +126,9 @@ component accessors="true"{
   function getMemento(){
     var results = {};
 
-    for( var thisProp in variables ){
-      if( !isCustomFunction( variables[ thisProp ] ) and thisProp neq "this" ){
-        results[ thisProp ] = variables[ thisProp ];
+    for(var thisProp in variables){
+      if(!isCustomFunction(variables[thisProp]) && thisProp neq "this" ){
+        results[thisProp] = variables[thisProp];
       }
     }
 

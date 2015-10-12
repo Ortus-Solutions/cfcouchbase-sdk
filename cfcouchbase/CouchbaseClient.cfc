@@ -5,7 +5,6 @@
 * @author Luis Majano, Brad Wood
 */
 component serializable="false" accessors="true"{
-
   /**
   * The version of this library
   */
@@ -127,104 +126,104 @@ component serializable="false" accessors="true"{
     // create a new JsonDocument from a JsonObject to be saved
     var document = newDocument(argumentCollection=arguments);
     return variables.couchbaseClient.upsert(
-                                            document,
-                                            arguments.persistTo,
-                                            arguments.replicateTo,
-                                            javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                            variables.timeUnit.MILLISECONDS
-                                          );
+      document,
+      arguments.persistTo,
+      arguments.replicateTo,
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
   }
-    /**
-    * Creates a new Java object representing the data being created
-    *
-    * @id.hint The unique id of the document to store
-    * @value.hint The value to store
-    * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
-    *
-    * @return The Java Object representation of the data
-    */
-    public any function newDocument(
-      required string id,
-      required any value,
-      numeric timeout
-    ){
-      var document = "";
-      // is it a structure?
-      if(isStruct(arguments.value)){
-        // create a new JsonDocument from a JsonObject to be saved
-        document = newJava("com.couchbase.client.java.document.JsonDocument").create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the expiry / timeout in minutes
-          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-          // create a new JsonObject from the value
-          newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
-        );
-      }
-      // is it an array?
-      else if(isArray(arguments.value)){
-        // create a new JsonArrayDocument from a JsonArray to be saved
-        document = newJava("com.couchbase.client.java.document.JsonArrayDocument").create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the expiry / timeout in minutes
-          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-          // create a new JsonObject from the value
-          newJava("com.couchbase.client.java.document.json.JsonArray").from(arguments.value)
-        );
-      }
-      // is it a number?
-      else if(isNumeric(arguments.value)){
-        // is it a double or integer?
-        if(find(".", arguments.value)){
-          // create a new JsonDoubleDocument from a value to be saved
-          document = newJava("com.couchbase.client.java.document.JsonDoubleDocument").create(
-            // normalize the id before setting it
-            javaCast("string", variables.util.normalizeID(arguments.id)),
-            // set the expiry / timeout in minutes
-            javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-            // create a new double from the value
-            javaCast("double", arguments.value)
-          );
-        }
-        else{
-          // create a new JsonLongDocument from a value to be saved
-          document = newJava("com.couchbase.client.java.document.JsonLongDocument").create(
-            // normalize the id before setting it
-            javaCast("string", variables.util.normalizeID(arguments.id)),
-            // set the expiry / timeout in minutes
-            javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-            // create a new long from the value
-            javaCast("long", arguments.value)
-          );
-        }
-      }
-      // is it an binary?
-      else if(isBinary(arguments.value)){
-        // create a new BinaryDocument from a value to be saved
-        document = newJava("com.couchbase.client.java.document.BinaryDocument").create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the expiry / timeout in minutes
-          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-          // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
-          arguments.value
-        );
-      }
-      // must be a string
-      else{
-        // create a new JsonStringDocument from a value to be saved
-        document = newJava("com.couchbase.client.java.document.JsonStringDocument").create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the expiry / timeout in minutes
-          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-          // create a new string from the value
-          arguments.value
-        );
-      }
-      return document;
+  /**
+  * Creates a new Java object representing the data being created
+  *
+  * @id.hint The unique id of the document to store
+  * @value.hint The value to store
+  * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+  *
+  * @return The Java Object representation of the data
+  */
+  public any function newDocument(
+    required string id,
+    required any value,
+    numeric timeout
+  ){
+    var document = "";
+    // is it a structure?
+    if(isStruct(arguments.value)){
+      // create a new JsonDocument from a JsonObject to be saved
+      document = newJava("com.couchbase.client.java.document.JsonDocument").create(
+        // normalize the id before setting it
+        javaCast("string", variables.util.normalizeID(arguments.id)),
+        // set the expiry / timeout in minutes
+        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        // create a new JsonObject from the value
+        newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
+      );
     }
+    // is it an array?
+    else if(isArray(arguments.value)){
+      // create a new JsonArrayDocument from a JsonArray to be saved
+      document = newJava("com.couchbase.client.java.document.JsonArrayDocument").create(
+        // normalize the id before setting it
+        javaCast("string", variables.util.normalizeID(arguments.id)),
+        // set the expiry / timeout in minutes
+        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        // create a new JsonObject from the value
+        newJava("com.couchbase.client.java.document.json.JsonArray").from(arguments.value)
+      );
+    }
+    // is it a number?
+    else if(isNumeric(arguments.value)){
+      // is it a double or integer?
+      if(find(".", arguments.value)){
+        // create a new JsonDoubleDocument from a value to be saved
+        document = newJava("com.couchbase.client.java.document.JsonDoubleDocument").create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the expiry / timeout in minutes
+          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          // create a new double from the value
+          javaCast("double", arguments.value)
+        );
+      }
+      else{
+        // create a new JsonLongDocument from a value to be saved
+        document = newJava("com.couchbase.client.java.document.JsonLongDocument").create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the expiry / timeout in minutes
+          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          // create a new long from the value
+          javaCast("long", arguments.value)
+        );
+      }
+    }
+    // is it an binary?
+    else if(isBinary(arguments.value)){
+      // create a new BinaryDocument from a value to be saved
+      document = newJava("com.couchbase.client.java.document.BinaryDocument").create(
+        // normalize the id before setting it
+        javaCast("string", variables.util.normalizeID(arguments.id)),
+        // set the expiry / timeout in minutes
+        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
+        arguments.value
+      );
+    }
+    // must be a string
+    else{
+      // create a new JsonStringDocument from a value to be saved
+      document = newJava("com.couchbase.client.java.document.JsonStringDocument").create(
+        // normalize the id before setting it
+        javaCast("string", variables.util.normalizeID(arguments.id)),
+        // set the expiry / timeout in minutes
+        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        // create a new string from the value
+        arguments.value
+      );
+    }
+    return document;
+  }
 
   /**
   * (deprecated)
@@ -288,12 +287,12 @@ component serializable="false" accessors="true"{
     };
     try{
       response = variables.couchbaseClient.replace(
-                                              document,
-                                              arguments.persistTo,
-                                              arguments.replicateTo,
-                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                              variables.timeUnit.MILLISECONDS
-                                            );
+        document,
+        arguments.persistTo,
+        arguments.replicateTo,
+        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+        variables.timeUnit.MILLISECONDS
+      );
     }
     catch(Expression e){
       switch(e.type){
@@ -367,12 +366,12 @@ component serializable="false" accessors="true"{
     var success = true;
     try{
       variables.couchbaseClient.insert(
-                                        document,
-                                        arguments.persistTo,
-                                        arguments.replicateTo,
-                                        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                        variables.timeUnit.MILLISECONDS
-                                      );
+        document,
+        arguments.persistTo,
+        arguments.replicateTo,
+        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+        variables.timeUnit.MILLISECONDS
+      );
     }
     catch(Expression e){
       // the document already exists and cannot be inserted
@@ -475,7 +474,7 @@ component serializable="false" accessors="true"{
   *
   * @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
   */
-  any function replace(
+  public any function replace(
     required string ID,
     required any value,
     numeric timeout,
@@ -489,12 +488,12 @@ component serializable="false" accessors="true"{
     var success = true;
     try{
       variables.couchbaseClient.replace(
-                                        document,
-                                        arguments.persistTo,
-                                        arguments.replicateTo,
-                                        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                        variables.timeUnit.MILLISECONDS
-                                      );
+        document,
+        arguments.persistTo,
+        arguments.replicateTo,
+        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+        variables.timeUnit.MILLISECONDS
+      );
     }
     catch(Expression e){
       // the document does not exist and can't be replaced
@@ -530,23 +529,20 @@ component serializable="false" accessors="true"{
   ){
     // this will need to be updated to support a type argument, because if you are retrieveing anything
     // other than a JsonDocument i.e. String, Binary, Double, Float the target class has to be specified
-    //
-    var document = newJava("com.couchbase.client.java.document.Document");
-    writedump(document); abort;
     var results = variables.couchbaseClient.get(
-                                                variables.util.normalizeID(arguments.id),
-                                                javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                variables.timeUnit.MILLISECONDS
-                                              );
+      variables.util.normalizeID(arguments.id),
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
     if(!isNull(results)){
       return deserializeData(
-                              arguments.id,
-                              // com.couchbase.client.java.document.JsonDocument
-                              results.content(),
-                              arguments.inflateTo,
-                              arguments.deserialize,
-                              arguments.deserializeOptions
-                            );
+        arguments.id,
+        // com.couchbase.client.java.document.JsonDocument
+        results.content(),
+        arguments.inflateTo,
+        arguments.deserialize,
+        arguments.deserializeOptions
+      );
     }
   }
 
@@ -565,8 +561,8 @@ component serializable="false" accessors="true"{
   public any function asyncGet(required string id){
     // no inflation or deserialization as it is async.
     return variables.couchbaseClient
-                                    .async()
-                                    .get(variables.util.normalizeID(arguments.id));
+      .async()
+      .get(variables.util.normalizeID(arguments.id));
   }
 
   /**
@@ -612,7 +608,11 @@ component serializable="false" accessors="true"{
   * @return A bulk Java Future. (net.spy.memcached.internal.BulkFuture)  Any document IDs not found will not exist in the future object.
   */
   public any function asyncGetMulti(required array id){
-   throw(message="asyncGetMulti not supported", detail="The asyncGetMulti method is not supported as it requires observables to issue separate gets.", type="CouchbaseClient.NotSupported");
+   throw(
+     message="asyncGetMulti not supported",
+     detail="The asyncGetMulti method is not supported as it requires observables to issue separate gets.",
+     type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -639,22 +639,22 @@ component serializable="false" accessors="true"{
     any inflateTo=""
   ){
     var resultsWithCAS = variables.couchbaseClient.get(
-                                                        variables.util.normalizeID(arguments.id),
-                                                        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                        variables.timeUnit.MILLISECONDS
-                                                      );
+      variables.util.normalizeID(arguments.id),
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
     if(!isNull(resultsWithCAS)){
       // build struct out.
       return {
         'cas' = resultsWithCAS.cas(),
         'value' = deserializeData(
-                                  arguments.id,
-                                  // com.couchbase.client.java.document.JsonDocument
-                                  resultsWithCAS.content(),
-                                  arguments.inflateTo,
-                                  arguments.deserialize,
-                                  arguments.deserializeOptions
-                                )
+          arguments.id,
+          // com.couchbase.client.java.document.JsonDocument
+          resultsWithCAS.content(),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        )
       };
     }
   }
@@ -663,8 +663,12 @@ component serializable="false" accessors="true"{
   * (deprecated)
   * asyncGetWithCAS() is no longer supported
   */
-  any function asyncGetWithCAS(required string id){
-    throw(message="asyncGetWithCAS not supported", detail="The asyncGetWithCAS method is not supported as it requires observables to issue separate gets.", type="CouchbaseClient.NotSupported");
+  public any function asyncGetWithCAS(required string id){
+    throw(
+      message="asyncGetWithCAS not supported",
+      detail="The asyncGetWithCAS method is not supported as it requires observables to issue separate gets.",
+      type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -693,23 +697,23 @@ component serializable="false" accessors="true"{
     any inflateTo=""
   ){
     var resultsWithCAS = variables.couchbaseClient.getAndTouch(
-                                                                variables.util.normalizeID(arguments.id),
-                                                                variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
-                                                                javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                                variables.timeUnit.MILLISECONDS
-                                                              );
+      variables.util.normalizeID(arguments.id),
+      variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
     if(!isNull( resultsWithCAS)){
       // build struct out.
       return {
         'cas' = resultsWithCAS.cas(),
         'value' = deserializeData(
-                                  arguments.id,
-                                  // com.couchbase.client.java.document.JsonDocument
-                                  resultsWithCAS.content(),
-                                  arguments.inflateTo,
-                                  arguments.deserialize,
-                                  arguments.deserializeOptions
-                                )
+          arguments.id,
+          // com.couchbase.client.java.document.JsonDocument
+          resultsWithCAS.content(),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        )
       };
     }
   }
@@ -727,18 +731,18 @@ component serializable="false" accessors="true"{
   *
   * @return A Future object (net.spy.memcached.internal.OperationFuture) that retrieves a CASValue class that you can use to get the value and cas of the object.
   */
-  any function asyncGetAndTouch(
+  public any function asyncGetAndTouch(
           required string id,
           required numeric timeout
   ){
     return variables.couchbaseClient
-                                    .async()
-                                    .getAndTouch(
-                                                variables.util.normalizeID(arguments.id),
-                                                variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
-                                                javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                variables.timeUnit.MILLISECONDS
-                                                );
+      .async()
+      .getAndTouch(
+        variables.util.normalizeID(arguments.id),
+        variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
+        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+        variables.timeUnit.MILLISECONDS
+      );
   }
 
   /**
@@ -769,22 +773,30 @@ component serializable="false" accessors="true"{
     any inflateTo=""
   ){
     if(arguments.lockTime > 30){
-      throw(message="Invalid lockTime", detail="The lockTime value cannot exceed 30 seconds", type="CouchbaseClient.GetAndLockTimeException");
+      throw(
+        message="Invalid lockTime",
+        detail="The lockTime value cannot exceed 30 seconds",
+        type="CouchbaseClient.GetAndLockTimeException"
+      );
     }
     try{
-    var resultsWithCAS = variables.couchbaseClient.getAndLock(
-                                                        variables.util.normalizeID(arguments.id),
-                                                        javaCast("int", arguments.lockTime),
-                                                        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                        variables.timeUnit.MILLISECONDS
-                                                      );
+      var resultsWithCAS = variables.couchbaseClient.getAndLock(
+        variables.util.normalizeID(arguments.id),
+        javaCast("int", arguments.lockTime),
+        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+        variables.timeUnit.MILLISECONDS
+      );
     }
     catch(Expression e){
       // catch Expression exceptions to see if it is a lock exception
       // locked documents cannot be re-retrieved until the lockTime has exceeded
       // or the document has been updated with a CAS value or it explicly unlocked
       if(e.type == "com.couchbase.client.java.error.TemporaryLockFailureException"){
-        throw(message="Document Locked", detail="The document has been locked and cannot be retrieved at this time", type="CouchbaseClient.LockedDocument");
+        throw(
+          message="Document Locked",
+          detail="The document has been locked and cannot be retrieved at this time",
+          type="CouchbaseClient.LockedDocument"
+        );
       }
     }
     if(!isNull(resultsWithCAS)){
@@ -792,13 +804,13 @@ component serializable="false" accessors="true"{
       return {
         'cas' = resultsWithCAS.cas(),
         'value' = deserializeData(
-                                  arguments.id,
-                                  // com.couchbase.client.java.document.JsonDocument
-                                  resultsWithCAS.content(),
-                                  arguments.inflateTo,
-                                  arguments.deserialize,
-                                  arguments.deserializeOptions
-                                )
+          arguments.id,
+          // com.couchbase.client.java.document.JsonDocument
+          resultsWithCAS.content(),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        )
       };
     }
   }
@@ -850,27 +862,31 @@ component serializable="false" accessors="true"{
   ){
     // make sure the consistency is valid
     if(!listFindNoCase("ALL,ONE,TWO,THREE", arguments.replicaMode)){
-      throw(message="Invalid replicaMode Value", detail="Invalid replicaMode value, valid values are: ALL, ONE, TWO, THREE", type="CouchbaseClient.GetReplicaException");
+      throw(
+        message="Invalid replicaMode Value",
+        detail="Invalid replicaMode value, valid values are: ALL, ONE, TWO, THREE",
+        type="CouchbaseClient.GetReplicaException"
+      );
     }
     var results = variables.couchbaseClient.getFromReplica(
-                                                variables.util.normalizeID(arguments.id),
-                                                this.replicaMode[uCase(arguments.replicaMode)],
-                                                javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                variables.timeUnit.MILLISECONDS
-                                              );
+      variables.util.normalizeID(arguments.id),
+      this.replicaMode[uCase(arguments.replicaMode)],
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
     // loop over all of the results
     var cfresults = [];
     var i = 0;
     for(var doc in results){
       i++;
       cfresults[i] = deserializeData(
-                                    arguments.id,
-                                    // com.couchbase.client.java.document.JsonDocument
-                                    doc.content(),
-                                    arguments.inflateTo,
-                                    arguments.deserialize,
-                                    arguments.deserializeOptions
-                                  );
+        arguments.id,
+        // com.couchbase.client.java.document.JsonDocument
+        doc.content(),
+        arguments.inflateTo,
+        arguments.deserialize,
+        arguments.deserializeOptions
+      );
     }
     return cfresults;
   }
@@ -923,14 +939,14 @@ component serializable="false" accessors="true"{
   */
   public any function getStats(required string username, required string password){
     var stats = deserializeJSON(
-                                  variables.cluster.clusterManager(
-                                                                    arguments.username,
-                                                                    arguments.password
-                                                                  )
-                                                                    .info()
-                                                                            .raw()
-                                                                                  .toString()
-                                );
+      variables.cluster.clusterManager(
+        arguments.username,
+        arguments.password
+      )
+        .info()
+          .raw()
+            .toString()
+    );
     return stats.nodes;
   }
 
@@ -952,7 +968,11 @@ component serializable="false" accessors="true"{
   *
   * @return An integer representing the aggregation of the stat specified acrossed the cluster.
   */
-  public numeric function getAggregateStat(required string username, required string password, required string stat){
+  public numeric function getAggregateStat(
+    required string username,
+    required string password,
+    required string stat
+  ){
     var nodes = getStats(arguments.username, arguments.password);
     var statValue = 0;
     // Loop over all the servers and add up the values if they exist for that server
@@ -997,13 +1017,13 @@ component serializable="false" accessors="true"{
     // default timeouts
     defaultTimeout(arguments);
     var document = variables.couchbaseClient.counter(
-                                                    variables.util.normalizeID(arguments.id),
-                                                    javaCast("long", arguments.value),
-                                                    javaCast("long", arguments.defaultValue),
-                                                    javaCast("long", arguments.timeout),
-                                                    javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                    variables.timeUnit.MILLISECONDS
-                                                  );
+      variables.util.normalizeID(arguments.id),
+      javaCast("long", arguments.value),
+      javaCast("long", arguments.defaultValue),
+      javaCast("long", arguments.timeout),
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
     return document.content();
   }
 
@@ -1031,13 +1051,13 @@ component serializable="false" accessors="true"{
     // default timeouts
     defaultTimeout(arguments);
     return variables.couchbaseClient
-                                    .async()
-                                    .counter(
-                                              variables.util.normalizeID(arguments.id),
-                                              javaCast("long", arguments.value),
-                                              javaCast("long", arguments.defaultValue),
-                                              javaCast("long", arguments.timeout)
-                                            );
+      .async()
+      .counter(
+        variables.util.normalizeID(arguments.id),
+        javaCast("long", arguments.value),
+        javaCast("long", arguments.defaultValue),
+        javaCast("long", arguments.timeout)
+      );
   }
 
   /**
@@ -1113,11 +1133,11 @@ component serializable="false" accessors="true"{
     required numeric timeout
   ){
     return variables.couchbaseClient.counter(
-                                              variables.util.normalizeID(arguments.id),
-                                              javaCast("long", arguments.timeout),
-                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                              variables.timeUnit.MILLISECONDS
-                                            );
+      variables.util.normalizeID(arguments.id),
+      javaCast("long", arguments.timeout),
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
   }
 
   /**
@@ -1141,12 +1161,12 @@ component serializable="false" accessors="true"{
     // default persist and replicate
     defaultPersistReplicate(arguments);
     var document = variables.couchbaseClient.remove(
-                                                      variables.util.normalizeID(arguments.id),
-                                                      arguments.persistTo,
-                                                      arguments.replicateTo,
-                                                      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                                      variables.timeUnit.MILLISECONDS
-                                                    );
+      variables.util.normalizeID(arguments.id),
+      arguments.persistTo,
+      arguments.replicateTo,
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
     return document.content();
   }
 
@@ -1179,18 +1199,22 @@ component serializable="false" accessors="true"{
     numeric timeout=variables.couchbaseConfig.getOpTimeout()
   ){
     return variables.couchbaseClient.exists(
-                                              arguments.id,
-                                              arguments.timeout,
-                                              variables.timeUnit.MILLISECONDS
-                                            );
+      arguments.id,
+      arguments.timeout,
+      variables.timeUnit.MILLISECONDS
+    );
   }
 
   /**
   * (deprecated)
   * getDocStats() is no longer supported
   */
-  any function getDocStats(required any id){
-   throw(message="getDocStats not supported", detail="The getDocStats method is not supported as it has been removed from the SDK.", type="CouchbaseClient.NotSupported");
+  public any function getDocStats(required any id){
+   throw(
+     message="getDocStats not supported",
+     detail="The getDocStats method is not supported as it has been removed from the SDK.",
+     type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -1278,7 +1302,7 @@ component serializable="false" accessors="true"{
   * @return A Java instance of the document that was created as
   * - com.couchbase.client.java.document.LegacyDocument or
   * - com.couchbase.client.java.document.BinaryDocument or
-  * com.couchbase.client.java.document.StringDocument
+  * - com.couchbase.client.java.document.StringDocument
   */
   public any function append(
     required string id,
@@ -1288,17 +1312,18 @@ component serializable="false" accessors="true"{
     string replicateTo,
     boolean legacy=false
   ){
+    var document = "";
     // default persist and replicate
     defaultPersistReplicate(arguments);
     // create the document based on the value type
     if(arguments.legacy){ // create a legacy document
-      var document = newJava("com.couchbase.client.java.document.LegacyDocument");
+      document = newJava("com.couchbase.client.java.document.LegacyDocument");
     }
     else if(isBinary(arguments.value)){ // create a binary document
-      var document = newJava("com.couchbase.client.java.document.BinaryDocument");
+      document = newJava("com.couchbase.client.java.document.BinaryDocument");
     }
     else{ // create a string document
-      var document = newJava("com.couchbase.client.java.document.StringDocument");
+      document = newJava("com.couchbase.client.java.document.StringDocument");
     }
     // is there a cas value?
     if(structKeyExists(arguments, "cas")){
@@ -1319,12 +1344,12 @@ component serializable="false" accessors="true"{
       );
     }
     return variables.couchbaseClient.append(
-                                              document,
-                                              arguments.persistTo,
-                                              arguments.replicateTo,
-                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                              variables.timeUnit.MILLISECONDS
-                                            );
+      document,
+      arguments.persistTo,
+      arguments.replicateTo,
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
   }
 
   /**
@@ -1352,17 +1377,18 @@ component serializable="false" accessors="true"{
     string replicateTo,
     boolean legacy=false
   ){
+    var document = ""
     // default persist and replicate
     defaultPersistReplicate(arguments);
     // create the document based on the value type
     if(arguments.legacy){ // create a legacy document
-      var document = newJava("com.couchbase.client.java.document.LegacyDocument");
+      document = newJava("com.couchbase.client.java.document.LegacyDocument");
     }
     else if(isBinary(arguments.value)){ // create a binary document
-      var document = newJava("com.couchbase.client.java.document.BinaryDocument");
+      document = newJava("com.couchbase.client.java.document.BinaryDocument");
     }
     else{ // create a string document
-      var document = newJava("com.couchbase.client.java.document.StringDocument");
+      document = newJava("com.couchbase.client.java.document.StringDocument");
     }
     // is there a cas value?
     if(structKeyExists(arguments, "cas")){
@@ -1383,12 +1409,12 @@ component serializable="false" accessors="true"{
       );
     }
     return variables.couchbaseClient.prepend(
-                                              document,
-                                              arguments.persistTo,
-                                              arguments.replicateTo,
-                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                              variables.timeUnit.MILLISECONDS
-                                            );
+      document,
+      arguments.persistTo,
+      arguments.replicateTo,
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
   }
 
   /************************* VIEW INTEGRATION ***********************************/
@@ -1595,7 +1621,11 @@ component serializable="false" accessors="true"{
     var results = rawQuery(oQuery);
 
     if(!results.success()){
-      throw(message="Query Failed", detail="The query failed to execute", type="CouchbaseClient.ViewException");
+      throw(
+        message="Query Failed",
+        detail="The query failed to execute",
+        type="CouchbaseClient.ViewException"
+      );
     }
     // Native return type?
     if(arguments.returnType == "native"){
@@ -1646,12 +1676,12 @@ component serializable="false" accessors="true"{
       // Did we get a document or none?
       if(hasDocs && structKeyExists(arguments.options, "includeDocs") && arguments.options.includeDocs){
         document['document'] = deserializeData(
-                                                document.id,
-                                                row.document().content(),
-                                                arguments.inflateTo,
-                                                arguments.deserialize,
-                                                arguments.deserializeOptions
-                                              );
+          document.id,
+          row.document().content(),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        );
       }
 
       // Do we have a transformer?
@@ -1686,7 +1716,11 @@ component serializable="false" accessors="true"{
   * @return A raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse).
   */
   public any function rawQuery(required any queryObject){
-    return variables.couchbaseClient.query(arguments.queryObject, javaCast("long", variables.couchbaseConfig.getOpTimeout()), variables.timeUnit.MILLISECONDS);
+    return variables.couchbaseClient.query(
+      arguments.queryObject,
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
   }
 
   /**
@@ -1719,8 +1753,8 @@ component serializable="false" accessors="true"{
   *
   * @return A View Java object (com.couchbase.client.protocol.views.View).
   */
-  public any function getView( required string designDocumentName, required string viewName ){
-    return variables.couchbaseClient.getView( arguments.designDocumentName, arguments.viewName );
+  public any function getView(required string designDocumentName, required string viewName){
+    return variables.couchbaseClient.getView(arguments.designDocumentName, arguments.viewName);
   }
 
   /**
@@ -1789,17 +1823,17 @@ component serializable="false" accessors="true"{
     if(structKeyExists(arguments, "parameters")){
       // we are performing a parameterized query with parameters
       n1qlQuery = n1qlQuery.parameterized(
-                                            arguments.statement,
-                                            variables.queryHelper.processN1qlParameters(arguments.parameters),
-                                            variables.queryHelper.processN1qlOptions(arguments.options)
-                                          );
+        arguments.statement,
+        variables.queryHelper.processN1qlParameters(arguments.parameters),
+        variables.queryHelper.processN1qlOptions(arguments.options)
+      );
     }
     else{
       // we are performing a simple query without parameters
       n1qlQuery = n1qlQuery.simple(
-                                    arguments.statement,
-                                    variables.queryHelper.processN1qlOptions(arguments.options)
-                                  );
+        arguments.statement,
+        variables.queryHelper.processN1qlOptions(arguments.options)
+      );
     }
 
     // run the query
@@ -1835,12 +1869,12 @@ component serializable="false" accessors="true"{
     while(iterator.hasNext()){
       var row = iterator.next();
       var document = deserializeData(
-                                      "",
-                                      row.value().toString(),
-                                      arguments.inflateTo,
-                                      arguments.deserialize,
-                                      arguments.deserializeOptions
-                                    );
+        "",
+        row.value().toString(),
+        arguments.inflateTo,
+        arguments.deserialize,
+        arguments.deserializeOptions
+      );
 
       // Do we have a transformer?
       if(structKeyExists(arguments, "transform") && isClosure(arguments.transform)){
@@ -1871,8 +1905,8 @@ component serializable="false" accessors="true"{
   *
   * @return A View Java object (com.couchbase.client.protocol.views.SpatialView).
   */
-  any function getSpatialView( required string designDocumentName, required string viewName ){
-    return variables.couchbaseClient.getSpatialView( arguments.designDocumentName, arguments.viewName );
+  public any function getSpatialView(required string designDocumentName, required string viewName){
+    return variables.couchbaseClient.getSpatialView(arguments.designDocumentName, arguments.viewName);
   }
 
   /**
@@ -1895,13 +1929,13 @@ component serializable="false" accessors="true"{
     numeric timeout=variables.couchbaseConfig.getOpTimeout()
   ){
     return variables.couchbaseClient
-                                    .bucketManager()
-                                                    .getDesignDocument(
-                                                                        arguments.designDocumentName,
-                                                                        javaCast("boolean", arguments.development),
-                                                                        javaCast("long", arguments.timeout),
-                                                                        variables.timeUnit.MILLISECONDS
-                                                                      );
+      .bucketManager()
+        .getDesignDocument(
+          arguments.designDocumentName,
+          javaCast("boolean", arguments.development),
+          javaCast("long", arguments.timeout),
+          variables.timeUnit.MILLISECONDS
+        );
   }
 
   /**
@@ -1924,13 +1958,13 @@ component serializable="false" accessors="true"{
 
   ){
     return variables.couchbaseClient
-                                    .bucketManager()
-                                                    .removeDesignDocument(
-                                                                        arguments.designDocumentName,
-                                                                        javaCast("boolean", arguments.development),
-                                                                        javaCast("long", arguments.timeout),
-                                                                        variables.timeUnit.MILLISECONDS
-                                                                      );
+      .bucketManager()
+        .removeDesignDocument(
+          arguments.designDocumentName,
+          javaCast("boolean", arguments.development),
+          javaCast("long", arguments.timeout),
+          variables.timeUnit.MILLISECONDS
+        );
   }
 
   /**
@@ -1954,9 +1988,9 @@ component serializable="false" accessors="true"{
   */
   public any function newDesignDocument(required string designDocumentName, required array views=[]){
     return newJava("com.couchbase.client.java.view.DesignDocument").create(
-                                                                            arguments.designDocumentName,
-                                                                            arguments.views
-                                                                          );
+      arguments.designDocumentName,
+      arguments.views
+    );
   }
 
   /**
@@ -2057,19 +2091,23 @@ component serializable="false" accessors="true"{
     var view = "";
     if(arguments.viewType == "default"){
       view = newJava("com.couchbase.client.java.view.DefaultView").create(
-                                                                            arguments.viewName,
-                                                                            arguments.mapFunction,
-                                                                            arguments.reduceFunction
-                                                                          );
+        arguments.viewName,
+        arguments.mapFunction,
+        arguments.reduceFunction
+      );
     }
     else if(arguments.viewType == "spatial"){
       view = newJava("com.couchbase.client.java.view.SpatialView").create(
-                                                                            arguments.viewName,
-                                                                            arguments.mapFunction
-                                                                          );
+        arguments.viewName,
+        arguments.mapFunction
+      );
     }
     else{
-      throw(message="Invalid viewType Value", detail="Invalid viewType value, valid values are: default, spatial", type="CouchbaseClient.ViewTypeException");
+      throw(
+        message="Invalid viewType Value",
+        detail="Invalid viewType value, valid values are: default, spatial",
+        type="CouchbaseClient.ViewTypeException"
+      );
     }
 
     return view;
@@ -2145,11 +2183,11 @@ component serializable="false" accessors="true"{
     designDocument = newDesignDocument(arguments.designDocumentName, views);
     // create or update the design document
     variables.couchbaseClient
-                              .bucketManager()
-                                              .upsertDesignDocument(
-                                                                      designDocument,
-                                                                      javaCast("boolean", arguments.development)
-                                                                    );
+      .bucketManager()
+        .upsertDesignDocument(
+          designDocument,
+          javaCast("boolean", arguments.development)
+        );
     return true;
   }
 
@@ -2266,11 +2304,11 @@ component serializable="false" accessors="true"{
         designDocument = newDesignDocument(arguments.designDocumentName, views);
         // create or update the design document
         variables.couchbaseClient
-                                  .bucketManager()
-                                                  .upsertDesignDocument(
-                                                                          designDocument,
-                                                                          javaCast("boolean", arguments.development)
-                                                                        );
+          .bucketManager()
+            .upsertDesignDocument(
+              designDocument,
+              javaCast("boolean", arguments.development)
+            );
       }
     }
     return;
@@ -2296,16 +2334,21 @@ component serializable="false" accessors="true"{
   ){
     var published = true;
     try{
-      variables.couchbaseClient.bucketManager()
-                                              .publishDesignDocument(
-                                                arguments.designDocumentName,
-                                                javaCast("boolean", arguments.overwrite),
-                                                javaCast("long", arguments.timeout),
-                                                variables.timeUnit.MILLISECONDS
-                                              );
+      variables.couchbaseClient
+        .bucketManager()
+          .publishDesignDocument(
+            arguments.designDocumentName,
+            javaCast("boolean", arguments.overwrite),
+            javaCast("long", arguments.timeout),
+            variables.timeUnit.MILLISECONDS
+          );
     }
     catch(Expression e){
-      if(e.type == "java.util.concurrent.TimeoutException" || e.type == "com.couchbase.client.java.error.DesignDocumentAlreadyExistsException"){
+      // if there was a timeout exception or the design document already exists
+      if(
+        e.type == "java.util.concurrent.TimeoutException" ||
+        e.type == "com.couchbase.client.java.error.DesignDocumentAlreadyExistsException"
+      ){
         published = false;
       }
       else{
@@ -2338,12 +2381,13 @@ component serializable="false" accessors="true"{
     struct deserializeOptions={}
   ){
     if(arguments.deserialize){
-      return variables.dataMarshaller.deserializeData(
-                                                      arguments.id,
-                                                      arguments.data,
-                                                      arguments.inflateTo,
-                                                      arguments.deserializeOptions
-                                                    );
+      return variables.dataMarshaller
+        .deserializeData(
+          arguments.id,
+          arguments.data,
+          arguments.inflateTo,
+          arguments.deserializeOptions
+        );
     }
     else{
       return arguments.data;
@@ -2455,7 +2499,11 @@ component serializable="false" accessors="true"{
 
       // Validate the configure() method
       if(!structKeyExists( arguments.config, "configure")){
-        throw(message="Config file must have a configure() method", detail="Valid config CFCs must set their config settings into the variables scope in a configure() method.", type="InvalidConfig");
+        throw(
+          message="Config file must have a configure() method",
+          detail="Valid config CFCs must set their config settings into the variables scope in a configure() method.",
+          type="InvalidConfig"
+        );
       }
 
       // Configure the CFC
@@ -2509,7 +2557,10 @@ component serializable="false" accessors="true"{
     }
     catch(any e){
       e.printStackTrace();
-      throw(message="Error Loading Couchbase Client Jars: #e.message# #e.detail#", detail=e.stacktrace);
+      throw(
+        message="Error Loading Couchbase Client Jars: " & e.message & " " & e.detail,
+        detail=e.stacktrace
+      );
     }
   }
 
@@ -2526,7 +2577,11 @@ component serializable="false" accessors="true"{
     if(structKeyExists(args, "persistTo")){
       args['persistTo'] = trim(args.persistTo);
       if(!listFindNoCase(validPersistTo, args.persistTo)){
-        throw(message="Invalid persistTo value of [" & args.persistTo & "]", detail="Valid values are [" & validPersistTo & "]", type="InvalidPersistTo");
+        throw(
+          message="Invalid persistTo value of [" & args.persistTo & "]",
+          detail="Valid values are [" & validPersistTo & "]",
+          type="InvalidPersistTo"
+        );
       }
       args['persistTo'] = this.persistTo[args.persistTo];
     } else {
@@ -2537,7 +2592,11 @@ component serializable="false" accessors="true"{
     if(structKeyExists(args, "replicateTo")){
       args['replicateTo'] = trim(args.replicateTo);
       if(!listFindNoCase(validReplicateTo, args.replicateTo)){
-        throw( message="Invalid replicateTo value of [" & args.replicateTo & "]", detail="Valid values are [" & validReplicateTo & "]", type="InvalidReplicateTo");
+        throw(
+          message="Invalid replicateTo value of [" & args.replicateTo & "]",
+          detail="Valid values are [" & validReplicateTo & "]",
+          type="InvalidReplicateTo"
+        );
       }
       args['replicateTo'] = this.replicateTo[args.replicateTo];
     } else {
@@ -2562,7 +2621,11 @@ component serializable="false" accessors="true"{
 
     // Validate timeout
     if(!isNumeric(args.timeout) || args.timeout < 0){
-      throw(message="Invalid timeout value of [" & args.timeout & "]", detail="Valid values are positive integers", type="InvalidTimeout");
+      throw(
+        message="Invalid timeout value of [" & args.timeout & "]",
+        detail="Valid values are positive integers",
+        type="InvalidTimeout"
+      );
     }
 
     // Convert minutes to seconds

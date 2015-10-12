@@ -8,7 +8,7 @@ component accessors="true"{
   /**
   * Constructor
   */
-  QueryHelper function init( required client ){
+  public QueryHelper function init( required client ){
     variables['client'] = arguments.client;
 
     // load enums
@@ -37,7 +37,11 @@ component accessors="true"{
         case "offset": {
           // make sure the value is numeric and greater than or equal to 0
           if(!isNumeric(arguments.options[key]) || arguments.options[key] < 0){
-            throw(message="Invalid " & key & " value of " & arguments.options[key], detail="Valid values are non-negative integers.", type="Invalid " & key);
+            throw(
+              message="Invalid " & key & " value of " & arguments.options[key],
+              detail="Valid values are non-negative integers.",
+              type="Invalid " & key
+            );
           }
           else if(key == "offset"){ // the url param is actually "skip"
             opts['skip'] = javaCast("int", int(arguments.options[key]));
@@ -57,7 +61,11 @@ component accessors="true"{
         case "reduce": {
           // make sure the value is a boolean
           if(!isBoolean(arguments.options[key])){
-            throw(message="Invalid " & key & " value of " & arguments.options[key], detail="Valid values are TRUE and FALSE.", type="Invalid " & key);
+            throw(
+              message="Invalid " & key & " value of " & arguments.options[key],
+              detail="Valid values are TRUE and FALSE.",
+              type="Invalid " & key
+            );
           }
           // set the value if it is not group, or if it is group and the groupLevel option wasn't passed
           if(key != "group" || !structKeyExists(arguments.options, "groupLevel")){
@@ -68,7 +76,11 @@ component accessors="true"{
         // validate the stale parameter
         case "stale": {
           if(!listFindNoCase("false,true,ok,update_after", arguments.options[key])){
-            throw(message="Invalid " & key & " value of " & arguments.options[key], detail="Valid values are ok, update_after and false.", type="Invalid " & key);
+            throw(
+              message="Invalid " & key & " value of " & arguments.options[key],
+              detail="Valid values are ok, update_after and false.",
+              type="Invalid " & key
+            );
           }
           // set the stale value to the key enum, the value "ok" is no longer supported
           // so normalize it to "true"
@@ -85,7 +97,11 @@ component accessors="true"{
             opts['descending'] = javaCast("boolean", true);
           }
           else{
-            throw(message="Invalid " & key & " value of " & arguments.options[key], detail="Valid values are ASC and DESC.", type="Invalid " & key);
+            throw(
+              message="Invalid " & key & " value of " & arguments.options[key],
+              detail="Valid values are ASC and DESC.",
+              type="Invalid " & key
+            );
           }
           break;
         }
@@ -109,14 +125,18 @@ component accessors="true"{
         case "keys": {
           // keys has to be set as a com.couchbase.client.java.document.json.JsonArray object
           opts['keys'] = variables.client.newJava("com.couchbase.client.java.document.json.JsonArray")
-                                                                                                      .create()
-                                                                                                      .from(arguments.options[key]);
+            .create()
+            .from(arguments.options[key]);
           break;
         }
       }
       // if group or groupLevel and not reduce error
       if((structKeyExists(arguments.options, "group") && arguments.options.group || structKeyExists(arguments.options, "groupLevel")) && structKeyExists(arguments.options, "reduce") && !arguments.options.reduce){
-        throw(message="Invalid option for groupLevel", detail="The reduce option must be true for a group or groupLevel query", type="Invalid Option");
+        throw(
+          message="Invalid option for groupLevel",
+          detail="The reduce option must be true for a group or groupLevel query",
+          type="Invalid Option"
+        );
       }
     }
     return opts;
@@ -131,7 +151,11 @@ component accessors="true"{
     var index = 1;
     // parameters can only be an array or structures
     if(!isArray(arguments.parameters) && !isStruct(arguments.parameters)){
-      throw(message="Invalid Parameter Type", detail="N1ql query parameters must an be an array or structure", type="CouchbaseClient.N1qlParamsException");
+      throw(
+        message="Invalid Parameter Type",
+        detail="N1ql query parameters must an be an array or structure",
+        type="CouchbaseClient.N1qlParamsException"
+      );
     }
 
     if(isArray(arguments.parameters)){ // we are dealing with positional params
@@ -158,7 +182,11 @@ component accessors="true"{
   public any function castN1qlParameter(required any value){
     var castValue = arguments.value;
     if(!isSimpleValue(castValue)){
-      throw(message="Invalid Parameter Value", detail="A N1ql query parameter value must be a string, number or boolean.", type="CouchbaseClient.N1qlParamException");
+      throw(
+        message="Invalid Parameter Value",
+        detail="A N1ql query parameter value must be a string, number or boolean.",
+        type="CouchbaseClient.N1qlParamException"
+      );
     }
     // is it a number?
     if(isNumeric(castValue)){
@@ -190,7 +218,11 @@ component accessors="true"{
     if(structKeyExists(arguments.options, "adhoc")){
       // make sure the consistency is value
       if(!isBoolean(arguments.options.adhoc)){
-        throw(message="Invalid adhoc Value", detail="Invalid adhoc value, must be TRUE or FALSE", type="CouchbaseClient.N1qlParamException");
+        throw(
+          message="Invalid adhoc Value",
+          detail="Invalid adhoc value, must be TRUE or FALSE",
+          type="CouchbaseClient.N1qlParamException"
+        );
       }
       // set the adhoc value
       n1qlParams = n1qlParams.adhoc(javaCast("boolean", arguments.options.adhoc));
@@ -199,7 +231,11 @@ component accessors="true"{
     if(structKeyExists(arguments.options, "consistency")){
       // make sure the consistency is valid
       if(!listFindNoCase("NOT_BOUNDED,REQUEST_PLUS,STATEMENT_PLUS", arguments.options.consistency)){
-        throw(message="Invalid consistency Value", detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, STATEMENT_PLUS", type="CouchbaseClient.N1qlParamException");
+        throw(
+          message="Invalid consistency Value",
+          detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, STATEMENT_PLUS",
+          type="CouchbaseClient.N1qlParamException"
+        );
       }
       // set the consistency from the enum
       n1qlParams = n1qlParams.consistency(this.stale[uCase(arguments.options.consistency)]);
@@ -207,7 +243,11 @@ component accessors="true"{
     // is there maxParallelism?
     if(structKeyExists(arguments.options, "maxParallelism")){
       if(!isNumeric(arguments.options.maxParallelism)){
-        throw(message="Invalid maxParallelism Value", detail="The value for maxParallelism must be numeric", type="CouchbaseClient.N1qlParamException");
+        throw(
+          message="Invalid maxParallelism Value",
+          detail="The value for maxParallelism must be numeric",
+          type="CouchbaseClient.N1qlParamException"
+        );
       }
       // set the maxParallelism
       n1qlParams = n1qlParams.maxParallelism(javaCast("int", arguments.options.maxParallelism));
@@ -215,24 +255,32 @@ component accessors="true"{
     // is there a scanWait?
     if(structKeyExists(arguments.options, "scanWait")){
       if(!isNumeric(arguments.options.scanWait)){
-        throw(message="Invalid scanWait Value", detail="The value for scanWait must be numeric", type="CouchbaseClient.N1qlParamException");
+        throw(
+          message="Invalid scanWait Value",
+          detail="The value for scanWait must be numeric",
+          type="CouchbaseClient.N1qlParamException"
+        );
       }
       // set the scanWait
       n1qlParams = n1qlParams.scanWait(
-                                        javaCast("long", arguments.options.scanWait),
-                                        variables.timeUnit.MILLISECONDS
-                                      );
+        javaCast("long", arguments.options.scanWait),
+        variables.timeUnit.MILLISECONDS
+      );
     }
     // is there a serverSideTimeout?
     if(structKeyExists(arguments.options, "serverSideTimeout")){
       if(!isNumeric(arguments.options.serverSideTimeout)){
-        throw(message="Invalid serverSideTimeout Value", detail="The value for serverSideTimeout must be numeric", type="CouchbaseClient.N1qlParamException");
+        throw(
+          message="Invalid serverSideTimeout Value",
+          detail="The value for serverSideTimeout must be numeric",
+          type="CouchbaseClient.N1qlParamException"
+        );
       }
       // set the serverSideTimeout
       n1qlParams = n1qlParams.serverSideTimeout(
-                                        javaCast("long", arguments.options.serverSideTimeout),
-                                        variables.timeUnit.MILLISECONDS
-                                      );
+        javaCast("long", arguments.options.serverSideTimeout),
+        variables.timeUnit.MILLISECONDS
+      );
     }
     // is there a clientContextId?
     if(structKeyExists(arguments.options, "clientContextId")){

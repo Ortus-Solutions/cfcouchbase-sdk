@@ -197,7 +197,7 @@ component accessors="true"{
     }
     // is there consistency?
     if(structKeyExists(arguments.options, "consistency")){
-      // make sure the consistency is value
+      // make sure the consistency is valid
       if(!listFindNoCase("NOT_BOUNDED,REQUEST_PLUS,STATEMENT_PLUS", arguments.options.consistency)){
         throw(message="Invalid consistency Value", detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, STATEMENT_PLUS", type="CouchbaseClient.N1qlParamException");
       }

@@ -82,7 +82,7 @@ component serializable="false" accessors="true"{
     // LOAD ENUMS
 		this['persistTo'] = newJava("com.couchbase.client.java.PersistTo");
 		this['replicateTo'] = newJava("com.couchbase.client.java.ReplicateTo");
-
+    this['replicaMode'] = newJava("com.couchbase.client.java.ReplicaMode");
     // Establish a connection to the Couchbase bucket
     variables['couchbaseClient'] = buildCouchbaseClient(variables.couchbaseConfig);
     // Build the data marshaler
@@ -125,14 +125,7 @@ component serializable="false" accessors="true"{
     // default persist and replicate
     defaultPersistReplicate(arguments);
     // create a new JsonDocument from a JsonObject to be saved
-    var document = newJava("com.couchbase.client.java.document.JsonDocument").create(
-      // normalize the id before setting it
-      javaCast("string", variables.util.normalizeID(arguments.id)),
-      // set the expiry / timeout in minutes
-      javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-      // create a new JsonObject from the value
-      newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
-    );
+    var document = newDocument(argumentCollection=arguments);
     return variables.couchbaseClient.upsert(
                                             document,
                                             arguments.persistTo,
@@ -141,6 +134,97 @@ component serializable="false" accessors="true"{
                                             variables.timeUnit.MILLISECONDS
                                           );
   }
+    /**
+    * Creates a new Java object representing the data being created
+    *
+    * @id.hint The unique id of the document to store
+    * @value.hint The value to store
+    * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+    *
+    * @return The Java Object representation of the data
+    */
+    public any function newDocument(
+      required string id,
+      required any value,
+      numeric timeout
+    ){
+      var document = "";
+      // is it a structure?
+      if(isStruct(arguments.value)){
+        // create a new JsonDocument from a JsonObject to be saved
+        document = newJava("com.couchbase.client.java.document.JsonDocument").create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the expiry / timeout in minutes
+          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          // create a new JsonObject from the value
+          newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
+        );
+      }
+      // is it an array?
+      else if(isArray(arguments.value)){
+        // create a new JsonArrayDocument from a JsonArray to be saved
+        document = newJava("com.couchbase.client.java.document.JsonArrayDocument").create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the expiry / timeout in minutes
+          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          // create a new JsonObject from the value
+          newJava("com.couchbase.client.java.document.json.JsonArray").from(arguments.value)
+        );
+      }
+      // is it a number?
+      else if(isNumeric(arguments.value)){
+        // is it a double or integer?
+        if(find(".", arguments.value)){
+          // create a new JsonDoubleDocument from a value to be saved
+          document = newJava("com.couchbase.client.java.document.JsonDoubleDocument").create(
+            // normalize the id before setting it
+            javaCast("string", variables.util.normalizeID(arguments.id)),
+            // set the expiry / timeout in minutes
+            javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+            // create a new double from the value
+            javaCast("double", arguments.value)
+          );
+        }
+        else{
+          // create a new JsonLongDocument from a value to be saved
+          document = newJava("com.couchbase.client.java.document.JsonLongDocument").create(
+            // normalize the id before setting it
+            javaCast("string", variables.util.normalizeID(arguments.id)),
+            // set the expiry / timeout in minutes
+            javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+            // create a new long from the value
+            javaCast("long", arguments.value)
+          );
+        }
+      }
+      // is it an binary?
+      else if(isBinary(arguments.value)){
+        // create a new BinaryDocument from a value to be saved
+        document = newJava("com.couchbase.client.java.document.BinaryDocument").create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the expiry / timeout in minutes
+          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
+          arguments.value
+        );
+      }
+      // must be a string
+      else{
+        // create a new JsonStringDocument from a value to be saved
+        document = newJava("com.couchbase.client.java.document.JsonStringDocument").create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the expiry / timeout in minutes
+          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          // create a new string from the value
+          arguments.value
+        );
+      }
+      return document;
+    }
 
   /**
   * (deprecated)
@@ -401,14 +485,7 @@ component serializable="false" accessors="true"{
     // default persist and replicate
     defaultPersistReplicate(arguments);
     // create a new JsonDocument from a JsonObject to be saved
-    var document = newJava("com.couchbase.client.java.document.JsonDocument").create(
-      // normalize the id before setting it
-      javaCast("string", variables.util.normalizeID(arguments.id)),
-      // set the expiry / timeout in minutes
-      javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-      // create a new JsonObject from the value
-      newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
-    );
+    var document = newDocument(argumentCollection=arguments);
     var success = true;
     try{
       variables.couchbaseClient.replace(
@@ -451,6 +528,11 @@ component serializable="false" accessors="true"{
     struct deserializeOptions={},
     any inflateTo=""
   ){
+    // this will need to be updated to support a type argument, because if you are retrieveing anything
+    // other than a JsonDocument i.e. String, Binary, Double, Float the target class has to be specified
+    //
+    var document = newJava("com.couchbase.client.java.document.Document");
+    writedump(document); abort;
     var results = variables.couchbaseClient.get(
                                                 variables.util.normalizeID(arguments.id),
                                                 javaCast("long", variables.couchbaseConfig.getOpTimeout()),
@@ -534,7 +616,7 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with setWithCAS to be able to
+  * Get an object from couchbase with its CAS value, returns null if not found.  This method is meant to be used in conjunction with replaceWithCAS to be able to
   * update a document while making sure another process hasn't modified it in the meantime.  The CAS value changes every time the document is updated.
   *
   * <pre class='brush: cf'>
@@ -660,6 +742,140 @@ component serializable="false" accessors="true"{
   }
 
   /**
+  * Get an object from couchbase with its CAS value and lock it, returns null if not found.  This method is meant to be used in conjunction with replaceWithCAS and unlock.
+  * Once a document has been locked it cannot be updated by other clients and must be updated with the CAS value by the current client. A document cannot be locked for
+  * more than 30 seconds.
+  *
+  * IMPORTANT: A locked document cannot be re-retrieved during a lock it can only be updated via CAS or unlocked
+  *
+  * <pre class='brush: cf'>
+  * result = client.getAndLock( 'aaron' );
+  * writeOutput(result.cas);
+  * writeOutput(result.value);
+  * </pre>
+  *
+  * @id.hint The ID of the document to retrieve.
+  * @deserialize.hint Deserialize the JSON automatically for you and return the representation
+  * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
+  * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+  *
+  * @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
+  */
+  public any function getAndLock(
+    required string id,
+    numeric lockTime=30,
+    boolean deserialize=true,
+    struct deserializeOptions={},
+    any inflateTo=""
+  ){
+    if(arguments.lockTime > 30){
+      throw(message="Invalid lockTime", detail="The lockTime value cannot exceed 30 seconds", type="CouchbaseClient.GetAndLockTimeException");
+    }
+    try{
+    var resultsWithCAS = variables.couchbaseClient.getAndLock(
+                                                        variables.util.normalizeID(arguments.id),
+                                                        javaCast("int", arguments.lockTime),
+                                                        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                                        variables.timeUnit.MILLISECONDS
+                                                      );
+    }
+    catch(Expression e){
+      // catch Expression exceptions to see if it is a lock exception
+      // locked documents cannot be re-retrieved until the lockTime has exceeded
+      // or the document has been updated with a CAS value or it explicly unlocked
+      if(e.type == "com.couchbase.client.java.error.TemporaryLockFailureException"){
+        throw(message="Document Locked", detail="The document has been locked and cannot be retrieved at this time", type="CouchbaseClient.LockedDocument");
+      }
+    }
+    if(!isNull(resultsWithCAS)){
+      // build struct out.
+      return {
+        'cas' = resultsWithCAS.cas(),
+        'value' = deserializeData(
+                                  arguments.id,
+                                  // com.couchbase.client.java.document.JsonDocument
+                                  resultsWithCAS.content(),
+                                  arguments.inflateTo,
+                                  arguments.deserialize,
+                                  arguments.deserializeOptions
+                                )
+      };
+    }
+  }
+
+  /**
+  * Unlocks a locked document
+  *
+  * <pre class='brush: cf'>
+  * result = client.getAndLock( 'aaron' );
+  * writeOutput(result.cas);
+  * writeOutput(result.value);
+  * ...
+  * unlockSuccess = client.unlock( 'aaron' );
+  * </pre>
+  *
+  * @id.hint The ID of the document to unlock.
+  * @cas.hint CAS value retrieved via getAndLock()
+  * @return A boolean indicating whether the unlock was successful or not
+  */
+  public any function unlock(required string id, required numeric cas){
+    return variables.couchbaseClient.unlock(
+                                              variables.util.normalizeID(arguments.id),
+                                              javaCast("long", arguments.cas),
+                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                              variables.timeUnit.MILLISECONDS
+                                            );
+  }
+
+  /**
+  * Get an object from a couchbase replica by the ID.  This method will deserialize object automatically and optionally inflate the data into a CFC.
+  *
+  * <pre class='brush: cf'>
+  * person = client.getFromReplica( 'aaron', 'ALL' );
+  * </pre>
+  *
+  * @ID.hint The ID of the document to retrieve.
+  * @deserialize.hint Deserialize the JSON automatically for you and return the representation
+  * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
+  * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
+  *
+  * @return An array of objects from each replica
+  */
+  public array function getFromReplica(
+    required string id,
+    replicaMode="ALL",
+    boolean deserialize=true,
+    struct deserializeOptions={},
+    any inflateTo=""
+  ){
+    // make sure the consistency is valid
+    if(!listFindNoCase("ALL,ONE,TWO,THREE", arguments.replicaMode)){
+      throw(message="Invalid replicaMode Value", detail="Invalid replicaMode value, valid values are: ALL, ONE, TWO, THREE", type="CouchbaseClient.GetReplicaException");
+    }
+    var results = variables.couchbaseClient.getFromReplica(
+                                                variables.util.normalizeID(arguments.id),
+                                                this.replicaMode[uCase(arguments.replicaMode)],
+                                                javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                                variables.timeUnit.MILLISECONDS
+                                              );
+    // loop over all of the results
+    var cfresults = [];
+    var i = 0;
+    for(var doc in results){
+      i++;
+      cfresults[i] = deserializeData(
+                                    arguments.id,
+                                    // com.couchbase.client.java.document.JsonDocument
+                                    doc.content(),
+                                    arguments.inflateTo,
+                                    arguments.deserialize,
+                                    arguments.deserializeOptions
+                                  );
+    }
+    return cfresults;
+  }
+
+  /**
   * Shutdown the native client connection
   *
   * <pre class='brush: cf'>
@@ -670,7 +886,7 @@ component serializable="false" accessors="true"{
   *
   * @return A refernce to "this" CFC
   */
-  CouchbaseClient function shutdown(numeric timeout=10){
+  public CouchbaseClient function shutdown(numeric timeout=10){
     // close the connection to the bucket
     variables.couchbaseClient.close(javaCast("long", arguments.timeout), variables.timeUnit.SECONDS);
     // close the connection to the cluster
@@ -706,7 +922,15 @@ component serializable="false" accessors="true"{
   * @return An array for each server in the cluster with a structure of stats
   */
   public any function getStats(required string username, required string password){
-    var stats = deserializeJSON(variables.cluster.clusterManager("Administrator", "password").info().raw().toString());
+    var stats = deserializeJSON(
+                                  variables.cluster.clusterManager(
+                                                                    arguments.username,
+                                                                    arguments.password
+                                                                  )
+                                                                    .info()
+                                                                            .raw()
+                                                                                  .toString()
+                                );
     return stats.nodes;
   }
 
@@ -939,6 +1163,29 @@ component serializable="false" accessors="true"{
   }
 
   /**
+  * Determines whether or not a document exists in a bucket or not
+  *
+  * <pre class='brush: cf'>
+  * exists = client.exists( 'aaron' );
+  * </pre>
+  *
+  * @id.hint The ID of the document to delete, or an array of ID's to delete
+  * @timeout.hint The timeout in milliseconds
+  *
+  * @return Boolean indicating the existence of a document
+  */
+  public boolean function exists(
+    required any id,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+  ){
+    return variables.couchbaseClient.exists(
+                                              arguments.id,
+                                              arguments.timeout,
+                                              variables.timeUnit.MILLISECONDS
+                                            );
+  }
+
+  /**
   * (deprecated)
   * getDocStats() is no longer supported
   */
@@ -978,7 +1225,7 @@ component serializable="false" accessors="true"{
   *
   * @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() <br>If all servers are online, the array with be empty.
   */
-  array function getUnAvailableServers(){
+  public array function getUnAvailableServers(){
     var servers = variables.couchbaseClient.getUnAvailableServers();
     var index = 1;
     for(var node in servers){
@@ -988,75 +1235,160 @@ component serializable="false" accessors="true"{
   }
 
   /**
+  * Get the Couchbase environment details
+  *
+  * <pre class='brush: cf'>
+  * environment = client.getEnvironment();
+  * </pre>
+  *
+  * @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() <br>If all servers are online, the array with be empty.
+  */
+  public struct function getEnvironment(){
+    var environment = variables.couchbaseClient.environment();
+    var settings = {};
+    // The default timeout for connect operations, set to DefaultCouchbaseEnvironment.CONNECT_TIMEOUT.
+    settings['connectTimeout'] = environment.connectTimeout();
+    // The default timeout for disconnect operations, set to DefaultCouchbaseEnvironment.DISCONNECT_TIMEOUT.
+    settings['disconnectTimeout'] = environment.disconnectTimeout();
+    // Returns whether DNS SRV lookup for the bootstrap nodes is enabled or not.
+    settings['dnsSrvEnabled'] = environment.dnsSrvEnabled();
+    // The default timeout for binary (key/value) operations, set to DefaultCouchbaseEnvironment.KV_TIMEOUT.
+    settings['kvTimeout'] = environment.kvTimeout();
+    // The default timeout for management operations, set to DefaultCouchbaseEnvironment.MANAGEMENT_TIMEOUT.
+    settings['managementTimeout'] = environment.managementTimeout();
+    // The default timeout for query operations, set to DefaultCouchbaseEnvironment.QUERY_TIMEOUT.
+    settings['queryTimeout'] = environment.queryTimeout();
+    // The default timeout for view operations, set to DefaultCouchbaseEnvironment.VIEW_TIMEOUT.
+    settings['viewTimeout'] = environment.viewTimeout();
+    return settings;
+  }
+
+  /**
   * Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
   * This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
   *
   * <pre class='brush: cf'>
-  * future = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
+  * result = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
   * </pre>
   *
   * @ID.hint The unique id of the document whose value will be appended
   * @value.hint The value to append
   * @CAS.hint CAS identifier (ignored in the ascii protocol)
   *
-  * @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) Note that the return will be false any time a mutation has not occurred.
+  * @return A Java instance of the document that was created as
+  * - com.couchbase.client.java.document.LegacyDocument or
+  * - com.couchbase.client.java.document.BinaryDocument or
+  * com.couchbase.client.java.document.StringDocument
   */
-  any function append(
-    required string ID,
+  public any function append(
+    required string id,
     required any value,
-    numeric CAS
+    numeric cas,
+    string persistTo,
+    string replicateTo,
+    boolean legacy=false
   ){
-
-    // normalize ID
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-
-    // append with cas
-    var future = "";
-    if( structKeyExists( arguments, "CAS") ){
-      return variables.couchbaseClient.append( javaCast( "long", arguments.CAS ),
-                             arguments.ID,
-                             arguments.value );
+    // default persist and replicate
+    defaultPersistReplicate(arguments);
+    // create the document based on the value type
+    if(arguments.legacy){ // create a legacy document
+      var document = newJava("com.couchbase.client.java.document.LegacyDocument");
     }
-    // append with no CAS
+    else if(isBinary(arguments.value)){ // create a binary document
+      var document = newJava("com.couchbase.client.java.document.BinaryDocument");
+    }
+    else{ // create a string document
+      var document = newJava("com.couchbase.client.java.document.StringDocument");
+    }
+    // is there a cas value?
+    if(structKeyExists(arguments, "cas")){
+        document = document.create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the value
+          arguments.value,
+          // set the cas
+          javaCast("long", arguments.cas)
+        );
+    }
     else{
-      return variables.couchbaseClient.append( arguments.ID, arguments.value );
+      document = document.create(
+        // normalize the id before setting it
+        javaCast("string", variables.util.normalizeID(arguments.id)),
+        arguments.value
+      );
     }
+    return variables.couchbaseClient.append(
+                                              document,
+                                              arguments.persistTo,
+                                              arguments.replicateTo,
+                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                              variables.timeUnit.MILLISECONDS
+                                            );
   }
 
   /**
   * Prepend to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
-  * This method is considered a 'binary' method since they operate on binary data such as string or integers, not JSON documents
+  * This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
   *
   * <pre class='brush: cf'>
-  * future = client.prepend( 'hierachyList', parent );
+  * result = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
   * </pre>
   *
-  * @ID.hint The unique id of the document whose value will be prepended
-  * @value.hint The value to prepend
+  * @ID.hint The unique id of the document whose value will be appended
+  * @value.hint The value to append
   * @CAS.hint CAS identifier (ignored in the ascii protocol)
   *
-  * @Return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) Note that the return will be false any time a mutation has not occurred.
+  * @return A Java instance of the document that was created as
+  * - com.couchbase.client.java.document.LegacyDocument or
+  * - com.couchbase.client.java.document.BinaryDocument or
+  * com.couchbase.client.java.document.StringDocument
   */
-  any function prepend(
-    required string ID,
+  public any function append(
+    required string id,
     required any value,
-    numeric CAS
+    numeric cas,
+    string persistTo,
+    string replicateTo,
+    boolean legacy=false
   ){
-
-    // normalize ID
-    arguments.ID = variables.util.normalizeID( arguments.ID );
-
-    // prepend with cas
-    var future = "";
-    if( structKeyExists( arguments, "CAS") ){
-      return variables.couchbaseClient.prepend( javaCast( "long", arguments.CAS ),
-                              arguments.ID,
-                              arguments.value );
+    // default persist and replicate
+    defaultPersistReplicate(arguments);
+    // create the document based on the value type
+    if(arguments.legacy){ // create a legacy document
+      var document = newJava("com.couchbase.client.java.document.LegacyDocument");
     }
-    // prepend with no CAS
+    else if(isBinary(arguments.value)){ // create a binary document
+      var document = newJava("com.couchbase.client.java.document.BinaryDocument");
+    }
+    else{ // create a string document
+      var document = newJava("com.couchbase.client.java.document.StringDocument");
+    }
+    // is there a cas value?
+    if(structKeyExists(arguments, "cas")){
+        document = document.create(
+          // normalize the id before setting it
+          javaCast("string", variables.util.normalizeID(arguments.id)),
+          // set the value
+          arguments.value,
+          // set the cas
+          javaCast("long", arguments.cas)
+        );
+    }
     else{
-      return variables.couchbaseClient.prepend( arguments.ID, arguments.value );
+      document = document.create(
+        // normalize the id before setting it
+        javaCast("string", variables.util.normalizeID(arguments.id)),
+        arguments.value
+      );
     }
+    return variables.couchbaseClient.prepend(
+                                              document,
+                                              arguments.persistTo,
+                                              arguments.replicateTo,
+                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+                                              variables.timeUnit.MILLISECONDS
+                                            );
   }
 
   /************************* VIEW INTEGRATION ***********************************/
@@ -1355,6 +1687,23 @@ component serializable="false" accessors="true"{
   */
   public any function rawQuery(required any queryObject){
     return variables.couchbaseClient.query(arguments.queryObject, javaCast("long", variables.couchbaseConfig.getOpTimeout()), variables.timeUnit.MILLISECONDS);
+  }
+
+  /**
+  * Invalidates and clears the internal query cache. This method can be used to explicitly clear the internal N1QL query cache. This
+  * cache will be filled with non-adhoc query statements (query plans) to speed up those subsequent executions.
+  * Triggering this method will wipe out the complete cache, which will not cause an interruption but rather all
+  * queries need to be re-prepared internally. This method is likely to be deprecated in the future once the
+  * server side query engine distributes its state throughout the cluster.
+  *
+  * <pre class='brush: cf'>
+  * entries = client.invalidateQueryCache();
+  * </pre>
+  *
+  * @return The number of entries in the cache before it was cleared out.
+  */
+  public numeric function invalidateQueryCache(){
+    return variables.couchbaseClient.invalidateQueryCache();
   }
 
   /**
@@ -1927,6 +2276,45 @@ component serializable="false" accessors="true"{
     return;
   }
 
+  /**
+  * Publishes a design document from development to production
+  *
+  * <pre class='brush: cf'>
+  * client.publishDesignDocument( 'docName' );
+  * </pre>
+  *
+  * @designDocumentName.hint The name of the design document for the view to be deleted from
+  * @overwrite.hint Whether or not to overwrite the design document if it exists
+  * @timeout.hint The timeout in milliseconds
+  *
+  * @viewName.hint Whether or not the design document was published successfully
+  */
+  public boolean function publishDesignDocument(
+    required string designDocumentName,
+    required boolean overwrite=false,
+    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+  ){
+    var published = true;
+    try{
+      variables.couchbaseClient.bucketManager()
+                                              .publishDesignDocument(
+                                                arguments.designDocumentName,
+                                                javaCast("boolean", arguments.overwrite),
+                                                javaCast("long", arguments.timeout),
+                                                variables.timeUnit.MILLISECONDS
+                                              );
+    }
+    catch(Expression e){
+      if(e.type == "java.util.concurrent.TimeoutException" || e.type == "com.couchbase.client.java.error.DesignDocumentAlreadyExistsException"){
+        published = false;
+      }
+      else{
+        rethrow;
+      }
+    }
+    return published;
+  }
+
 
   /************************* SERIALIZE/DESERIALIZE INTEGRATION ***********************************/
 
@@ -1960,7 +2348,6 @@ component serializable="false" accessors="true"{
     else{
       return arguments.data;
     }
-
   }
 
   /**

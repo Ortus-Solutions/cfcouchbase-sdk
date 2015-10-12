@@ -1304,7 +1304,7 @@ component serializable="false" accessors="true"{
   * - com.couchbase.client.java.document.BinaryDocument or
   * - com.couchbase.client.java.document.StringDocument
   */
-  public any function append(
+  public any function prepend(
     required string id,
     required any value,
     numeric cas,
@@ -1377,7 +1377,11 @@ component serializable="false" accessors="true"{
     string replicateTo,
     boolean legacy=false
   ){
+<<<<<<< HEAD
     var document = ""
+=======
+    var document = "";
+>>>>>>> Updated Formatting for Consistency
     // default persist and replicate
     defaultPersistReplicate(arguments);
     // create the document based on the value type

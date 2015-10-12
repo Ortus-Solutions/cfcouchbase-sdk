@@ -23,7 +23,7 @@
 ********************************************************************************
 */
 component extends="testbox.system.BaseSpec"{
-	
+
 /*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
@@ -36,7 +36,7 @@ component extends="testbox.system.BaseSpec"{
 
 	function run(){
 		describe( "Couchbase Client Construction", function(){
-				
+
 			afterEach(function( currentSpec ){
 				couchbase.shutdown();
 			});
@@ -68,15 +68,15 @@ component extends="testbox.system.BaseSpec"{
 				expect(	couchbase ).toBeComponent();
 				expect(	couchbase.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
 			});
-		
-			it( "with bad config", function(){				
+
+			it( "with bad config", function(){
 				expect( function(){
 					var badConfig = new test.resources.BadConfig();
 					couchbase = new cfcouchbase.CouchbaseClient( config=badConfig );
-          		}).toThrow( type="InvalidConfig" );     	
+          		}).toThrow( type="InvalidConfig" );
 			});
-		
+
 		});
 	}
-	
+
 }

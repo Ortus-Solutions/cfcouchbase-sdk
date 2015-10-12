@@ -121,10 +121,19 @@ component serializable="false" accessors="true"{
     string persistTo,
     string replicateTo
   ){
+    // default timeout
+    defaultTimeout(arguments);
     // default persist and replicate
     defaultPersistReplicate(arguments);
-    // create a new JsonDocument from a JsonObject to be saved
-    var document = newDocument(argumentCollection=arguments);
+    // create a new RawJsonDocument to be saved
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
+      // normalize the id before setting it
+      variables.util.normalizeID(arguments.id),
+      // set the expiry / timeout in minutes
+      javaCast("int", arguments.timeout),
+      // serialize the data
+      serializeData(arguments.value)
+    );
     return variables.couchbaseClient.upsert(
       document,
       arguments.persistTo,
@@ -133,6 +142,7 @@ component serializable="false" accessors="true"{
       variables.timeUnit.MILLISECONDS
     );
   }
+
   /**
   * Creates a new Java object representing the data being created
   *
@@ -155,7 +165,7 @@ component serializable="false" accessors="true"{
         // normalize the id before setting it
         javaCast("string", variables.util.normalizeID(arguments.id)),
         // set the expiry / timeout in minutes
-        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        javaCast("int", arguments.timeout),
         // create a new JsonObject from the value
         newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
       );
@@ -167,7 +177,7 @@ component serializable="false" accessors="true"{
         // normalize the id before setting it
         javaCast("string", variables.util.normalizeID(arguments.id)),
         // set the expiry / timeout in minutes
-        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        javaCast("int", arguments.timeout),
         // create a new JsonObject from the value
         newJava("com.couchbase.client.java.document.json.JsonArray").from(arguments.value)
       );
@@ -181,7 +191,7 @@ component serializable="false" accessors="true"{
           // normalize the id before setting it
           javaCast("string", variables.util.normalizeID(arguments.id)),
           // set the expiry / timeout in minutes
-          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          javaCast("int", arguments.timeout),
           // create a new double from the value
           javaCast("double", arguments.value)
         );
@@ -192,7 +202,7 @@ component serializable="false" accessors="true"{
           // normalize the id before setting it
           javaCast("string", variables.util.normalizeID(arguments.id)),
           // set the expiry / timeout in minutes
-          javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+          javaCast("int", arguments.timeout),
           // create a new long from the value
           javaCast("long", arguments.value)
         );
@@ -205,7 +215,7 @@ component serializable="false" accessors="true"{
         // normalize the id before setting it
         javaCast("string", variables.util.normalizeID(arguments.id)),
         // set the expiry / timeout in minutes
-        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
+        javaCast("int", arguments.timeout),
         // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
         arguments.value
       );
@@ -267,16 +277,18 @@ component serializable="false" accessors="true"{
     string persistTo,
     string replicateTo
   ){
+    // default timeout
+    defaultTimeout(arguments);
     // default persist and replicate
     defaultPersistReplicate(arguments);
-    // create a new JsonDocument from a JsonObject to be saved
-    var document = newJava("com.couchbase.client.java.document.JsonDocument").create(
+    // create a new RawJsonDocument to be saved
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
       // normalize the id before setting it
-      javaCast("string", variables.util.normalizeID(arguments.id)),
+      variables.util.normalizeID(arguments.id),
       // set the expiry / timeout in minutes
-      javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-      // create a new JsonObject from the value
-      newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value)),
+      javaCast("int", arguments.timeout),
+      // serialize the data
+      serializeData(arguments.value),
       // set the cas value
       javaCast("long", arguments.cas)
     );
@@ -352,16 +364,20 @@ component serializable="false" accessors="true"{
     string persistTo,
     string replicateTo
   ){
+    // default timeout
+    defaultTimeout(arguments);
     // default persist and replicate
     defaultPersistReplicate(arguments);
-    // create a new JsonDocument from a JsonObject to be saved
-    var document = newJava("com.couchbase.client.java.document.JsonDocument").create(
+    // create a new RawJsonDocument to be saved
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
       // normalize the id before setting it
-      javaCast("string", variables.util.normalizeID(arguments.id)),
+      variables.util.normalizeID(arguments.id),
       // set the expiry / timeout in minutes
-      javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-      // create a new JsonObject from the value
-      newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
+      javaCast("int", arguments.timeout),
+      // serialize the data
+      serializeData(arguments.value),
+      // set the cas value
+      javaCast("long", arguments.cas)
     );
     var success = true;
     try{
@@ -479,12 +495,24 @@ component serializable="false" accessors="true"{
     required any value,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    numeric cas=0
   ){
+    // default timeout
+    defaultTimeout(arguments);
     // default persist and replicate
     defaultPersistReplicate(arguments);
-    // create a new JsonDocument from a JsonObject to be saved
-    var document = newDocument(argumentCollection=arguments);
+    // create a new RawJsonDocument to be saved
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
+      // normalize the id before setting it
+      variables.util.normalizeID(arguments.id),
+      // set the expiry / timeout in minutes
+      javaCast("int", arguments.timeout),
+      // serialize the data
+      serializeData(arguments.value),
+      // set the cas value
+      javaCast("long", arguments.cas)
+    );
     var success = true;
     try{
       variables.couchbaseClient.replace(
@@ -527,18 +555,18 @@ component serializable="false" accessors="true"{
     struct deserializeOptions={},
     any inflateTo=""
   ){
-    // this will need to be updated to support a type argument, because if you are retrieveing anything
-    // other than a JsonDocument i.e. String, Binary, Double, Float the target class has to be specified
-    var results = variables.couchbaseClient.get(
-      variables.util.normalizeID(arguments.id),
+    // couchbase expects a target class to inflate the results to, in this case we just want the raw
+    // result and we will handle the deserialization on our side
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
+    var result = variables.couchbaseClient.get(
+      document,
       javaCast("long", variables.couchbaseConfig.getOpTimeout()),
       variables.timeUnit.MILLISECONDS
     );
-    if(!isNull(results)){
+    if(!isNull(result)){
       return deserializeData(
         arguments.id,
-        // com.couchbase.client.java.document.JsonDocument
-        results.content(),
+        result.content(),
         arguments.inflateTo,
         arguments.deserialize,
         arguments.deserializeOptions
@@ -587,7 +615,7 @@ component serializable="false" accessors="true"{
   ){
     var result = {};
     // normalize the id's
-    arguments.id = variables.util.normalizeID(arguments.id);
+    arguments['id'] = variables.util.normalizeID(arguments.id);
     // In the java 2.0 sdk all synchronous bulk operations were removed, now they are only available
     // through async() to still provide a synchronous version a get is issued for each document
     for(var doc_id in arguments.id){
@@ -638,19 +666,22 @@ component serializable="false" accessors="true"{
     struct deserializeOptions={},
     any inflateTo=""
   ){
-    var resultsWithCAS = variables.couchbaseClient.get(
-      variables.util.normalizeID(arguments.id),
+    // couchbase expects a target class to inflate the results to, in this case we just want the raw
+    // result and we will handle the deserialization on our side
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
+    var result = variables.couchbaseClient.get(
+      document,
       javaCast("long", variables.couchbaseConfig.getOpTimeout()),
       variables.timeUnit.MILLISECONDS
     );
-    if(!isNull(resultsWithCAS)){
+    if(!isNull(result)){
       // build struct out.
       return {
-        'cas' = resultsWithCAS.cas(),
+        'expiry' = result.expiry(),
+        'cas' = result.cas(),
         'value' = deserializeData(
           arguments.id,
-          // com.couchbase.client.java.document.JsonDocument
-          resultsWithCAS.content(),
+          result.content(),
           arguments.inflateTo,
           arguments.deserialize,
           arguments.deserializeOptions
@@ -696,20 +727,22 @@ component serializable="false" accessors="true"{
     struct deserializeOptions={},
     any inflateTo=""
   ){
-    var resultsWithCAS = variables.couchbaseClient.getAndTouch(
-      variables.util.normalizeID(arguments.id),
+    // couchbase expects a target class to inflate the results to, in this case we just want the raw
+    // result and we will handle the deserialization on our side
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
+    var result = variables.couchbaseClient.getAndTouch(
+      document,
       variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
       javaCast("long", variables.couchbaseConfig.getOpTimeout()),
       variables.timeUnit.MILLISECONDS
     );
-    if(!isNull( resultsWithCAS)){
+    if(!isNull(result)){
       // build struct out.
       return {
-        'cas' = resultsWithCAS.cas(),
+        'cas' = result.cas(),
         'value' = deserializeData(
           arguments.id,
-          // com.couchbase.client.java.document.JsonDocument
-          resultsWithCAS.content(),
+          result.content(),
           arguments.inflateTo,
           arguments.deserialize,
           arguments.deserializeOptions
@@ -732,8 +765,8 @@ component serializable="false" accessors="true"{
   * @return A Future object (net.spy.memcached.internal.OperationFuture) that retrieves a CASValue class that you can use to get the value and cas of the object.
   */
   public any function asyncGetAndTouch(
-          required string id,
-          required numeric timeout
+    required string id,
+    required numeric timeout
   ){
     return variables.couchbaseClient
       .async()
@@ -780,8 +813,11 @@ component serializable="false" accessors="true"{
       );
     }
     try{
-      var resultsWithCAS = variables.couchbaseClient.getAndLock(
-        variables.util.normalizeID(arguments.id),
+      // couchbase expects a target class to inflate the results to, in this case we just want the raw
+      // result and we will handle the deserialization on our side
+      var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
+      var result = variables.couchbaseClient.getAndLock(
+        document,
         javaCast("int", arguments.lockTime),
         javaCast("long", variables.couchbaseConfig.getOpTimeout()),
         variables.timeUnit.MILLISECONDS
@@ -799,14 +835,14 @@ component serializable="false" accessors="true"{
         );
       }
     }
-    if(!isNull(resultsWithCAS)){
+    if(!isNull(result)){
       // build struct out.
       return {
-        'cas' = resultsWithCAS.cas(),
+        'expiry' = result.expiry(),
+        'cas' = result.cas(),
         'value' = deserializeData(
           arguments.id,
-          // com.couchbase.client.java.document.JsonDocument
-          resultsWithCAS.content(),
+          result.content(),
           arguments.inflateTo,
           arguments.deserialize,
           arguments.deserializeOptions
@@ -832,11 +868,11 @@ component serializable="false" accessors="true"{
   */
   public any function unlock(required string id, required numeric cas){
     return variables.couchbaseClient.unlock(
-                                              variables.util.normalizeID(arguments.id),
-                                              javaCast("long", arguments.cas),
-                                              javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-                                              variables.timeUnit.MILLISECONDS
-                                            );
+      variables.util.normalizeID(arguments.id),
+      javaCast("long", arguments.cas),
+      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
+      variables.timeUnit.MILLISECONDS
+    );
   }
 
   /**
@@ -868,8 +904,9 @@ component serializable="false" accessors="true"{
         type="CouchbaseClient.GetReplicaException"
       );
     }
+    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
     var results = variables.couchbaseClient.getFromReplica(
-      variables.util.normalizeID(arguments.id),
+      document,
       this.replicaMode[uCase(arguments.replicaMode)],
       javaCast("long", variables.couchbaseConfig.getOpTimeout()),
       variables.timeUnit.MILLISECONDS
@@ -1247,13 +1284,18 @@ component serializable="false" accessors="true"{
   * serverArray = client.getUnAvailableServers();
   * </pre>
   *
+  * @username A valid username for the admin console
+  * @password A valid password for the admin console
+  *
   * @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() <br>If all servers are online, the array with be empty.
   */
-  public array function getUnAvailableServers(){
-    var servers = variables.couchbaseClient.getUnAvailableServers();
-    var index = 1;
-    for(var node in servers){
-      servers[index++] = node.toString();
+  public array function getUnAvailableServers(required string username, required string password){
+    var stats = getStats(arguments.username, arguments.password);
+    var servers = [];
+    for(var node in stats){
+      if(node.status != "healthy" || node.clusterMembership != "active"){
+        arrayAppend(servers, node.hostname);
+      }
     }
     return servers;
   }
@@ -2576,6 +2618,10 @@ component serializable="false" accessors="true"{
     // persistTo
     if(structKeyExists(args, "persistTo")){
       args['persistTo'] = trim(args.persistTo);
+      // if the value is ZERO set it to NONE for backwards compatibility
+      if(args.persistTo == "ZERO"){
+        args['persistTo'] = "NONE";
+      }
       if(!listFindNoCase(validPersistTo, args.persistTo)){
         throw(
           message="Invalid persistTo value of [" & args.persistTo & "]",
@@ -2591,6 +2637,10 @@ component serializable="false" accessors="true"{
     // replicateTo
     if(structKeyExists(args, "replicateTo")){
       args['replicateTo'] = trim(args.replicateTo);
+      // if the value is ZERO set it to NONE for backwards compatibility
+      if(args.replicateTo == "ZERO"){
+        args['replicateTo'] = "NONE";
+      }
       if(!listFindNoCase(validReplicateTo, args.replicateTo)){
         throw(
           message="Invalid replicateTo value of [" & args.replicateTo & "]",
@@ -2607,37 +2657,34 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * Default timeout in arguments.  Will create "timeout" with a default value specified in settings
-  * Also accounts for timeouts over 30 days which must be represented as epoch date.
-  *
-  * @args.hint The argument collection to process
-  *
-  * @Return The argument collection with the defaulted values.
-  */
-  private any function defaultTimeout(required args){
-    var secondsIn30Days = 30 * 24 * 60 * 60;
+	* Default timeout in arguments.  Will create "timeout" with a default value specified in settings
+	* Also accounts for timeouts over 30 days which must be represented as epoch date.
+	*
+	* @args.hint The argument collection to process
+	*
+	* @Return The argument collection with the defaulted values.
+	*/
+	private any function defaultTimeout( required args ) {
+		var secondsIn30Days = 30 * 24 * 60 * 60;
 
-    args['timeout'] = (!structKeyExists(args, "timeout") ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout);
+		args.timeout = ( !structKeyExists( args, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout );
 
-    // Validate timeout
-    if(!isNumeric(args.timeout) || args.timeout < 0){
-      throw(
-        message="Invalid timeout value of [" & args.timeout & "]",
-        detail="Valid values are positive integers",
-        type="InvalidTimeout"
-      );
-    }
+		// Validate timeout
+		if( !isNumeric(args.timeout) || args.timeout < 0 ) {
+			throw( message='Invalid timeout value of [#args.timeout#]', detail='Valid values are positive integers', type='InvalidTimeout' );
+		}
 
-    // Convert minutes to seconds
-    args['timeout'] = args.timeout*60;
+		// Convert minutes to seconds
+		args.timeout = args.timeout*60;
 
-    // Timeouts over 30 days must be treated as epoch dates (seconds since 1970)
-    // If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
-    if(args.timeout > secondsIn30Days){
-      var secondsSinceEpoch = datediff("s", createdatetime("1970","01","01","00","00","00"), dateConvert("local2Utc", now()));
-      args['timeout'] += secondsSinceEpoch;
-    }
-    return args;
-  }
+		// Timeouts over 30 days must be treated as epoch dates (seconds since 1970)
+		// If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
+		if( args.timeout > secondsIn30Days ) {
+			var secondsSinceEpoch = datediff( 's', createdatetime( '1970','01','01','00','00','00' ), dateConvert( "local2Utc", now() ) );
+			args.timeout += secondsSinceEpoch;
+		}
+
+		return args;
+	}
 
 }

@@ -36,8 +36,16 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 	*/
 	string function serializeData( required any data ){
 
-		// if json, or string, just return back no serialization needed
-		if( isJSON( arguments.data ) OR isSimpleValue( arguments.data ) ){ return arguments.data; }
+		// if json or a number just return back no serialization needed
+		if( isJSON( arguments.data ) OR isNumeric( arguments.data ) ){
+      return arguments.data;
+    }
+
+    // if string wrap it in quotes and return it
+    // this is required otherwise it is seen as a binary document
+		if( isSimpleValue( arguments.data ) ){
+      return """" & arguments.data & """";
+    }
 
 		// if objects?
 		if( isObject( arguments.data ) ){

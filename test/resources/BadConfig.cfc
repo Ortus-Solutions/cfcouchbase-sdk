@@ -1,5 +1,5 @@
 component{
 
-	// No configure() method!
+  // No configure() method!
 
 }

@@ -24,59 +24,60 @@
 */
 component extends="testbox.system.BaseSpec"{
 
-/*********************************** LIFE CYCLE Methods ***********************************/
+  /*********************************** LIFE CYCLE Methods ***********************************/
+  function beforeAll(){
+  }
 
-	function beforeAll(){
-	}
+  function afterAll(){
+  }
 
-	function afterAll(){
-	}
+  /*********************************** BDD SUITES ***********************************/
+  function run(){
 
-/*********************************** BDD SUITES ***********************************/
+    describe( "Couchbase Client Construction", function(){
 
-	function run(){
-		describe( "Couchbase Client Construction", function(){
+      afterEach(function( currentSpec ){
+        couchbase.shutdown();
+      });
 
-			afterEach(function( currentSpec ){
-				couchbase.shutdown();
-			});
+      it( "with vanilla settings", function(){
+        couchbase = new cfcouchbase.CouchbaseClient();
+        expect( couchbase ).toBeComponent();
+      });
 
-			it( "with vanilla settings", function(){
-				couchbase = new cfcouchbase.CouchbaseClient();
-				expect(	couchbase ).toBeComponent();
-			});
+      it( "with config struct literal", function(){
+        couchbase = new cfcouchbase.CouchbaseClient( config={servers="http://127.0.0.1:8091", bucketname="default"} );
+        expect( couchbase ).toBeComponent();
+      });
 
-			it( "with config struct literal", function(){
-				couchbase = new cfcouchbase.CouchbaseClient( config={servers="http://127.0.0.1:8091", bucketname="default"} );
-				expect(	couchbase ).toBeComponent();
-			});
+      it( "with config object instance", function(){
+        var config = new cfcouchbase.config.CouchbaseConfig( bucketname="default", viewTimeout="1000" );
+        couchbase = new cfcouchbase.CouchbaseClient( config=config );
+        expect( couchbase ).toBeComponent();
+      });
 
-			it( "with config object instance", function(){
-				var config = new cfcouchbase.config.CouchbaseConfig( bucketname="default", viewTimeout="1000" );
-				couchbase = new cfcouchbase.CouchbaseClient( config=config );
-				expect(	couchbase ).toBeComponent();
-			});
+      it( "with config object path", function(){
+        couchbase = new cfcouchbase.CouchbaseClient( config="test.resources.Config" );
+        expect( couchbase ).toBeComponent();
+      });
 
-			it( "with config object path", function(){
-				couchbase = new cfcouchbase.CouchbaseClient( config="test.resources.Config" );
-				expect(	couchbase ).toBeComponent();
-			});
+      it( "with simple config object", function(){
+        var config = new test.resources.SimpleConfig();
+        couchbase = new cfcouchbase.CouchbaseClient( config=config );
+        expect( couchbase ).toBeComponent();
+        expect( couchbase.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
+      });
 
-			it( "with simple config object", function(){
-				var config = new test.resources.SimpleConfig();
-				couchbase = new cfcouchbase.CouchbaseClient( config=config );
-				expect(	couchbase ).toBeComponent();
-				expect(	couchbase.getCouchbaseConfig().getDefaultTimeout() ).toBe( 30 );
-			});
+      it( "with bad config", function(){
+        expect( function(){
+          var badConfig = new test.resources.BadConfig();
+          couchbase = new cfcouchbase.CouchbaseClient( config=badConfig );
+        })
+        .toThrow( type="InvalidConfig" );
+      });
 
-			it( "with bad config", function(){
-				expect( function(){
-					var badConfig = new test.resources.BadConfig();
-					couchbase = new cfcouchbase.CouchbaseClient( config=badConfig );
-          		}).toThrow( type="InvalidConfig" );
-			});
+    });
 
-		});
-	}
+  }
 
 }

@@ -23,38 +23,71 @@
 ********************************************************************************
 */
 component extends="testbox.system.BaseSpec"{
-	
+
 /*********************************** LIFE CYCLE Methods ***********************************/
 
-	function beforeAll(){
-	}
+  function beforeAll(){
+  }
 
-	function afterAll(){
-	}
+  function afterAll(){
+  }
 
 /*********************************** BDD SUITES ***********************************/
 
-	function run(){
-		describe( "SDK Utility", function(){
+  function run(){
+    describe( "SDK Utility", function(){
 
-			beforeEach(function(){
-				util = new cfcouchbase.util.Utility();
-			});
+      beforeEach(function(){
+        util = new cfcouchbase.util.Utility();
+      });
 
-			it( "can format servers correctly", function(){
-				expect(	util.formatServers( "127.0.0.1:8091" ) ).toBe( [ "http://127.0.0.1:8091/pools" ]);
-				expect(	util.formatServers( "127.0.0.1:8091/pools" ) ).toBe( [ "http://127.0.0.1:8091/pools" ]);
-				expect(	util.formatServers( ["127.0.0.1:8091/pools"] ) ).toBe( [ "http://127.0.0.1:8091/pools" ]);
-				expect(	util.formatServers( "127.0.0.1:8091/pools,http://localhost:8091" ) ).toBe( [ "http://127.0.0.1:8091/pools", "http://localhost:8091/pools" ]);
-			});
+      describe( "dataType operations", function(){
 
-			it( "can build java URIs", function(){
-				var list = util.buildServerURIs( "127.0.0.1:8091" );
-				expect( list ).toBeArray();
-				expect( list[ 1 ] ).toBeInstanceOf( "java.net.URI" );
-			});
-		
-		});
-	}
-	
+        it( "can determine a struct", function(){
+          var data = {
+            "name": "Aaron"
+          };
+          expect( util.getDataType(data) ).toBe( "struct" );
+        });
+
+        it( "can determine an array", function(){
+          var data = [ "Aaron" ];
+          expect( util.getDataType(data) ).toBe( "array" );
+        });
+
+        it( "can determine a double", function(){
+          var data = 57.93;
+          expect( util.getDataType(data) ).toBe( "double" );
+        });
+
+        it( "can determine a long", function(){
+          var data = 2398734;
+          expect( util.getDataType(data) ).toBe( "long" );
+        });
+
+        it( "can determine an object", function(){
+          var data = new test.resources.User();
+          expect( util.getDataType(data) ).toBe( "object" );
+        });
+
+        it( "can determine a binary", function(){
+          var data = toBinary( toBase64( "Aaron" ) );
+          expect( util.getDataType(data) ).toBe( "binary" );
+        });
+
+        it( "can determine a boolean", function(){
+          var data = true;
+          expect( util.getDataType(data) ).toBe( "boolean" );
+        });
+
+        it( "can determine a string", function(){
+          var data = "Aaron";
+          expect( util.getDataType(data) ).toBe( "string" );
+        });
+
+      });
+
+    });
+  }
+
 }

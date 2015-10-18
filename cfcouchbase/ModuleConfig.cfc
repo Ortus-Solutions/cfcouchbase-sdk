@@ -2,7 +2,7 @@
 * <strong>Copyright Since 2005 Ortus Solutions, Corp</strong><br>
 * <a href="http://www.ortussolutions.com">www.ortussolutions.com</a>
 * <p>CFCouchbase Module Configuration</p>
-* @author Luis Majano, Brad Wood
+* @author Luis Majano, Brad Wood, Aaron Benton
 */
 component{
 

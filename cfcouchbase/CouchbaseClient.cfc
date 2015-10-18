@@ -2,9 +2,9 @@
 * <strong>Copyright Since 2005 Ortus Solutions, Corp</strong><br>
 * <a href="http://www.ortussolutions.com">www.ortussolutions.com</a>
 * <p>This is the main class used to connect and interact with Couchbase</p>
-* @author Luis Majano, Brad Wood
+* @author Luis Majano, Brad Wood, Aaron Benton
 */
-component serializable="false" accessors="true"{
+component serializable="false" accessors="true" {
   /**
   * The version of this library
   */
@@ -28,7 +28,7 @@ component serializable="false" accessors="true"{
   /**
   * The java Couchbase Bucket object
   */
-  property name="couchbaseClient";
+  property name="couchbaseBucket";
   /**
   *The couchbase configuration object
   */
@@ -51,7 +51,7 @@ component serializable="false" accessors="true"{
   *
   * @return A reference to "this" CFC
   */
-  CouchbaseClient function init( any config={} ){
+  CouchbaseClient function init( any config= {} ) {
 
     /****************** Setup SDK dependencies & properties ******************/
 
@@ -59,45 +59,45 @@ component serializable="false" accessors="true"{
     variables['version'] = "1.1.0.@build.number@";
     variables['SDKVersion'] = "2.2.0";
     // The unique version of this client
-    variables['libID'] = createObject('java','java.lang.System').identityHashCode( this );
+    variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
     variables['libPath'] = getDirectoryFromPath( getMetadata( this ).path ) & "lib";
     // setup class loader ID
-    variables['javaLoaderID'] = "cfcouchbase-#variables.version#-classloader";
+    variables['javaLoaderID'] = "cfcouchbase-" & variables.version & "-classloader";
     // our UUID creation helper
-    variables['UUIDHelper'] = createobject("java", "java.util.UUID");
+    variables['UUIDHelper'] = createobject( "java", "java.util.UUID" );
     // Java Time Units
-    variables['timeUnit'] = createObject("java", "java.util.concurrent.TimeUnit");
+    variables['timeUnit'] = createObject( "java", "java.util.concurrent.TimeUnit" );
     // SDK Utility class
     variables['util'] = new util.Utility();
     // validate configuration
-    variables['couchbaseConfig'] = validateConfig(arguments.config);
+    variables['couchbaseConfig'] = validateConfig( arguments.config );
 
     // Load up javaLoader with Couchbase SDK
-    if(variables.couchbaseConfig.getUseClassloader()){
+    if( variables.couchbaseConfig.getUseClassloader() ) {
       loadSDK();
     }
 
     // LOAD ENUMS
-		this['persistTo'] = newJava("com.couchbase.client.java.PersistTo");
-		this['replicateTo'] = newJava("com.couchbase.client.java.ReplicateTo");
-    this['replicaMode'] = newJava("com.couchbase.client.java.ReplicaMode");
-    // Establish a connection to the Couchbase bucket
-    variables['couchbaseClient'] = buildCouchbaseClient(variables.couchbaseConfig);
-    // Build the data marshaler
-    variables['dataMarshaller'] = buildDataMarshaller(variables.couchbaseConfig).setCouchbaseClient(this);
+		this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
+		this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
+    this['replicaMode'] = newJava( "com.couchbase.client.java.ReplicaMode" );
 
+    // Establish a connection to the Couchbase bucket
+    variables['couchbaseBucket'] = buildCouchbaseClient( variables.couchbaseConfig );
+    // Build the data marshaler
+    variables['dataMarshaller'] = buildDataMarshaller( variables.couchbaseConfig ).setCouchbaseClient( this );
     // Query Helper Utility
-    variables['queryHelper'] = new util.QueryHelper(this);
+    variables['queryHelper'] = new util.QueryHelper( this );
     return this;
   }
 
   /************************* COUCHBASE SDK METHODS ***********************************/
 
   /**
-  * Upsert (Update/Insert) a value with durability options. It is synchronous by default so it returns immediatley without waiting for the actual set to complete.  Call future.set()
+  * Upsert ( Update/Insert ) a value with durability options. It is synchronous by default so it returns immediatley without waiting for the actual set to complete.  Call future.set()
   * if you need to confirm the document has been set.  Even then, the document is only guarunteed to be in memory on a single node.  To force the document to be replicated
-  * to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  (This assumes you have replicas enabled)
+  * to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  ( This assumes you have replicas enabled )
   * To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc.
   * A PersistTo.TWO durability setting implies a replication to at least one node.
   *
@@ -106,13 +106,13 @@ component serializable="false" accessors="true"{
   * future = client.set( 'brad', person );
   * </pre>
   *
-  * @ID.hint The unique id of the document to store
+  * @id.hint The unique id of the document to store
   * @value.hint The value to store
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<T>) or void (null) if a timeout exception occurs.
+  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<T> ) or void ( null ) if a timeout exception occurs.
   */
   public any function upsert(
     required string id,
@@ -120,133 +120,320 @@ component serializable="false" accessors="true"{
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
+  ) {
     // default timeout
-    defaultTimeout(arguments);
+    defaultTimeout( arguments );
     // default persist and replicate
-    defaultPersistReplicate(arguments);
+    defaultPersistReplicate( arguments );
+    // we are dealing with a new sdk 2.x+ method set legacy to false
+    arguments['legacy'] = false;
     // create a new RawJsonDocument to be saved
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
-      // normalize the id before setting it
-      variables.util.normalizeID(arguments.id),
-      // set the expiry / timeout in minutes
-      javaCast("int", arguments.timeout),
-      // serialize the data
-      serializeData(arguments.value)
-    );
-    return variables.couchbaseClient.upsert(
+    var document = newPopulatedDocument( argumentCollection=arguments );
+    var result = variables.couchbaseBucket.upsert(
       document,
       arguments.persistTo,
-      arguments.replicateTo,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+      arguments.replicateTo
     );
+    return {
+      'id' = result.id(),
+      'cas' = result.cas(),
+      'expiry' = result.expiry(),
+      'hashCode' = result.hashCode()
+    };
   }
 
   /**
-  * Creates a new Java object representing the data being created
+  * Creates a new Java object and populates the id, expiry and content
   *
   * @id.hint The unique id of the document to store
   * @value.hint The value to store
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+  * @cas.hint The cas value of the document
+  * @legacy.hint Whether or not to create a legacy document
+  * @dataType.hint An explicitly known data type otherwise it is determined
   *
   * @return The Java Object representation of the data
   */
-  public any function newDocument(
+  public any function newPopulatedDocument(
     required string id,
     required any value,
-    numeric timeout
-  ){
+    numeric timeout=0,
+    numeric cas=0
+    boolean legacy=false,
+    string dataType=""
+  ) {
+    // make sure that legacy exists, even though we set a default this method is called through
+    // argumentCollection and thus legacy won't always exist
+    if( !structKeyExists( arguments, "legacy" ) ) {
+      arguments['legacy'] = false;
+    }
     var document = "";
-    // is it a structure?
-    if(isStruct(arguments.value)){
-      // create a new JsonDocument from a JsonObject to be saved
-      document = newJava("com.couchbase.client.java.document.JsonDocument").create(
-        // normalize the id before setting it
-        javaCast("string", variables.util.normalizeID(arguments.id)),
-        // set the expiry / timeout in minutes
-        javaCast("int", arguments.timeout),
-        // create a new JsonObject from the value
-        newJava("com.couchbase.client.java.document.json.JsonObject").fromJson(serializeData(arguments.value))
-      );
-    }
-    // is it an array?
-    else if(isArray(arguments.value)){
-      // create a new JsonArrayDocument from a JsonArray to be saved
-      document = newJava("com.couchbase.client.java.document.JsonArrayDocument").create(
-        // normalize the id before setting it
-        javaCast("string", variables.util.normalizeID(arguments.id)),
-        // set the expiry / timeout in minutes
-        javaCast("int", arguments.timeout),
-        // create a new JsonObject from the value
-        newJava("com.couchbase.client.java.document.json.JsonArray").from(arguments.value)
-      );
-    }
-    // is it a number?
-    else if(isNumeric(arguments.value)){
-      // is it a double or integer?
-      if(find(".", arguments.value)){
-        // create a new JsonDoubleDocument from a value to be saved
-        document = newJava("com.couchbase.client.java.document.JsonDoubleDocument").create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the expiry / timeout in minutes
-          javaCast("int", arguments.timeout),
-          // create a new double from the value
-          javaCast("double", arguments.value)
-        );
-      }
-      else{
-        // create a new JsonLongDocument from a value to be saved
-        document = newJava("com.couchbase.client.java.document.JsonLongDocument").create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the expiry / timeout in minutes
-          javaCast("int", arguments.timeout),
-          // create a new long from the value
-          javaCast("long", arguments.value)
-        );
+    // if the data type was pass just use it, otherwise infer it
+    arguments['dataType'] = len( arguments.dataType ) ? arguments.dataType : variables.util.getDataType( arguments.value );
+    // are we dealing with legacy documents?
+    if( arguments.legacy ) {
+      switch( arguments.dataType ) {
+        case "binary":
+          document = newJava( "com.couchbase.client.java.document.BinaryDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
+            arguments.value,
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        case "string":
+          document = newJava( "com.couchbase.client.java.document.StringDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new string from the value
+            javaCast( "string", arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        default:
+          document = newJava( "com.couchbase.client.java.document.LegacyDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new string from the value
+            serializeData( arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
       }
     }
-    // is it an binary?
-    else if(isBinary(arguments.value)){
-      // create a new BinaryDocument from a value to be saved
-      document = newJava("com.couchbase.client.java.document.BinaryDocument").create(
-        // normalize the id before setting it
-        javaCast("string", variables.util.normalizeID(arguments.id)),
-        // set the expiry / timeout in minutes
-        javaCast("int", arguments.timeout),
-        // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
-        arguments.value
-      );
-    }
-    // must be a string
-    else{
-      // create a new JsonStringDocument from a value to be saved
-      document = newJava("com.couchbase.client.java.document.JsonStringDocument").create(
-        // normalize the id before setting it
-        javaCast("string", variables.util.normalizeID(arguments.id)),
-        // set the expiry / timeout in minutes
-        javaCast("int", structKeyExists(arguments, "timeout") ? variables.timeUnit.MINUTES.toSeconds(arguments.timeout) : 0),
-        // create a new string from the value
-        arguments.value
-      );
+    else {
+      switch( arguments.dataType ) {
+        case "struct":
+          // create a new JsonDocument from a JsonObject to be saved
+          document = newJava( "com.couchbase.client.java.document.JsonDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new JsonObject from the value
+            newJava( "com.couchbase.client.java.document.json.JsonObject" ).fromJson( serializeData( arguments.value ) ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        case "array":
+          // create a new JsonArrayDocument from a JsonArray to be saved
+          document = newJava( "com.couchbase.client.java.document.JsonArrayDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new JsonObject from the value
+            newJava( "com.couchbase.client.java.document.json.JsonArray" ).from( arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        case "double":
+          // create a new JsonDoubleDocument from a value to be saved
+          document = newJava( "com.couchbase.client.java.document.JsonDoubleDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new double from the value
+            javaCast( "double", arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        case "long":
+          // create a new JsonLongDocument from a value to be saved
+          document = newJava( "com.couchbase.client.java.document.JsonLongDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new long from the value
+            javaCast( "long", arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        case "binary":
+          // create a new BinaryDocument from a value to be saved
+          document = newJava( "com.couchbase.client.java.document.BinaryDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
+            arguments.value,
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        case "boolean":
+          // create a new BooleanDocument from a value to be saved
+          document = newJava( "com.couchbase.client.java.document.JsonBooleanDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new boolean from the value
+            javaCast( "boolean", arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+        );
+        break;
+        case "string":
+          // create a new JsonStringDocument from a value to be saved
+          document = newJava( "com.couchbase.client.java.document.JsonStringDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new string from the value
+            javaCast( "string", arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+        break;
+        default: // the data type could be determined, just serialize the data
+          // create a new RawJsonDocument from a value to be saved
+          document = newJava( "com.couchbase.client.java.document.RawJsonDocument" ).create(
+            // normalize the id before setting it
+            javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+            // set the expiry / timeout in minutes
+            javaCast( "int", arguments.timeout ),
+            // create a new string from the value
+            serializeData( arguments.value ),
+            // set the cas value
+            javaCast( "long", arguments.cas )
+          );
+      }
     }
     return document;
   }
 
   /**
-  * (deprecated)
-  * set is no longer supported by the Java SDK, it has been replaced with upsert, leaving here for backwards compatibility
+  * Creates a new Java Document that is empty
+  *
+  * @value.hint The value to store
+  * @legacy.hint Whether or not to create a legacy document
+  * @dataType.hint The data type to determine the type of Java Object to create
+  *
+  * @return The Java Object representation of the data
+  */
+  public any function newEmptyDocument(
+    boolean legacy=false,
+    string dataType="unknown",
+    any value=""
+  ) {
+    // make sure that legacy exists, even though we set a default this method is called through
+    // argumentCollection and thus legacy won't always exist
+    if( !structKeyExists( arguments, "legacy" ) ) {
+      arguments['legacy'] = false;
+    }
+    var document = "";
+    // if the data type was pass just use it, otherwise infer it
+    arguments['dataType'] = len( arguments.dataType ) ? arguments.dataType : variables.util.getDataType( arguments.value );
+
+    // are we dealing with legacy documents?
+    if( arguments.legacy ) {
+      switch( arguments.dataType ) {
+        case "binary":
+          document = newJava( "com.couchbase.client.java.document.BinaryDocument" );
+        break;
+        case "string":
+          document = newJava( "com.couchbase.client.java.document.StringDocument" );
+        break;
+        default:
+          document = newJava( "com.couchbase.client.java.document.LegacyDocument" );
+      }
+    }
+    else {
+      switch( arguments.dataType ) {
+        case "struct":
+          document = newJava( "com.couchbase.client.java.document.JsonDocument" );
+        break;
+        case "array":
+          document = newJava( "com.couchbase.client.java.document.JsonArrayDocument" );
+        break;
+        case "double":
+          document = newJava( "com.couchbase.client.java.document.JsonDoubleDocument" );
+        break;
+        case "long":
+          document = newJava( "com.couchbase.client.java.document.JsonLongDocument" );
+        break;
+        case "binary":
+          document = newJava( "com.couchbase.client.java.document.JsonDocument" );
+        break;
+        case "boolean":
+          document = newJava( "com.couchbase.client.java.document.JsonDocument" );
+        break;
+        case "string":
+          document = newJava( "com.couchbase.client.java.document.JsonDocument" );
+        break;
+        default:
+          document = newJava( "com.couchbase.client.java.document.RawJsonDocument" );
+      }
+    }
+    return document;
+  }
+
+  /**
+  * Set a value with durability options. It is synchronous by default so it returns immediatley without waiting for the actual set to complete.  Call future.set()
+  * if you need to confirm the document has been set.  Even then, the document is only guarunteed to be in memory on a single node.  To force the document to be replicated
+  * to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  ( This assumes you have replicas enabled )
+  * To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc.
+  * A PersistTo.TWO durability setting implies a replication to at least one node.
+  *
+  * <pre class='brush: cf'>
+  * person = { name: "Brad", age: 33, hair: "red" };
+  * future = client.set( 'brad', person );
+  * </pre>
+  *
+  * @id.hint The unique id of the document to store
+  * @value.hint The value to store
+  * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+  * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+  * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  *
+  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<T> ) or void ( null ) if a timeout exception occurs.
   */
   public any function set(
-    required string ID,
+    required string id,
     required any value,
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
-    return upsert(argumentCollection=arguments);
+  ) {
+    // default timeout
+    defaultTimeout( arguments );
+    // default persist and replicate
+    defaultPersistReplicate( arguments );
+    // set the document type we are dealing with, since set() is deprecated from the SDK assume that
+    // whoever is calling set() is using Legacy documents
+    arguments['legacy'] = true;
+    // create a new document to be saved
+    var document = newPopulatedDocument( argumentCollection=arguments );
+    // update the document
+    var result = variables.couchbaseBucket.upsert(
+      document,
+      arguments.persistTo,
+      arguments.replicateTo
+    );
+    return {
+      'id' = result.id(),
+      'cas' = result.cas(),
+      'expiry' = result.expiry(),
+      'hashCode' = result.hashCode()
+    };
   }
 
   /**
@@ -260,7 +447,7 @@ component serializable="false" accessors="true"{
   * result = client.setWithCAS( 'brad', person, CAS );
   * </pre>
   *
-  * @ID.hint The unique id of the document to store
+  * @id.hint The unique id of the document to store
   * @value.hint The value to store
   * @CAS.hint CAS value retrieved via getWithCAS()
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
@@ -276,38 +463,36 @@ component serializable="false" accessors="true"{
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
+  ) {
     // default timeout
-    defaultTimeout(arguments);
+    defaultTimeout( arguments );
     // default persist and replicate
-    defaultPersistReplicate(arguments);
+    defaultPersistReplicate( arguments );
     // create a new RawJsonDocument to be saved
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
+    var document = newJava( "com.couchbase.client.java.document.RawJsonDocument" ).create(
       // normalize the id before setting it
-      variables.util.normalizeID(arguments.id),
+      variables.util.normalizeID( arguments.id ),
       // set the expiry / timeout in minutes
-      javaCast("int", arguments.timeout),
+      javaCast( "int", arguments.timeout ),
       // serialize the data
-      serializeData(arguments.value),
+      serializeData( arguments.value ),
       // set the cas value
-      javaCast("long", arguments.cas)
+      javaCast( "long", arguments.cas )
     );
     var response = "";
     var result = {
       'status' = true,
       'detail' = "SUCCESS"
     };
-    try{
-      response = variables.couchbaseClient.replace(
+    try {
+      response = variables.couchbaseBucket.replace(
         document,
         arguments.persistTo,
-        arguments.replicateTo,
-        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-        variables.timeUnit.MILLISECONDS
+        arguments.replicateTo
       );
     }
-    catch(Expression e){
-      switch(e.type){
+    catch( Expression e ) {
+      switch( e.type ) {
         // the cas value is invalid
         case "com.couchbase.client.java.error.CASMismatchException":
           result['status'] = false;
@@ -326,7 +511,7 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * setWithCAS is no longer supported by the Java SDK, it has been replaced with replace(), leaving here for backwards compatibility
   */
   public any function setWithCAS(
@@ -336,8 +521,8 @@ component serializable="false" accessors="true"{
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
-    return replaceWithCAS(argumentCollection=arguments);
+  ) {
+    return replaceWithCAS( argumentCollection=arguments );
   }
 
   /**
@@ -349,13 +534,13 @@ component serializable="false" accessors="true"{
   * future = client.insert( 'brad', person );
   * </pre>
   *
-  * @ID.hint
+  * @id.hint
   * @value.hint
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs.
+  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<Boolean> ) or void ( null ) if a timeout exception occurs.
   */
   public boolean function insert(
     required string id,
@@ -363,38 +548,29 @@ component serializable="false" accessors="true"{
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
+  ) {
     // default timeout
-    defaultTimeout(arguments);
+    defaultTimeout( arguments );
     // default persist and replicate
-    defaultPersistReplicate(arguments);
-    // create a new RawJsonDocument to be saved
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
-      // normalize the id before setting it
-      variables.util.normalizeID(arguments.id),
-      // set the expiry / timeout in minutes
-      javaCast("int", arguments.timeout),
-      // serialize the data
-      serializeData(arguments.value),
-      // set the cas value
-      javaCast("long", arguments.cas)
-    );
+    defaultPersistReplicate( arguments );
+    // we are dealing with a new sdk 2.x+ method set legacy to false
+    arguments['legacy'] = false;
+    // create a new document to be saved
+    var document = newPopulatedDocument( argumentCollection=arguments );
     var success = true;
-    try{
-      variables.couchbaseClient.insert(
+    try {
+      variables.couchbaseBucket.insert(
         document,
         arguments.persistTo,
-        arguments.replicateTo,
-        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-        variables.timeUnit.MILLISECONDS
+        arguments.replicateTo
       );
     }
-    catch(Expression e){
+    catch( Expression e ) {
       // the document already exists and cannot be inserted
-      if(e.type == "com.couchbase.client.java.error.DocumentAlreadyExistsException"){
+      if( e.type == "com.couchbase.client.java.error.DocumentAlreadyExistsException" ) {
         success = false;
       }
-      else{
+      else {
         rethrow;
       }
     }
@@ -402,17 +578,100 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * add is no longer supported by the Java SDK, it has been replaced with insert(), leaving here for backwards compatibility
+  * This method is the same as set(), except it return true if the ID being set doesn't already exist.
+  * It will return false if the item being set does already exist.
+  *
+  * <pre class='brush: cf'>
+  * person = { name: "Brad", age: 33, hair: "red" };
+  * future = client.insert( 'brad', person );
+  * </pre>
+  *
+  * @id.hint
+  * @value.hint
+  * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+  * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+  * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  *
+  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<Boolean> ) or void ( null ) if a timeout exception occurs.
   */
-  public any function add(
+  public boolean function add(
     required string id,
     required any value,
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
-    // call as this.insert because CF has a built-in function called insert
-    return this.insert(argumentCollection=arguments);
+  ) {
+    // default timeout
+    defaultTimeout( arguments );
+    // default persist and replicate
+    defaultPersistReplicate( arguments );
+    // we are dealing with an old sdk 1.x method, assume that we are wanting to create legacy documents
+    arguments['legacy'] = true;
+    // create a new document to be saved
+    var document = newPopulatedDocument( argumentCollection=arguments );
+    var success = true;
+    try {
+      variables.couchbaseBucket.insert(
+        document,
+        arguments.persistTo,
+        arguments.replicateTo
+      );
+    }
+    catch( Expression e ) {
+      // the document already exists and cannot be inserted
+      if( e.type == "com.couchbase.client.java.error.DocumentAlreadyExistsException" ) {
+        success = false;
+      }
+      else {
+        rethrow;
+      }
+    }
+    return success;
+  }
+
+  /**
+  * Upsert multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
+  * The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
+  *
+  * <pre class='brush: cf'>
+  * data = {
+  * &nbsp;&nbsp;brad = { name: "Brad", age: 33, hair: "red" },
+  * &nbsp;&nbsp;luis = { name: "Luis", age: 35, hair: "black" },
+  * &nbsp;&nbsp;bill = { name: "Bill", age: 21, hair: "blond" }
+  * };
+  * future = client.setMulti( data );
+  * </pre>
+  *
+  * @data.hint A struct ( key/value pair ) of documents to set into Couchbase.
+  * @timeout.hint The expiration of the documents in minutes.
+  * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+  * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  *
+  * @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
+  */
+  public any function upsertMulti(
+    required struct data,
+    numeric timeout,
+    string persistTo,
+    string replicateTo
+  ) {
+    var results = {};
+    // default persist and replicate
+    defaultPersistReplicate( arguments );
+    // default timeouts
+    defaultTimeout( arguments );
+    // Loop over incoming key/value pairs
+    for( var id in arguments.data ) {
+      // save the result
+      results[id] = this.upsert(
+        id=id,
+        value=serializeData( arguments.data[id] ),
+        timeout=arguments.timeout,
+        persistTo=arguments.persistTo,
+        replicateTo=arguments.replicateTo
+      );
+    }
+    return results;
   }
 
   /**
@@ -428,49 +687,36 @@ component serializable="false" accessors="true"{
   * future = client.setMulti( data );
   * </pre>
   *
-  * @data.hint A struct (key/value pair) of documents to set into Couchbase.
+  * @data.hint A struct ( key/value pair ) of documents to set into Couchbase.
   * @timeout.hint The expiration of the documents in minutes.
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
   * @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
   */
-  public any function upsertMulti(
+  public any function setMulti(
     required struct data,
     numeric timeout,
     string persistTo,
     string replicateTo
-  ){
+  ) {
     var results = {};
     // default persist and replicate
-    defaultPersistReplicate(arguments);
+    defaultPersistReplicate( arguments );
     // default timeouts
-    arguments['timeout'] = structKeyExists(arguments, "timeout") ? arguments.timeout : 0;
+    defaultTimeout( arguments );
     // Loop over incoming key/value pairs
-    for(var id in arguments.data){
+    for( var id in arguments.data ) {
       // save the result
-      results[id] = upsert(
+      results[id] = this.set(
         id=id,
-        value=serializeData(arguments.data[id]),
+        value=serializeData( arguments.data[id] ),
         timeout=arguments.timeout,
         persistTo=arguments.persistTo,
         replicateTo=arguments.replicateTo
       );
     }
     return results;
-  }
-
-  /**
-  * (deprecated)
-  * setMulti is no longer supported, it has been replaced with upsertMulti(), leaving here for backwards compatibility
-  */
-  public any function setMulti(
-    required struct data,
-    numeric timeout,
-    string persistTo,
-    string replicateTo
-  ){
-    return upsertMulti(argumentCollection=arguments);
   }
 
   /**
@@ -482,53 +728,42 @@ component serializable="false" accessors="true"{
   * future.get();
   * </pre>
   *
-  * @ID The ID of the document to replace.
+  * @id.hint The ID of the document to replace.
   * @value.hint The value of the document to replace
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object (net.spy.memcached.internal.OperationFuture<Boolean>) or void (null) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
+  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<Boolean> ) or void ( null ) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
   */
   public any function replace(
-    required string ID,
+    required string id,
     required any value,
     numeric timeout,
     string persistTo,
     string replicateTo,
     numeric cas=0
-  ){
+  ) {
     // default timeout
-    defaultTimeout(arguments);
+    defaultTimeout( arguments );
     // default persist and replicate
-    defaultPersistReplicate(arguments);
+    defaultPersistReplicate( arguments );
     // create a new RawJsonDocument to be saved
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(
-      // normalize the id before setting it
-      variables.util.normalizeID(arguments.id),
-      // set the expiry / timeout in minutes
-      javaCast("int", arguments.timeout),
-      // serialize the data
-      serializeData(arguments.value),
-      // set the cas value
-      javaCast("long", arguments.cas)
-    );
+    var document = newPopulatedDocument( argumentCollection=arguments );
     var success = true;
-    try{
-      variables.couchbaseClient.replace(
+    try {
+      variables.couchbaseBucket.replace(
         document,
         arguments.persistTo,
-        arguments.replicateTo,
-        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-        variables.timeUnit.MILLISECONDS
+        arguments.replicateTo
       );
     }
-    catch(Expression e){
+    catch( Expression e ) {
       // the document does not exist and can't be replaced
-      if(e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException"){
+      if( e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException" ) {
         success = false;
       }
-      else{
+      else {
         rethrow;
       }
     }
@@ -542,7 +777,7 @@ component serializable="false" accessors="true"{
   * person = client.get( 'brad' );
   * </pre>
   *
-  * @ID.hint The ID of the document to retrieve.
+  * @id.hint The ID of the document to retrieve.
   * @deserialize.hint Deserialize the JSON automatically for you and return the representation
   * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
   * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
@@ -553,17 +788,37 @@ component serializable="false" accessors="true"{
     required string id,
     boolean deserialize=true,
     struct deserializeOptions={},
-    any inflateTo=""
-  ){
+    any inflateTo="",
+    string dataType="json",
+    boolean legacy=false
+  ) {
     // couchbase expects a target class to inflate the results to, in this case we just want the raw
     // result and we will handle the deserialization on our side
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
-    var result = variables.couchbaseClient.get(
-      document,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+    var document = newEmptyDocument( argumentCollection=arguments ).create(
+      variables.util.normalizeID( arguments.id )
     );
-    if(!isNull(result)){
+    var result = "";
+    try {
+      result = variables.couchbaseBucket.get( document );
+    }
+    catch( Expression e ) {
+      // basically an attempt was made to retrieve a legacy document that cannot be inflated
+      // to the new Json*Document objects provided by the SDK.  try to get the document as a
+      // legacy document
+      if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
+        arguments['legacy'] = true;
+        // rebuild a new document shell
+        document = newEmptyDocument( argumentCollection=arguments ).create(
+          variables.util.normalizeID( arguments.id )
+        );
+        // try to get the results again
+        result = variables.couchbaseBucket.get( document );
+      }
+      else {
+        rethrow;
+      }
+    }
+    if( !isNull( result ) ) {
       return deserializeData(
         arguments.id,
         result.content(),
@@ -582,15 +837,15 @@ component serializable="false" accessors="true"{
   * future.get();
   * </pre>
   *
-  * @ID.hint The ID of the document to retrieve.
+  * @id.hint The ID of the document to retrieve.
   *
-  * @return A Java Observable (rx.Observable)
+  * @return A Java Observable ( rx.Observable )
   */
-  public any function asyncGet(required string id){
+  public any function asyncGet( required string id ) {
     // no inflation or deserialization as it is async.
-    return variables.couchbaseClient
+    return variables.couchbaseBucket
       .async()
-      .get(variables.util.normalizeID(arguments.id));
+      .get( variables.util.normalizeID( arguments.id ) ).single();
   }
 
   /**
@@ -600,7 +855,7 @@ component serializable="false" accessors="true"{
   * results = client.getMulti( ['brad', 'luis', 'bill'] );
   * </pre>
   *
-  * @ID.hint An array of document IDs to retrieve.
+  * @id.hint An array of document IDs to retrieve.
   * @deserialize.hint Deserialize the JSON automatically for you and return the representation
   * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
   * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
@@ -612,14 +867,14 @@ component serializable="false" accessors="true"{
     boolean deserialize=true,
     struct deserializeOptions={},
     any inflateTo=""
-  ){
+  ) {
     var result = {};
     // normalize the id's
-    arguments['id'] = variables.util.normalizeID(arguments.id);
+    arguments['id'] = variables.util.normalizeID( arguments.id );
     // In the java 2.0 sdk all synchronous bulk operations were removed, now they are only available
     // through async() to still provide a synchronous version a get is issued for each document
-    for(var doc_id in arguments.id){
-      result[doc_id] = get(doc_id, deserialize, deserializeOptions, inflateTo);
+    for( var doc_id in arguments.id ) {
+      result[doc_id] = get( doc_id, deserialize, deserializeOptions, inflateTo );
     }
     return result;
   }
@@ -631,11 +886,11 @@ component serializable="false" accessors="true"{
   * buldFuture = client.asyncGetMulti( ['brad', 'luis', 'bill'] );
   * </pre>
   *
-  * @ID.hint An array of document IDs to retrieve.
+  * @id.hint An array of document IDs to retrieve.
   *
-  * @return A bulk Java Future. (net.spy.memcached.internal.BulkFuture)  Any document IDs not found will not exist in the future object.
+  * @return A bulk Java Future. ( net.spy.memcached.internal.BulkFuture )  Any document IDs not found will not exist in the future object.
   */
-  public any function asyncGetMulti(required array id){
+  public any function asyncGetMulti( required array id ) {
    throw(
      message="asyncGetMulti not supported",
      detail="The asyncGetMulti method is not supported as it requires observables to issue separate gets.",
@@ -649,11 +904,11 @@ component serializable="false" accessors="true"{
   *
   * <pre class='brush: cf'>
   * result = client.getWithCAS( 'brad' );
-  * writeOutput(result.cas);
-  * writeOutput(result.value);
+  * writeOutput( result.cas );
+  * writeOutput( result.value );
   * </pre>
   *
-  * @ID.hint The ID of the document to retrieve.
+  * @id.hint The ID of the document to retrieve.
   * @deserialize.hint Deserialize the JSON automatically for you and return the representation
   * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
   * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
@@ -665,16 +920,34 @@ component serializable="false" accessors="true"{
     boolean deserialize=true,
     struct deserializeOptions={},
     any inflateTo=""
-  ){
+  ) {
     // couchbase expects a target class to inflate the results to, in this case we just want the raw
     // result and we will handle the deserialization on our side
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
-    var result = variables.couchbaseClient.get(
-      document,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+    var document = newEmptyDocument( argumentCollection=arguments ).create(
+      variables.util.normalizeID( arguments.id )
     );
-    if(!isNull(result)){
+    var result = "";
+    try {
+      result = variables.couchbaseBucket.get( document );
+    }
+    catch( Expression e ) {
+      // basically an attempt was made to retrieve a legacy document that cannot be inflated
+      // to the new Json*Document objects provided by the SDK.  try to get the document as a
+      // legacy document
+      if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
+        arguments['legacy'] = true;
+        // rebuild a new document shell
+        document = newEmptyDocument( argumentCollection=arguments ).create(
+          variables.util.normalizeID( arguments.id )
+        );
+        // try to get the results again
+        result = variables.couchbaseBucket.get( document );
+      }
+      else {
+        rethrow;
+      }
+    }
+    if( !isNull( result ) ) {
       // build struct out.
       return {
         'expiry' = result.expiry(),
@@ -691,10 +964,10 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * asyncGetWithCAS() is no longer supported
   */
-  public any function asyncGetWithCAS(required string id){
+  public any function asyncGetWithCAS( required string id ) {
     throw(
       message="asyncGetWithCAS not supported",
       detail="The asyncGetWithCAS method is not supported as it requires observables to issue separate gets.",
@@ -708,11 +981,11 @@ component serializable="false" accessors="true"{
   *
   * <pre class='brush: cf'>
   * result = client.getAndTouch( 'brad' );
-  * writeOutput(result.cas);
-  * writeOutput(result.value);
+  * writeOutput( result.cas );
+  * writeOutput( result.value );
   * </pre>
   *
-  * @ID.hint The ID of the document to retrieve.
+  * @id.hint The ID of the document to retrieve.
   * @timeout.hint The expiration of the document in minutes
   * @deserialize.hint Deserialize the JSON automatically for you and return the representation
   * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
@@ -726,19 +999,37 @@ component serializable="false" accessors="true"{
     boolean deserialize=true,
     struct deserializeOptions={},
     any inflateTo=""
-  ){
+  ) {
     // couchbase expects a target class to inflate the results to, in this case we just want the raw
     // result and we will handle the deserialization on our side
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
-    var result = variables.couchbaseClient.getAndTouch(
-      document,
-      variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+    var document = newEmptyDocument( argumentCollection=arguments ).create(
+      variables.util.normalizeID( arguments.id )
     );
-    if(!isNull(result)){
+    var result = "";
+    try {
+      result = variables.couchbaseBucket.getAndTouch( document );
+    }
+    catch( Expression e ) {
+      // basically an attempt was made to retrieve a legacy document that cannot be inflated
+      // to the new Json*Document objects provided by the SDK.  try to get the document as a
+      // legacy document
+      if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
+        arguments['legacy'] = true;
+        // rebuild a new document shell
+        document = newEmptyDocument( argumentCollection=arguments ).create(
+          variables.util.normalizeID( arguments.id )
+        );
+        // try to get the results again
+        result = variables.couchbaseBucket.getAndTouch( document );
+      }
+      else {
+        rethrow;
+      }
+    }
+    if( !isNull( result ) ) {
       // build struct out.
       return {
+        'expiry' = result.expiry(),
         'cas' = result.cas(),
         'value' = deserializeData(
           arguments.id,
@@ -759,22 +1050,20 @@ component serializable="false" accessors="true"{
   * future = client.asyncGetAndTouch( 'brad' );
   * </pre>
   *
-  * @ID.hint The ID of the document to retrieve.
+  * @id.hint The ID of the document to retrieve.
   * @timeout.hint The expiration of the document in minutes
   *
-  * @return A Future object (net.spy.memcached.internal.OperationFuture) that retrieves a CASValue class that you can use to get the value and cas of the object.
+  * @return A Future object ( net.spy.memcached.internal.OperationFuture ) that retrieves a CASValue class that you can use to get the value and cas of the object.
   */
   public any function asyncGetAndTouch(
     required string id,
     required numeric timeout
-  ){
-    return variables.couchbaseClient
+  ) {
+    return variables.couchbaseBucket
       .async()
       .getAndTouch(
-        variables.util.normalizeID(arguments.id),
-        variables.timeUnit.MINUTES.toMillis(javaCast("long", arguments.timeout)),
-        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-        variables.timeUnit.MILLISECONDS
+        variables.util.normalizeID( arguments.id ),
+        variables.timeUnit.MINUTES.toMillis( javaCast( "long", arguments.timeout ) )
       );
   }
 
@@ -787,8 +1076,8 @@ component serializable="false" accessors="true"{
   *
   * <pre class='brush: cf'>
   * result = client.getAndLock( 'aaron' );
-  * writeOutput(result.cas);
-  * writeOutput(result.value);
+  * writeOutput( result.cas );
+  * writeOutput( result.value );
   * </pre>
   *
   * @id.hint The ID of the document to retrieve.
@@ -804,38 +1093,47 @@ component serializable="false" accessors="true"{
     boolean deserialize=true,
     struct deserializeOptions={},
     any inflateTo=""
-  ){
-    if(arguments.lockTime > 30){
+  ) {
+    if( arguments.lockTime > 30 ) {
       throw(
         message="Invalid lockTime",
         detail="The lockTime value cannot exceed 30 seconds",
         type="CouchbaseClient.GetAndLockTimeException"
       );
     }
-    try{
-      // couchbase expects a target class to inflate the results to, in this case we just want the raw
-      // result and we will handle the deserialization on our side
-      var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
-      var result = variables.couchbaseClient.getAndLock(
+    // couchbase expects a target class to inflate the results to, in this case we just want the raw
+    // result and we will handle the deserialization on our side
+    var document = newEmptyDocument( argumentCollection=arguments ).create(
+      variables.util.normalizeID( arguments.id )
+    );
+    var result = "";
+    try {
+      result = variables.couchbaseBucket.getAndLock(
         document,
-        javaCast("int", arguments.lockTime),
-        javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-        variables.timeUnit.MILLISECONDS
+        javaCast( "int", arguments.lockTime )
       );
     }
-    catch(Expression e){
+    catch( Expression e ) {
       // catch Expression exceptions to see if it is a lock exception
       // locked documents cannot be re-retrieved until the lockTime has exceeded
       // or the document has been updated with a CAS value or it explicly unlocked
-      if(e.type == "com.couchbase.client.java.error.TemporaryLockFailureException"){
+      if( e.type == "com.couchbase.client.java.error.TemporaryLockFailureException" ) {
         throw(
           message="Document Locked",
           detail="The document has been locked and cannot be retrieved at this time",
           type="CouchbaseClient.LockedDocument"
         );
       }
+      // basically an attempt was made to retrieve a legacy document that cannot be inflated
+      // to the new Json*Document objects provided by the SDK.  try to get the document as a
+      // legacy document
+      if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
+        arguments['legacy'] = true;
+        // try to get the results again
+        result = this.getAndLock( argumentCollection=arguments );
+      }
     }
-    if(!isNull(result)){
+    if( !isNull( result ) ) {
       // build struct out.
       return {
         'expiry' = result.expiry(),
@@ -856,8 +1154,8 @@ component serializable="false" accessors="true"{
   *
   * <pre class='brush: cf'>
   * result = client.getAndLock( 'aaron' );
-  * writeOutput(result.cas);
-  * writeOutput(result.value);
+  * writeOutput( result.cas );
+  * writeOutput( result.value );
   * ...
   * unlockSuccess = client.unlock( 'aaron' );
   * </pre>
@@ -866,12 +1164,10 @@ component serializable="false" accessors="true"{
   * @cas.hint CAS value retrieved via getAndLock()
   * @return A boolean indicating whether the unlock was successful or not
   */
-  public any function unlock(required string id, required numeric cas){
-    return variables.couchbaseClient.unlock(
-      variables.util.normalizeID(arguments.id),
-      javaCast("long", arguments.cas),
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+  public boolean function unlock( required string id, required numeric cas ) {
+    return variables.couchbaseBucket.unlock(
+      variables.util.normalizeID( arguments.id ),
+      javaCast( "long", arguments.cas )
     );
   }
 
@@ -882,7 +1178,7 @@ component serializable="false" accessors="true"{
   * person = client.getFromReplica( 'aaron', 'ALL' );
   * </pre>
   *
-  * @ID.hint The ID of the document to retrieve.
+  * @id.hint The ID of the document to retrieve.
   * @deserialize.hint Deserialize the JSON automatically for you and return the representation
   * @deserializeOptions.hint A struct of options to help control how the data is deserialized when populating an object
   * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
@@ -895,26 +1191,24 @@ component serializable="false" accessors="true"{
     boolean deserialize=true,
     struct deserializeOptions={},
     any inflateTo=""
-  ){
+  ) {
     // make sure the consistency is valid
-    if(!listFindNoCase("ALL,ONE,TWO,THREE", arguments.replicaMode)){
+    if( !listFindNoCase( "ALL,ONE,TWO,THREE", arguments.replicaMode ) ) {
       throw(
         message="Invalid replicaMode Value",
         detail="Invalid replicaMode value, valid values are: ALL, ONE, TWO, THREE",
         type="CouchbaseClient.GetReplicaException"
       );
     }
-    var document = newJava("com.couchbase.client.java.document.RawJsonDocument").create(variables.util.normalizeID(arguments.id));
-    var results = variables.couchbaseClient.getFromReplica(
+    var document = newJava( "com.couchbase.client.java.document.RawJsonDocument" ).create( variables.util.normalizeID( arguments.id ) );
+    var results = variables.couchbaseBucket.getFromReplica(
       document,
-      this.replicaMode[uCase(arguments.replicaMode)],
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+      this.replicaMode[uCase( arguments.replicaMode )]
     );
     // loop over all of the results
     var cfresults = [];
     var i = 0;
-    for(var doc in results){
+    for( var doc in results ) {
       i++;
       cfresults[i] = deserializeData(
         arguments.id,
@@ -939,11 +1233,11 @@ component serializable="false" accessors="true"{
   *
   * @return A refernce to "this" CFC
   */
-  public CouchbaseClient function shutdown(numeric timeout=10){
+  public CouchbaseClient function shutdown( numeric timeout=10 ) {
     // close the connection to the bucket
-    variables.couchbaseClient.close(javaCast("long", arguments.timeout), variables.timeUnit.SECONDS);
+    variables.couchbaseBucket.close( javaCast( "long", arguments.timeout ), variables.timeUnit.SECONDS );
     // close the connection to the cluster
-    variables.cluster.disconnect(javaCast("long", arguments.timeout), variables.timeUnit.SECONDS);
+    variables.couchbaseCluster.disconnect( javaCast( "long", arguments.timeout ), variables.timeUnit.SECONDS );
     return this;
   }
 
@@ -956,10 +1250,10 @@ component serializable="false" accessors="true"{
   *
   * @delay.hint The period of time to delay, in seconds
   *
-  * @return A Java future object. (net.spy.memcached.internal.OperationFuture)
+  * @return A Java future object. ( net.spy.memcached.internal.OperationFuture )
   */
-  public any function flush(numeric delay=0){
-    return variables.couchbaseClient.bucketManager().flush(javaCast("long", arguments.delay), variables.timeUnit.SECONDS);
+  public any function flush( numeric delay=0 ) {
+    return variables.couchbaseBucket.bucketManager().flush( javaCast( "long", arguments.delay ), variables.timeUnit.SECONDS );
   }
 
   /**
@@ -974,9 +1268,9 @@ component serializable="false" accessors="true"{
   * @password A valid password for the admin console
   * @return An array for each server in the cluster with a structure of stats
   */
-  public any function getStats(required string username, required string password){
+  public array function getStats( required string username, required string password ) {
     var stats = deserializeJSON(
-      variables.cluster.clusterManager(
+      variables.couchbaseCluster.clusterManager(
         arguments.username,
         arguments.password
       )
@@ -1009,22 +1303,22 @@ component serializable="false" accessors="true"{
     required string username,
     required string password,
     required string stat
-  ){
-    var nodes = getStats(arguments.username, arguments.password);
+  ) {
+    var nodes = getStats( arguments.username, arguments.password );
     var statValue = 0;
     // Loop over all the servers and add up the values if they exist for that server
-    for(var node in nodes){
+    for( var node in nodes ) {
       // if the stat exists in the top-level structure
-      if(structKeyExists(node, arguments.stat) && isNumeric(node[arguments.stat])){
-        statValue += val(serverStats[arguments.stat]);
+      if( structKeyExists( node, arguments.stat ) && isNumeric( node[arguments.stat] ) ) {
+        statValue += val( serverStats[arguments.stat] );
       }
       // if the stat is in the interestingStats property
-      else if(structKeyExists(node.interestingStats, arguments.stat) && isNumeric(node.interestingStats[arguments.stat])){
-        statValue += val(node.interestingStats[arguments.stat]);
+      else if( structKeyExists( node.interestingStats, arguments.stat ) && isNumeric( node.interestingStats[arguments.stat] ) ) {
+        statValue += val( node.interestingStats[arguments.stat] );
       }
       // if the stat is in the systemStats property
-      else if(structKeyExists(node.systemStats, arguments.stat) && isNumeric(node.systemStats[arguments.stat])){
-        statValue += val(node.systemStats[arguments.stat]);
+      else if( structKeyExists( node.systemStats, arguments.stat ) && isNumeric( node.systemStats[arguments.stat] ) ) {
+        statValue += val( node.systemStats[arguments.stat] );
       }
     }
     return statValue;
@@ -1050,16 +1344,14 @@ component serializable="false" accessors="true"{
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
-  ){
+  ) {
     // default timeouts
-    defaultTimeout(arguments);
-    var document = variables.couchbaseClient.counter(
-      variables.util.normalizeID(arguments.id),
-      javaCast("long", arguments.value),
-      javaCast("long", arguments.defaultValue),
-      javaCast("long", arguments.timeout),
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+    defaultTimeout( arguments );
+    var document = variables.couchbaseBucket.counter(
+      variables.util.normalizeID( arguments.id ),
+      javaCast( "long", arguments.value ),
+      javaCast( "long", arguments.defaultValue ),
+      javaCast( "long", arguments.timeout )
     );
     return document.content();
   }
@@ -1077,28 +1369,28 @@ component serializable="false" accessors="true"{
   * @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   *
-  * @return A Java Observable (rx.Observable)
+  * @return A Java Observable ( rx.Observable )
   */
   public any function asyncCounter(
     required string id,
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
-  ){
+  ) {
     // default timeouts
-    defaultTimeout(arguments);
-    return variables.couchbaseClient
+    defaultTimeout( arguments );
+    return variables.couchbaseBucket
       .async()
       .counter(
-        variables.util.normalizeID(arguments.id),
-        javaCast("long", arguments.value),
-        javaCast("long", arguments.defaultValue),
-        javaCast("long", arguments.timeout)
+        variables.util.normalizeID( arguments.id ),
+        javaCast( "long", arguments.value ),
+        javaCast( "long", arguments.defaultValue ),
+        javaCast( "long", arguments.timeout )
       );
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * decr() is no longer supported, it has been replaced with counter(), leaving here for backwards compatibility
   */
   public any function decr(
@@ -1106,14 +1398,14 @@ component serializable="false" accessors="true"{
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
-  ){
+  ) {
     // since it is being passed to counter the value needs to be negative
     arguments['value'] *= -1;
-    return counter(argumentCollection=arguments);
+    return counter( argumentCollection=arguments );
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * asyncDecr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
   */
   public any function asyncDecr(
@@ -1121,14 +1413,14 @@ component serializable="false" accessors="true"{
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
-  ){
+  ) {
     // since it is being passed to counter the value needs to be negative
     arguments['value'] *= -1;
-    return asyncCounter(argumentCollection=arguments);
+    return asyncCounter( argumentCollection=arguments );
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * incr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
   */
   public any function incr(
@@ -1136,12 +1428,12 @@ component serializable="false" accessors="true"{
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
-  ){
-    return counter(argumentCollection=arguments);
+  ) {
+    return counter( argumentCollection=arguments );
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * asyncIncr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
   */
   public any function asyncIncr(
@@ -1149,8 +1441,8 @@ component serializable="false" accessors="true"{
     required numeric value,
     numeric defaultValue=0,
     numeric timeout
-  ){
-    return asyncCounter(argumentCollection=arguments);
+  ) {
+    return asyncCounter( argumentCollection=arguments );
   }
 
   /**
@@ -1160,21 +1452,22 @@ component serializable="false" accessors="true"{
   * future = client.touch( 'sessionData', 30 );
   * </pre>
   *
-  * @ID.hint The id of the document to increment
+  * @id.hint The id of the document to increment
   * @timeout.hint The expiration of the document in minutes
   *
-  * @return A future object (net.spy.memcached.internal.OperationFuture)
+  * @return A boolean indicating whether or not the touch was successful
   */
-  public any function touch(
+  public boolean function touch(
     required string id,
     required numeric timeout
-  ){
-    return variables.couchbaseClient.counter(
-      variables.util.normalizeID(arguments.id),
-      javaCast("long", arguments.timeout),
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+  ) {
+    // default the timeout
+    defaultTimeout( arguments );
+    var result = variables.couchbaseBucket.touch(
+        javaCast( "string", variables.util.normalizeID( arguments.id ) ),
+        javaCast( "int", arguments.timeout )
     );
+    return result;
   }
 
   /**
@@ -1188,35 +1481,57 @@ component serializable="false" accessors="true"{
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return void
+  * @return A structure of document IDs w/ boolean values or just a boolean whether or not the delete was successful
   */
-  public void function remove(
+  public any function remove(
     required any id,
     string persistTo,
     string replicateTo
-  ){
+  ) {
+    arguments['id'] = variables.util.normalizeID( arguments.id );
+
     // default persist and replicate
-    defaultPersistReplicate(arguments);
-    var document = variables.couchbaseClient.remove(
-      variables.util.normalizeID(arguments.id),
-      arguments.persistTo,
-      arguments.replicateTo,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
-    );
-    return document.content();
+    defaultPersistReplicate( arguments );
+
+    // simple or array
+		arguments['id'] = isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id;
+
+    var results = {};
+    // iterate over the results
+    for( var document_id in arguments.id ) {
+      try {
+        variables.couchbaseBucket.remove(
+          document_id,
+          arguments.persistTo,
+          arguments.replicateTo
+        );
+        // the operation returns the document that was deleted if we got here it was successful
+        results[document_id] = true;
+      }
+      catch( Expression e ) {
+        // if the document doesn't exist or the durability options couldn't be met set a false value for the key
+        if( e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException" || e.type == "com.couchbase.client.java.error.DurabilityException" ) {
+          results[document_id] = false;
+        }
+        else {
+          rethrow;
+        }
+      }
+    }
+    // if > 1 futures, return struct, else return the only one future
+		return structCount( results ) > 1 ? results : results[ arguments.id[ 1 ] ];
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * delete() is no longer supported, it has been replaced with remove(), leaving here for backwards compatibility
   */
   public any function delete(
     required any id,
     string persistTo,
     string replicateTo
-  ){
-    return remove(argumentCollection=arguments);
+  ) {
+    return this.remove( argumentCollection=arguments );
   }
 
   /**
@@ -1227,26 +1542,20 @@ component serializable="false" accessors="true"{
   * </pre>
   *
   * @id.hint The ID of the document to delete, or an array of ID's to delete
-  * @timeout.hint The timeout in milliseconds
   *
   * @return Boolean indicating the existence of a document
   */
   public boolean function exists(
-    required any id,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout()
-  ){
-    return variables.couchbaseClient.exists(
-      arguments.id,
-      arguments.timeout,
-      variables.timeUnit.MILLISECONDS
-    );
+    required any id
+  ) {
+    return variables.couchbaseBucket.exists( arguments.id );
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * getDocStats() is no longer supported
   */
-  public any function getDocStats(required any id){
+  public any function getDocStats( required any id ) {
    throw(
      message="getDocStats not supported",
      detail="The getDocStats method is not supported as it has been removed from the SDK.",
@@ -1266,12 +1575,12 @@ component serializable="false" accessors="true"{
   *
   * @return An array containing an item for each server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString()
   */
-  public array function getAvailableServers(required string username, required string password){
-    var stats = getStats(arguments.username, arguments.password);
+  public array function getAvailableServers( required string username, required string password ) {
+    var stats = getStats( arguments.username, arguments.password );
     var servers = [];
-    for(var node in stats){
-      if(node.status == "healthy" && node.clusterMembership == "active"){
-        arrayAppend(servers, node.hostname);
+    for( var node in stats ) {
+      if( node.status == "healthy" && node.clusterMembership == "active" ) {
+        arrayAppend( servers, node.hostname );
       }
     }
     return servers;
@@ -1289,12 +1598,12 @@ component serializable="false" accessors="true"{
   *
   * @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() <br>If all servers are online, the array with be empty.
   */
-  public array function getUnAvailableServers(required string username, required string password){
-    var stats = getStats(arguments.username, arguments.password);
+  public array function getUnAvailableServers( required string username, required string password ) {
+    var stats = getStats( arguments.username, arguments.password );
     var servers = [];
-    for(var node in stats){
-      if(node.status != "healthy" || node.clusterMembership != "active"){
-        arrayAppend(servers, node.hostname);
+    for( var node in stats ) {
+      if( node.status != "healthy" || node.clusterMembership != "active" ) {
+        arrayAppend( servers, node.hostname );
       }
     }
     return servers;
@@ -1307,39 +1616,65 @@ component serializable="false" accessors="true"{
   * environment = client.getEnvironment();
   * </pre>
   *
-  * @return An array containing an item for each unavilable server in the cluster.  Servers are represented as a string containing their address produced via java.net.InetSocketAddress.toString() <br>If all servers are online, the array with be empty.
+  * @return A struct with information about the environment
   */
-  public struct function getEnvironment(){
-    var environment = variables.couchbaseClient.environment();
+  public struct function getEnvironment() {
+    var env = variables.couchbaseBucket.environment();
     var settings = {};
-    // The default timeout for connect operations, set to DefaultCouchbaseEnvironment.CONNECT_TIMEOUT.
-    settings['connectTimeout'] = environment.connectTimeout();
-    // The default timeout for disconnect operations, set to DefaultCouchbaseEnvironment.DISCONNECT_TIMEOUT.
-    settings['disconnectTimeout'] = environment.disconnectTimeout();
-    // Returns whether DNS SRV lookup for the bootstrap nodes is enabled or not.
-    settings['dnsSrvEnabled'] = environment.dnsSrvEnabled();
-    // The default timeout for binary (key/value) operations, set to DefaultCouchbaseEnvironment.KV_TIMEOUT.
-    settings['kvTimeout'] = environment.kvTimeout();
-    // The default timeout for management operations, set to DefaultCouchbaseEnvironment.MANAGEMENT_TIMEOUT.
-    settings['managementTimeout'] = environment.managementTimeout();
-    // The default timeout for query operations, set to DefaultCouchbaseEnvironment.QUERY_TIMEOUT.
-    settings['queryTimeout'] = environment.queryTimeout();
-    // The default timeout for view operations, set to DefaultCouchbaseEnvironment.VIEW_TIMEOUT.
-    settings['viewTimeout'] = environment.viewTimeout();
+    settings['autoReleaseAfter'] = env.AUTORELEASE_AFTER;
+    settings['bootstrapCarrierDirectPort'] = env.BOOTSTRAP_CARRIER_DIRECT_PORT;
+    settings['bootstrapCarrierEnabled'] = env.BOOTSTRAP_CARRIER_ENABLED;
+    settings['bootstrapCarrierSslPort'] = env.BOOTSTRAP_CARRIER_SSL_PORT;
+    settings['bootstrapHttpDirectPort'] = env.BOOTSTRAP_HTTP_DIRECT_PORT;
+    settings['bootstrapHttpEnabled'] = env.BOOTSTRAP_HTTP_ENABLED;
+    settings['bootstrapHttpSslPort'] = env.BOOTSTRAP_HTTP_SSL_PORT;
+    settings['bufferPoolingEnabled'] = env.BUFFER_POOLING_ENABLED;
+    settings['computationPoolSize'] = env.COMPUTATION_POOL_SIZE;
+    settings['connectTimeout'] = env.connectTimeout();
+    settings['dcpEnabled'] = env.DCP_ENABLED;
+    settings['disconnectTimeout'] = env.disconnectTimeout();
+    settings['dnsSrvEnabled'] = env.dnsSrvEnabled();
+    settings['ioPoolSize'] = env.IO_POOL_SIZE;
+    settings['keepAliveInterval'] = env.KEEPALIVEINTERVAL;
+    settings['keyValueEndpoints'] = env.KEYVALUE_ENDPOINTS;
+    settings['kvTimeout'] = env.kvTimeout();
+    settings['managementTimeout'] = env.managementTimeout();
+    settings['maxRequestLifetime'] = env.MAX_REQUEST_LIFETIME;
+    settings['mutationTokensEnabled'] = env.MUTATION_TOKENS_ENABLED;
+    settings['observeIntervalDelay'] = env.OBSERVE_INTERVAL_DELAY;
+    settings['packageNameAndVersion'] = env.PACKAGE_NAME_AND_VERSION;
+    settings['queryEnabled'] = env.QUERY_ENABLED;
+    settings['queryEndpoints'] = env.QUERY_ENDPOINTS;
+    settings['queryPort'] = env.QUERY_PORT;
+    settings['queryTimeout'] = env.queryTimeout();
+    settings['reconnectDelay'] = env.RECONNECT_DELAY;
+    settings['requestBufferSize'] = env.REQUEST_BUFFER_SIZE;
+    settings['responseBufferSize'] = env.RESPONSE_BUFFER_SIZE;
+    settings['retryDelay'] = env.RETRY_DELAY;
+    settings['retryStrategy'] = env.RETRY_STRATEGY;
+    settings['sdkPackageNameAndVersion'] = env.SDK_PACKAGE_NAME_AND_VERSION;
+    settings['sslEnabled'] = env.SSL_ENABLED;
+    settings['sslKeystoreFile'] = !isNull(env.SSL_KEYSTORE_FILE) ? env.SSL_KEYSTORE_FILE : "";
+    settings['sslKeystorePassword'] = !isNull(env.SSL_KEYSTORE_PASSWORD) ? env.SSL_KEYSTORE_PASSWORD : "";
+    // this is not a typo couchbase has a typo in their field
+    settings['tcpNodelayEnabled'] = env.TCP_NODELAY_ENALED;
+    settings['userAgent'] = env.USER_AGENT;
+    settings['viewEndpoints'] = env.VIEW_ENDPOINTS;
+    settings['viewTimeout'] = env.viewTimeout();
     return settings;
   }
 
   /**
-  * Append to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
+  * Append to an existing value in the cache. If 0 is passed in as the CAS identifier ( default ), it will override the value on the server without performing the CAS check.
   * This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
   *
   * <pre class='brush: cf'>
-  * result = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
+  * result = client.append( 'operationLog', 'This is a new log message#chr( 13 )##chr( 10 )#' );
   * </pre>
   *
-  * @ID.hint The unique id of the document whose value will be appended
+  * @id.hint The unique id of the document whose value will be appended
   * @value.hint The value to append
-  * @CAS.hint CAS identifier (ignored in the ascii protocol)
+  * @CAS.hint CAS identifier ( ignored in the ascii protocol )
   *
   * @return A Java instance of the document that was created as
   * - com.couchbase.client.java.document.LegacyDocument or
@@ -1351,60 +1686,33 @@ component serializable="false" accessors="true"{
     required any value,
     numeric cas,
     string persistTo,
-    string replicateTo,
-    boolean legacy=false
-  ){
-    var document = "";
+    string replicateTo
+  ) {
+    // append operations are only supported on legacy documents
+    arguments['legacy'] = true;
+    // get a new document presentation
+    var document = newPopulatedDocument( argumentCollection=arguments );
     // default persist and replicate
-    defaultPersistReplicate(arguments);
-    // create the document based on the value type
-    if(arguments.legacy){ // create a legacy document
-      document = newJava("com.couchbase.client.java.document.LegacyDocument");
-    }
-    else if(isBinary(arguments.value)){ // create a binary document
-      document = newJava("com.couchbase.client.java.document.BinaryDocument");
-    }
-    else{ // create a string document
-      document = newJava("com.couchbase.client.java.document.StringDocument");
-    }
-    // is there a cas value?
-    if(structKeyExists(arguments, "cas")){
-        document = document.create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the value
-          arguments.value,
-          // set the cas
-          javaCast("long", arguments.cas)
-        );
-    }
-    else{
-      document = document.create(
-        // normalize the id before setting it
-        javaCast("string", variables.util.normalizeID(arguments.id)),
-        arguments.value
-      );
-    }
-    return variables.couchbaseClient.append(
+    defaultPersistReplicate( arguments );
+    // append the document
+    return variables.couchbaseBucket.append(
       document,
       arguments.persistTo,
-      arguments.replicateTo,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+      arguments.replicateTo
     );
   }
 
   /**
-  * Prepend to an existing value in the cache. If 0 is passed in as the CAS identifier (default), it will override the value on the server without performing the CAS check.
+  * Prepend to an existing value in the cache. If 0 is passed in as the CAS identifier ( default ), it will override the value on the server without performing the CAS check.
   * This method is considered a 'binary' method since it operates on binary data such as string or integers, not JSON documents
   *
   * <pre class='brush: cf'>
-  * result = client.append( 'operationLog', 'This is a new log message#chr(13)##chr(10)#' );
+  * result = client.append( 'operationLog', 'This is a new log message#chr( 13 )##chr( 10 )#' );
   * </pre>
   *
-  * @ID.hint The unique id of the document whose value will be appended
+  * @id.hint The unique id of the document whose value will be appended
   * @value.hint The value to append
-  * @CAS.hint CAS identifier (ignored in the ascii protocol)
+  * @CAS.hint CAS identifier ( ignored in the ascii protocol )
   *
   * @return A Java instance of the document that was created as
   * - com.couchbase.client.java.document.LegacyDocument or
@@ -1416,157 +1724,139 @@ component serializable="false" accessors="true"{
     required any value,
     numeric cas,
     string persistTo,
-    string replicateTo,
-    boolean legacy=false
-  ){
-    var document = "";
+    string replicateTo
+  ) {
+    // prepend operations are only supported on legacy documents
+    arguments['legacy'] = true;
+    // get a new document presentation
+    var document = newPopulatedDocument( argumentCollection=arguments );
     // default persist and replicate
-    defaultPersistReplicate(arguments);
-    // create the document based on the value type
-    if(arguments.legacy){ // create a legacy document
-      document = newJava("com.couchbase.client.java.document.LegacyDocument");
-    }
-    else if(isBinary(arguments.value)){ // create a binary document
-      document = newJava("com.couchbase.client.java.document.BinaryDocument");
-    }
-    else{ // create a string document
-      document = newJava("com.couchbase.client.java.document.StringDocument");
-    }
-    // is there a cas value?
-    if(structKeyExists(arguments, "cas")){
-        document = document.create(
-          // normalize the id before setting it
-          javaCast("string", variables.util.normalizeID(arguments.id)),
-          // set the value
-          arguments.value,
-          // set the cas
-          javaCast("long", arguments.cas)
-        );
-    }
-    else{
-      document = document.create(
-        // normalize the id before setting it
-        javaCast("string", variables.util.normalizeID(arguments.id)),
-        arguments.value
-      );
-    }
-    return variables.couchbaseClient.prepend(
+    defaultPersistReplicate( arguments );
+    // prepend the document
+    return variables.couchbaseBucket.prepend(
       document,
       arguments.persistTo,
-      arguments.replicateTo,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
+      arguments.replicateTo
     );
   }
 
   /************************* VIEW INTEGRATION ***********************************/
 
   /**
-  * Creates a new Java query object (com.couchbase.client.protocol.views.Query) that can be used to execute raw view queries.
+  * Creates a new Java query object ( com.couchbase.client.protocol.views.Query ) that can be used to execute raw view queries.
   * You can pass an optional options struct with name-value pairs of simple query options.
   * <p>
   * http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
   *
   * <pre class='brush: cf'>
-  * oQuery = client.newQuery( { offset:10, limit:20, group:true, groupLevel:2 } );
+  * oQuery = client.newQuery(  { offset:10, limit:20, group:true, groupLevel:2 } );
   * </pre>
   *
   * @designDocumentName.hint The name of the design document
   * @viewName.hint The name of the view to get
   * @options.hint A struct of query options, see http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html for more information. This only does the simple 1 value options
   *
-  * @return A Java query object (com.couchbase.client.java.view.ViewQuery)
+  * @return A Java query object ( com.couchbase.client.java.view.ViewQuery )
   */
   public any function newViewQuery(
     required string designDocumentName,
     required string viewName,
-    struct options={}
-  ){
-    var viewQuery = newJava("com.couchbase.client.java.view.ViewQuery");
-    arguments['options'] = variables.queryHelper.processOptions(arguments.options);
+    struct options= {}
+  ) {
+    var viewQuery = newJava( "com.couchbase.client.java.view.ViewQuery" );
+    arguments['options'] = variables.queryHelper.processOptions( arguments.options );
     // set the design document and view name
-    viewQuery = viewQuery.from(arguments.designDocumentName, arguments.viewName);
+    viewQuery = viewQuery.from( arguments.designDocumentName, arguments.viewName );
+
     // set debug
-    if(structKeyExists(arguments.options, "debug")){
-      viewQuery = viewQuery.debug(arguments.options.debug);
+    if( structKeyExists( arguments.options, "debug" ) ) {
+      viewQuery = viewQuery.debug( javaCast( "boolean", arguments.options.debug ) );
     }
     // set descending
-    if(structKeyExists(arguments.options, "descending")){
-      viewQuery = viewQuery.descending(arguments.options.descending);
+    if( structKeyExists( arguments.options, "descending" ) ) {
+      viewQuery = viewQuery.descending( arguments.options.descending );
     }
     // set development
-    if(structKeyExists(arguments.options, "development")){
-      viewQuery = viewQuery.development(arguments.options.development);
+    if( structKeyExists( arguments.options, "development" ) ) {
+      viewQuery = viewQuery.development( arguments.options.development );
     }
     // set the endKey
-    if(structKeyExists(arguments.options, "endKey")){
-      viewQuery = viewQuery.endKey(arguments.options.endKey);
+    if( structKeyExists( arguments.options, "endKey" ) ) {
+      viewQuery = viewQuery.endKey( arguments.options.endKey );
     }
     // set the endKeyDocId
-    if(structKeyExists(arguments.options, "endKeyDocId")){
-      viewQuery = viewQuery.endKeyDocId(arguments.options.endKeyDocId);
+    if( structKeyExists( arguments.options, "endKeyDocId" ) ) {
+      viewQuery = viewQuery.endKeyDocId( arguments.options.endKeyDocId );
     }
     // set the group
-    if(structKeyExists(arguments.options, "group")){
-      viewQuery = viewQuery.group(arguments.options.group);
+    if( structKeyExists( arguments.options, "group" ) ) {
+      viewQuery = viewQuery.group( arguments.options.group );
     }
     // set the groupLevel
-    if(structKeyExists(arguments.options, "groupLevel")){
-      viewQuery = viewQuery.groupLevel(arguments.options.groupLevel);
+    if( structKeyExists( arguments.options, "groupLevel" ) ) {
+      viewQuery = viewQuery.groupLevel( arguments.options.groupLevel );
     }
     // set includeDocs
-    if(structKeyExists(arguments.options, "includeDocs")){
-      viewQuery = viewQuery.includeDocs(javaCast("boolean", arguments.options.includeDocs));
+    if( structKeyExists( arguments.options, "includeDocs" ) ) {
+      viewQuery = viewQuery.includeDocs( javaCast( "boolean", arguments.options.includeDocs ) );
     }
     // set inclusiveEnd
-    if(structKeyExists(arguments.options, "inclusiveEnd")){
-      viewQuery = viewQuery.inclusiveEnd(arguments.options.inclusiveEnd);
+    if( structKeyExists( arguments.options, "inclusiveEnd" ) ) {
+      viewQuery = viewQuery.inclusiveEnd( arguments.options.inclusiveEnd );
     }
     // set the key
-    if(structKeyExists(arguments.options, "key")){
-      viewQuery = viewQuery.key(arguments.options.key);
+    if( structKeyExists( arguments.options, "key" ) ) {
+      viewQuery = viewQuery.key( arguments.options.key );
     }
     // set the keys
-    if(structKeyExists(arguments.options, "keys")){
-      viewQuery = viewQuery.keys(arguments.options.keys);
+    if( structKeyExists( arguments.options, "keys" ) ) {
+      viewQuery = viewQuery.keys( arguments.options.keys );
     }
     // set the limit
-    if(structKeyExists(arguments.options, "limit")){
-      viewQuery = viewQuery.limit(arguments.options.limit);
+    if( structKeyExists( arguments.options, "limit" ) ) {
+      viewQuery = viewQuery.limit( arguments.options.limit );
     }
     // set reduce
-    if(structKeyExists(arguments.options, "reduce")){
-      viewQuery = viewQuery.reduce(arguments.options.reduce);
+    if( structKeyExists( arguments.options, "reduce" ) ) {
+      viewQuery = viewQuery.reduce( arguments.options.reduce );
     }
     // set skip
-    if(structKeyExists(arguments.options, "skip")){
-      viewQuery = viewQuery.skip(arguments.options.skip);
+    if( structKeyExists( arguments.options, "skip" ) ) {
+      viewQuery = viewQuery.skip( arguments.options.skip );
     }
     // set stale
-    if(structKeyExists(arguments.options, "stale")){
-      viewQuery = viewQuery.stale(arguments.options.stale);
+    if( structKeyExists( arguments.options, "stale" ) ) {
+      viewQuery = viewQuery.stale( arguments.options.stale );
     }
     // set startKey
-    if(structKeyExists(arguments.options, "startKey")){
-      viewQuery = viewQuery.startKey(arguments.options.startKey);
+    if( structKeyExists( arguments.options, "startKey" ) ) {
+      viewQuery = viewQuery.startKey( arguments.options.startKey );
     }
     // set startKeyDocId
-    if(structKeyExists(arguments.options, "startKeyDocId")){
-      viewQuery = viewQuery.startKeyDocId(arguments.options.startKeyDocId);
+    if( structKeyExists( arguments.options, "startKeyDocId" ) ) {
+      viewQuery = viewQuery.startKeyDocId( arguments.options.startKeyDocId );
     }
     return viewQuery;
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * newQuery() is no longer supported, it has been replaced with newViewQuery(), leaving here for backwards compatibility
   */
   public any function newQuery(
-    required string designDocumentName,
-    required string viewName,
-    struct options={}
-  ){
-    return newViewQuery(argumentCollection=arguments);
+    string designDocumentName,
+    string viewName,
+    struct options={},
+    string type="view",
+    string statement,
+    string parameters
+  ) {
+    if( arguments.type == "view" ) {
+      return newViewQuery( argumentCollection=arguments );
+    }
+    else if( arguments.type == "n1ql" ) {
+      return newViewQuery( argumentCollection=arguments );
+    }
   }
 
   /**
@@ -1587,13 +1877,13 @@ component serializable="false" accessors="true"{
     string type="view",
     string statement,
     any parameters
-  ){
+  ) {
     // the sdk supports both View Queries and N1QL queries from the view method
-    if(arguments.type == "n1ql"){
-      return n1qlQuery(argumentCollection=arguments);
+    if( arguments.type == "n1ql" ) {
+      return n1qlQuery( argumentCollection=arguments );
     }
-    else{
-      return viewQuery(argumentCollection=arguments);
+    else {
+      return viewQuery( argumentCollection=arguments );
     }
   }
 
@@ -1614,12 +1904,12 @@ component serializable="false" accessors="true"{
   * <li><b>startkeyDocID</b> - If you have specified a startKey AND there is more than one record in the view results that share that key, this will specify what ID to start at when returning records.  This input is ignored when not using startKey.</li>
   * <li><b>endKeyDocID</b> - If you have specified an endKey AND there is more than one record in the view results that share that key, this will specify what ID to end at when returning records.  This input is ignored when not using endKey.</li>
   * <li><b>group</b> - Flag to control whether the results of the reduce function are grouped.  If no groupLevel is specified, only one row will be returned.</li>
-  * <li><b>groupLevel</b> - Number representing what level of the map key to group at (Keys can be complex).  If the key is simple, this parameter does nothing.</li>
+  * <li><b>groupLevel</b> - Number representing what level of the map key to group at ( Keys can be complex ).  If the key is simple, this parameter does nothing.</li>
   * <li><b>key</b> - The key of a single record to return.  For complex keys, pass the key as an array.</li>
   * <li><b>keys</b> - An array of keys to return.  For complex keys, pass each key as an array.</li>
   * <li><b>stale</b> - Specifies if stale data can be returned with the view.  Possible values are:
   *   <ul>
-  *      <li><b>"OK"</b> (default) - stale data is ok
+  *      <li><b>"TRUE"</b> ( default ) - stale data is ok
   *      <li><b>"FALSE"</b> - force index of view
   *      <li><b>"UPDATE_AFTER"</b> - potentially returns stale data, but starts an asynch re-index.</li>
   *   </ul>
@@ -1628,11 +1918,11 @@ component serializable="false" accessors="true"{
   * </ul>
   * <p>
   * The options struct maps to the set of options found
-  * in the native Couchbase query object (com.couchbase.client.protocol.views.Query)
+  * in the native Couchbase query object ( com.couchbase.client.protocol.views.Query )
   * See http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/Query.html
   *
   * <pre class='brush: cf'>
-  * results = client.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 20, stale: 'OK' } );
+  * results = client.query( designDocumentName='beer', viewName='brewery_beers', options= { limit: 20, stale: 'OK' } );
   * </pre>
   *
   * @designDocumentName.hint The name of the design document
@@ -1645,7 +1935,7 @@ component serializable="false" accessors="true"{
   * @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). Since the struct is by reference, you do not need to return anything.
   * @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
   *
-  * @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.  <br>Each struct contains the following items: id, document, key, value  <br>If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)  <br>If returnType is iterator, a Java iterator object will be returned
+  * @return If returnType is "array", will return an array of structs where each struct represents a record of output from the view.  <br>Each struct contains the following items: id, document, key, value  <br>If returnType is native, a Java ViewResponse object will be returned ( com.couchbase.client.protocol.views.ViewResponse )  <br>If returnType is iterator, a Java iterator object will be returned
   */
   public any function viewQuery(
     required string designDocumentName,
@@ -1657,12 +1947,13 @@ component serializable="false" accessors="true"{
     any filter,
     any transform,
     string returnType="array"
-  ){
+  ) {
     // if options is struct, then build out the query, else use it as an object.
-    var oQuery = newViewQuery(arguments.designDocumentName, arguments.viewName, arguments.options);
-    var results = rawQuery(oQuery);
+    var oQuery = newViewQuery( arguments.designDocumentName, arguments.viewName, arguments.options );
+    var results = rawQuery( oQuery );
 
-    if(!results.success()){
+    // should this throw or return an empty array?
+    if( !results.success() ) {
       throw(
         message="Query Failed",
         detail="The query failed to execute",
@@ -1670,24 +1961,24 @@ component serializable="false" accessors="true"{
       );
     }
     // Native return type?
-    if(arguments.returnType == "native"){
+    if( arguments.returnType == "native" ) {
       return results;
     }
 
     // Iterator results?
-    if(arguments.returnType == "iterator"){
+    if( arguments.returnType == "iterator" ) {
       return results.iterator();
     }
 
     // iterate and build it out with or without desrializations
     var iterator = results.iterator();
     var cfresults = [];
-    while(iterator.hasNext()){
+    while( iterator.hasNext() ) {
       var row = iterator.next();
       // if there is no id then the results are reduced
-      var isReduced = isNull(row.id());
+      var isReduced = isNull( row.id() );
       // if there is no id there will be no document
-      var hasDocs = !isReduced && !isNull(row.document());
+      var hasDocs = !isReduced && !isNull( row.document() );
       /**
       * ID: The id of the document in Couchbase, but only available if the query is NOT reduced
       * Document: Only available if the query is NOT reduced
@@ -1701,22 +1992,22 @@ component serializable="false" accessors="true"{
         'value' = ""
       };
       // Add value if not null
-      if(!isNull(row.value())){
+      if( !isNull( row.value() ) ) {
         document['value'] = row.value();
       }
 
       // Add key if not null
-      if(!isNull(row.key())){
+      if( !isNull( row.key() ) ) {
         document['key'] = row.key().toString();
       }
 
       // check for reduced
-      if(!isReduced){
+      if( !isReduced ) {
         document['id'] = row.id();
       }
 
       // Did we get a document or none?
-      if(hasDocs && structKeyExists(arguments.options, "includeDocs") && arguments.options.includeDocs){
+      if( hasDocs && structKeyExists( arguments.options, "includeDocs" ) && arguments.options.includeDocs ) {
         document['document'] = deserializeData(
           document.id,
           row.document().content(),
@@ -1727,16 +2018,16 @@ component serializable="false" accessors="true"{
       }
 
       // Do we have a transformer?
-      if(structKeyExists(arguments, "transform") && isClosure(arguments.transform)){
-        arguments.transform(document);
+      if( structKeyExists( arguments, "transform" ) && isClosure( arguments.transform ) ) {
+        arguments.transform( document );
       }
 
       // Do we have a filter?
       if(
-        !structKeyExists(arguments, "filter" ) ||
-        (isClosure(arguments.filter) && arguments.filter(document))
-      ){
-        arrayAppend(cfresults, document);
+        !structKeyExists( arguments, "filter" ) ||
+        ( isClosure( arguments.filter ) && arguments.filter( document ) )
+      ) {
+        arrayAppend( cfresults, document );
       }
     }
     return cfresults;
@@ -1747,27 +2038,22 @@ component serializable="false" accessors="true"{
   * See: http://www.couchbase.com/autodocs/couchbase-java-client-1.2.0/com/couchbase/client/protocol/views/ViewResponse.html
   *
   * <pre class='brush: cf'>
-  * query = client.newQuery( { limit: 20, stale: 'OK' } );
+  * query = client.newQuery(  { limit: 20, stale: 'OK' } );
   * view = client.getView( 'beer', 'brewery_beers' );
   * results = client.rawQuery( view, query );
   * </pre>
   *
-  * @viewName.hint A couchbase view object (com.couchbase.client.protocol.views.View)
-  * @query.hint A couchbase query object (com.couchbase.client.protocol.views.Query)
+  * @query.hint A couchbase query object ( com.couchbase.client.java.view.ViewQuery, com.couchbase.client.java.view.SpatialViewQuery, or )
   *
-  * @return A raw Java View result object. The result can be accessed row-wise via an iterator class (com.couchbase.client.protocol.views.ViewResponse).
+  * @return A raw Java View result object. Can be
   */
-  public any function rawQuery(required any queryObject){
-    return variables.couchbaseClient.query(
-      arguments.queryObject,
-      javaCast("long", variables.couchbaseConfig.getOpTimeout()),
-      variables.timeUnit.MILLISECONDS
-    );
+  public any function rawQuery( required any queryObject ) {
+    return variables.couchbaseBucket.query( arguments.queryObject );
   }
 
   /**
   * Invalidates and clears the internal query cache. This method can be used to explicitly clear the internal N1QL query cache. This
-  * cache will be filled with non-adhoc query statements (query plans) to speed up those subsequent executions.
+  * cache will be filled with non-adhoc query statements ( query plans ) to speed up those subsequent executions.
   * Triggering this method will wipe out the complete cache, which will not cause an interruption but rather all
   * queries need to be re-prepared internally. This method is likely to be deprecated in the future once the
   * server side query engine distributes its state throughout the cluster.
@@ -1778,8 +2064,8 @@ component serializable="false" accessors="true"{
   *
   * @return The number of entries in the cache before it was cleared out.
   */
-  public numeric function invalidateQueryCache(){
-    return variables.couchbaseClient.invalidateQueryCache();
+  public numeric function invalidateQueryCache() {
+    return variables.couchbaseBucket.invalidateQueryCache();
   }
 
   /**
@@ -1792,11 +2078,22 @@ component serializable="false" accessors="true"{
   *
   * @designDocumentName.hint The name of the design document
   * @viewName.hint The name of the view to get
+  * @development.hint Whether or not to get the development or production view
   *
-  * @return A View Java object (com.couchbase.client.protocol.views.View).
+  * @return A View Java object ( com.couchbase.client.java.view.DefaultView or com.couchbase.client.java.view.SpatialView ).
   */
-  public any function getView(required string designDocumentName, required string viewName){
-    return variables.couchbaseClient.getView(arguments.designDocumentName, arguments.viewName);
+  public any function getView(
+    required string designDocumentName,
+    required string viewName,
+    boolean development=false
+  ) {
+    var designDocument = getDesignDocument( argumentCollection=arguments );
+    var views = designDocument.views();
+    for( var view in views ) {
+      if( view.name() == arguments.viewName ) {
+        return view;
+      }
+    }
   }
 
   /**
@@ -1805,11 +2102,11 @@ component serializable="false" accessors="true"{
   * Valid options are:
   *<p>
   * <ul>
-  *  <li><b>adhoc</b> - A boolean to specify if this query is adhoc or not.  If it is not adhoc (so performed often), the client will try to perform optimizations transparently based on the server capabilities, like preparing the statement and then executing a query plan instead of the raw query.</li>
+  *  <li><b>adhoc</b> - A boolean to specify if this query is adhoc or not.  If it is not adhoc ( so performed often ), the client will try to perform optimizations transparently based on the server capabilities, like preparing the statement and then executing a query plan instead of the raw query.</li>
   *  <li>
   *    <b>consistency</b> - Sets scan consistency. Valid values are:
   *    <ul>
-  *       <li>NOT_BOUNDED - This is the default (for single-statement requests). No timestamp vector is used in the index scan. This is also the fastest mode, because we avoid the cost of obtaining the vector, and we also avoid any wait for the index to catch up to the vector.</li>
+  *       <li>NOT_BOUNDED - This is the default ( for single-statement requests ). No timestamp vector is used in the index scan. This is also the fastest mode, because we avoid the cost of obtaining the vector, and we also avoid any wait for the index to catch up to the vector.</li>
   *       <li>REQUEST_PLUS - This implements strong consistency per request. Before processing the request, a current vector is obtained. The vector is used as a lower bound for the statements in the request. If there are DML statements in the request, RYOW is also applied within the request.</li>
   *       <li>STATEMENT_PLUS - This implements strong consistency per statement. Before processing each statement, a current vector is obtained and used as a lower bound for that statement.</li>
   *    </ul>
@@ -1817,12 +2114,15 @@ component serializable="false" accessors="true"{
   *  <li><b>maxParallelism</b> - Allows to override the default maximum parallelism for the query execution on the server side.</li>
   *  <li><b>scanWait</b> - Sets the maximum time in milliseconds the client is willing to wait for an index to catch up to the vector timestamp in the request.  If the NOT_BOUNDED scan consistency has been chosen, does nothing.</li>
   *  <li><b>serverSideTimeout</b> - Sets a maximum timeout for processing on the server side</li>
-  *  <li><b>contextId</b> - Adds a client context ID to the request, that will be sent back in the response, allowing clients to meaningfully trace requests/responses when many are exchanged.</li>
+  *  <li><b>clientContextId</b> - Adds a client context ID to the request, that will be sent back in the response, allowing clients to meaningfully trace requests/responses when many are exchanged.</li>
   * </ul>
   * <p>
   * The options struct maps to the set of options found
-  * in the native Couchbase query object (com.couchbase.client.java.query.N1qlParams)
+  * in the native Couchbase query object ( com.couchbase.client.java.query.N1qlParams )
   * See http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.0/com/couchbase/client/java/query/N1qlParams.html
+  *
+  * http://docs.couchbase.com/files/Couchbase-N1QL-CheatSheet.pdf
+  * http://developer.couchbase.com/documentation/server/4.0/n1ql/n1ql-language-reference/index.html
   *
   * <pre class='brush: cf'>
   * results = client.n1qlQuery(
@@ -1846,7 +2146,7 @@ component serializable="false" accessors="true"{
   * @transform.hint A closure or UDF to use to transform records from the returning array of records, the closure receives a struct that has id, document, key, and value: function( row ). Since the struct is by reference, you do not need to return anything.
   * @returnType.hint The type of return for us to return to you. Available options: native, iterator, array. By default we use the cf type which uses transformations, automatic deserializations and inflations.
   *
-  * @return If returnType is "struct", will return struct containing the results, requestID, signature, and metrics. <br>If returnType is native, a Java ViewResponse object will be returned (com.couchbase.client.protocol.views.ViewResponse)  <br>If returnType is iterator, a Java iterator object will be returned
+  * @return If returnType is "struct", will return struct containing the results, requestID, signature, and metrics. <br>If returnType is native, a Java ViewResponse object will be returned ( com.couchbase.client.protocol.views.ViewResponse )  <br>If returnType is iterator, a Java iterator object will be returned
   */
   public any function n1qlQuery(
     required string statement,
@@ -1858,57 +2158,41 @@ component serializable="false" accessors="true"{
     any filter,
     any transform,
     string returnType="struct"
-  ){
-    var n1qlQuery = newJava("com.couchbase.client.java.query.N1qlQuery");
-
-    // this isn't the best flow but based on the method signatures this will have to do for now
-    if(structKeyExists(arguments, "parameters")){
-      // we are performing a parameterized query with parameters
-      n1qlQuery = n1qlQuery.parameterized(
-        arguments.statement,
-        variables.queryHelper.processN1qlParameters(arguments.parameters),
-        variables.queryHelper.processN1qlOptions(arguments.options)
-      );
-    }
-    else{
-      // we are performing a simple query without parameters
-      n1qlQuery = n1qlQuery.simple(
-        arguments.statement,
-        variables.queryHelper.processN1qlOptions(arguments.options)
-      );
-    }
+  ) {
+    // build the query
+    var n1qlQuery = newN1qlQuery( argumentCollection=arguments );
 
     // run the query
-    var n1qlResult = variables.couchbaseClient.query(n1qlQuery);
+    var n1qlResult = variables.couchbaseBucket.query( n1qlQuery );
 
     // Native return type?
-    if(arguments.returnType == "native"){
-      return results;
+    if( arguments.returnType == "native" ) {
+      return n1qlResult;
     }
 
     // Iterator results?
-    if(arguments.returnType == "iterator"){
-      return results.iterator();
+    if( arguments.returnType == "iterator" ) {
+      return n1qlResult.iterator();
     }
 
     // build the output
     var cfresults = {
       'requestId' = n1qlResult.requestId(),
       'clientContextId' = n1qlResult.clientContextId(),
-      'errors' = deserializeJSON(n1qlResult.errors().toString()),
-      'metrics' = deserializeJSON(n1qlResult.info().asJsonObject().toString()),
+      'errors' = deserializeJSON( n1qlResult.errors().toString() ),
+      'metrics' = deserializeJSON( n1qlResult.info().asJsonObject().toString() ),
       'results' = []
     };
-    cfresults['success'] = arrayLen(cfresults.errors) == 0;
+    cfresults['success'] = arrayLen( cfresults.errors ) == 0;
 
     // if there were errors just return
-    if(!cfresults.success){
+    if( !cfresults.success ) {
       return cfresults;
     }
 
     // iterate and build it out with or without desrializations
     var iterator = n1qlResult.iterator();
-    while(iterator.hasNext()){
+    while( iterator.hasNext() ) {
       var row = iterator.next();
       var document = deserializeData(
         "",
@@ -1919,19 +2203,97 @@ component serializable="false" accessors="true"{
       );
 
       // Do we have a transformer?
-      if(structKeyExists(arguments, "transform") && isClosure(arguments.transform)){
-        arguments.transform(document);
+      if( structKeyExists( arguments, "transform" ) && isClosure( arguments.transform ) ) {
+        document = arguments.transform( document );
       }
 
       // Do we have a filter?
       if(
-        !structKeyExists(arguments, "filter" ) ||
-        (isClosure(arguments.filter) && arguments.filter(document))
-      ){
-        arrayAppend(cfresults.results, document);
+        !structKeyExists( arguments, "filter" ) ||
+        ( isClosure( arguments.filter ) && arguments.filter( document ) )
+      ) {
+        arrayAppend( cfresults.results, document );
       }
     }
     return cfresults;
+  }
+
+  /**
+  * Creates a new Java query object ( com.couchbase.client.java.query.N1qlQuery ) that can be used to execute raw n1ql queries.
+  * You can pass an optional options struct with name-value pairs of simple query options.
+  * <p>
+  *
+  * <pre class='brush: cf'>
+  * oQuery = client.n1qlQuery(
+  *   statement = "
+  *     SELECT t.callsign, t.country, t.iata, t.icao, t.id, t.name, t.type
+  *     FROM `travel-sample` AS t
+  *     WHERE t.country = $1
+  *     LIMIT 10
+  *   ",
+  *   parameters = ["United Kingdom"]
+  * );
+  *
+  * results = client.rawQuery( oQuery );
+  * </pre>
+  *
+  * @statement.hint The N1QL/SQL statement
+  * @parameters.hint An array of parameters or an object of named parameters
+  * @options.hint The query options to use for this query. This can be a structure of name-value pairs or an actual Couchbase query options object usually using the 'newQuery()' method.
+  *
+  * @return A Java query object ( com.couchbase.client.java.query.N1qlQuery )
+  */
+  public any function newN1qlQuery(
+    required string statement,
+    any parameters,
+    struct options= {}
+  ) {
+    var n1qlQuery = newJava( "com.couchbase.client.java.query.N1qlQuery" );
+
+    // this isn't the best flow but based on the method signatures this will have to do for now
+    if( structKeyExists( arguments, "parameters" ) ) {
+      // we are performing a parameterized query with parameters
+      n1qlQuery = n1qlQuery.parameterized(
+        arguments.statement,
+        variables.queryHelper.processN1qlParameters( arguments.parameters ),
+        variables.queryHelper.processN1qlOptions( arguments.options )
+      );
+    }
+    else {
+      // we are performing a simple query without parameters
+      n1qlQuery = n1qlQuery.simple(
+        arguments.statement,
+        variables.queryHelper.processN1qlOptions( arguments.options )
+      );
+    }
+    return n1qlQuery;
+  }
+
+  /**
+  * Gets all of the indexes for all buckets
+  *
+  * <pre class='brush: cf'>
+  * indexes = client.getIndexes( 'beer', 'brewery_beers' );
+  * </pre>
+  *
+  * @designDocumentName.hint The name of the design document
+  * @viewName.hint The name of the view to get
+  * @development.hint Whether or not to get the development or production view
+  * @timeout.hint The timeout in milliseconds
+  *
+  * @return A View Java object ( com.couchbase.client.java.view.DefaultView or com.couchbase.client.java.view.SpatialView ).
+  */
+  public array function getIndexes(
+    required string bucket
+  ) {
+    return n1qlQuery(
+      statement='
+        SELECT datastore_id, id, index_key, keyspace_id, name, namespace_id, state, `using`
+        FROM system:indexes
+        WHERE keyspace_id = $1;
+      ',
+      parameters=[arguments.bucket]
+    ).results;
   }
 
   /**
@@ -1945,10 +2307,10 @@ component serializable="false" accessors="true"{
   * @designDocumentName.hint The name of the design document
   * @viewName.hint The name of the view to get
   *
-  * @return A View Java object (com.couchbase.client.protocol.views.SpatialView).
+  * @return A View Java object ( com.couchbase.client.protocol.views.SpatialView ).
   */
-  public any function getSpatialView(required string designDocumentName, required string viewName){
-    return variables.couchbaseClient.getSpatialView(arguments.designDocumentName, arguments.viewName);
+  public any function getSpatialView( required string designDocumentName, required string viewName ) {
+    return variables.couchbaseBucket.getSpatialView( arguments.designDocumentName, arguments.viewName );
   }
 
   /**
@@ -1963,20 +2325,17 @@ component serializable="false" accessors="true"{
   * @development.hint Whether or not to get the development or production view
   * @timeout.hint The timeout in milliseconds
   *
-  * @return A DesignDocument Java object (com.couchbase.client.java.view.DesignDocument).
+  * @return A DesignDocument Java object ( com.couchbase.client.java.view.DesignDocument ).
   */
   public any function getDesignDocument(
     required string designDocumentName,
-    boolean development=false,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout()
-  ){
-    return variables.couchbaseClient
+    boolean development=false
+  ) {
+    return variables.couchbaseBucket
       .bucketManager()
         .getDesignDocument(
           arguments.designDocumentName,
-          javaCast("boolean", arguments.development),
-          javaCast("long", arguments.timeout),
-          variables.timeUnit.MILLISECONDS
+          javaCast( "boolean", arguments.development )
         );
   }
 
@@ -1995,26 +2354,23 @@ component serializable="false" accessors="true"{
   */
   public boolean function removeDesignDocument(
     required string designDocumentName,
-    boolean development=false,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout()
+    boolean development=false
 
-  ){
-    return variables.couchbaseClient
+  ) {
+    return variables.couchbaseBucket
       .bucketManager()
         .removeDesignDocument(
           arguments.designDocumentName,
-          javaCast("boolean", arguments.development),
-          javaCast("long", arguments.timeout),
-          variables.timeUnit.MILLISECONDS
+          javaCast( "boolean", arguments.development )
         );
   }
 
   /**
-  * (deprecated)
+  * ( deprecated )
   * deleteDesignDocument() is no longer supported, it has been replaced with removeDesignDocument(), leaving here for backwards compatibility
   */
-  public boolean function deleteDesignDocument(required string designDocumentName){
-    return removeDesignDocument(argumentCollection=arguments);
+  public boolean function deleteDesignDocument( required string designDocumentName ) {
+    return removeDesignDocument( argumentCollection=arguments );
   }
 
   /**
@@ -2028,8 +2384,8 @@ component serializable="false" accessors="true"{
   *
   * @return An instance of com.couchbase.client.java.view.DesignDocument
   */
-  public any function newDesignDocument(required string designDocumentName, required array views=[]){
-    return newJava("com.couchbase.client.java.view.DesignDocument").create(
+  public any function newDesignDocument( required string designDocumentName, required array views=[] ) {
+    return newJava( "com.couchbase.client.java.view.DesignDocument" ).create(
       arguments.designDocumentName,
       arguments.views
     );
@@ -2044,16 +2400,14 @@ component serializable="false" accessors="true"{
   *
   * @designDocumentName.hint The name of the design document to check for
   * @development.hint Whether or not to get the development or production view
-  * @timeout.hint The timeout in milliseconds
   *
   * @Return True if the design document is found and false if it is not found.
   */
   public boolean function designDocumentExists(
     required string designDocumentName,
-    boolean development=false,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout()
-  ){
-    return !isNull(getDesignDocument(argumentCollection=arguments));
+    boolean development=false
+  ) {
+    return !isNull( getDesignDocument( argumentCollection=arguments ) );
   }
 
   /**
@@ -2078,28 +2432,27 @@ component serializable="false" accessors="true"{
     required string viewName,
     string mapFunction,
     string reduceFunction,
-    boolean development=false,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout()
-  ){
-    var designDocument = getDesignDocument(arguments.designDocumentName);
+    boolean development=false
+  ) {
+    var designDocument = getDesignDocument( arguments.designDocumentName );
     // If the design doc doesn't exist, bail.
-    if(isNull(designDocument)){
+    if( isNull( designDocument ) ) {
       return 0;
     }
     // get the views for the design document
     var views = designDocument.views();
     var i = 0;
     // Search to see if this view is already in the design document
-    for(var view in views){
+    for( var view in views ) {
       i++;
-      // If we find it (by name)
-      if(view.name() == arguments.viewName){
+      // If we find it ( by name )
+      if( view.name() == arguments.viewName ) {
         // If there was a mapFunction specified, enforce the match
-        if(structKeyExists(arguments, "mapFunction") && arguments.mapFunction != view.map()){
+        if( structKeyExists( arguments, "mapFunction" ) && arguments.mapFunction != view.map() ) {
           return 0;
         }
         // If there was a reduceFunction specified, enforce the match
-        if( structKeyExists(arguments, "reduceFunction") && arguments.reduceFunction != view.reduce()){
+        if( structKeyExists( arguments, "reduceFunction" ) && arguments.reduceFunction != view.reduce() ) {
           return 0;
         }
         // Passed all the tests
@@ -2111,7 +2464,7 @@ component serializable="false" accessors="true"{
   }
 
   /**
-  * Creates a new instance of a viewDesign Java object (com.couchbase.client.protocol.views.ViewDesign)
+  * Creates a new instance of a viewDesign Java object ( com.couchbase.client.protocol.views.ViewDesign )
   *
   * <pre class='brush: cf'>
   * viewDesign = client.newViewDesign( viewName, mapFunction, reduceFunction );
@@ -2129,22 +2482,22 @@ component serializable="false" accessors="true"{
     required string mapFunction,
     string reduceFunction="",
     string viewType="default"
-  ){
+  ) {
     var view = "";
-    if(arguments.viewType == "default"){
-      view = newJava("com.couchbase.client.java.view.DefaultView").create(
+    if( arguments.viewType == "default" ) {
+      view = newJava( "com.couchbase.client.java.view.DefaultView" ).create(
         arguments.viewName,
         arguments.mapFunction,
         arguments.reduceFunction
       );
     }
-    else if(arguments.viewType == "spatial"){
-      view = newJava("com.couchbase.client.java.view.SpatialView").create(
+    else if( arguments.viewType == "spatial" ) {
+      view = newJava( "com.couchbase.client.java.view.SpatialView" ).create(
         arguments.viewName,
         arguments.mapFunction
       );
     }
-    else{
+    else {
       throw(
         message="Invalid viewType Value",
         detail="Invalid viewType value, valid values are: default, spatial",
@@ -2163,9 +2516,9 @@ component serializable="false" accessors="true"{
   * client.asyncSaveView(
   * &nbsp;&nbsp;'manager',
   * &nbsp;&nbsp;'listBreweries',
-  * &nbsp;&nbsp;'function (doc, meta) {
-  * &nbsp;&nbsp;if ( doc.type == ''brewery'' ) {
-  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;emit(doc.name, null);
+  * &nbsp;&nbsp;'function ( doc, meta )  {
+  * &nbsp;&nbsp;if ( doc.type == ''brewery'' )  {
+  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;emit( doc.name, null );
   * &nbsp;&nbsp;&nbsp;&nbsp;}
   * &nbsp;&nbsp;}',
   * &nbsp;&nbsp;'_count'
@@ -2188,47 +2541,47 @@ component serializable="false" accessors="true"{
     string reduceFunction = "",
     boolean development=false,
     string viewType="default"
-  ){
+  ) {
 
     // This is required to clean up carriage returns
-    arguments['mapFunction'] = variables.util.normalizeViewFunction(arguments.mapFunction);
-    arguments['reduceFunction'] = variables.util.normalizeViewFunction(arguments.reduceFunction);
+    arguments['mapFunction'] = variables.util.normalizeViewFunction( arguments.mapFunction );
+    arguments['reduceFunction'] = variables.util.normalizeViewFunction( arguments.reduceFunction );
 
     // If this exact view already exists, we've nothing to do here
-    if(viewExists(argumentCollection=arguments)){
+    if( viewExists( argumentCollection=arguments ) ) {
       return false;
     }
 
     // get the design document
-    var designDocument = getDesignDocument(arguments.designDocumentName);
+    var designDocument = getDesignDocument( arguments.designDocumentName );
     // if designDocument is null create it
-    if(isNull(designDocument)){
-      designDocument = newDesignDocument(arguments.designDocumentName);
+    if( isNull( designDocument ) ) {
+      designDocument = newDesignDocument( arguments.designDocumentName );
     }
 
     // Create a representation of our new view
-    var viewDesign = newViewDesign(arguments.viewName, arguments.mapFunction, arguments.reduceFunction);
+    var viewDesign = newViewDesign( arguments.viewName, arguments.mapFunction, arguments.reduceFunction );
     // get the views
     var views = designDocument.views();
-    // Check for this view by name (A less specific check than the one at the top of this method)
-    var matchIndex = viewExists(arguments.designDocumentName, arguments.viewName);
+    // Check for this view by name ( A less specific check than the one at the top of this method )
+    var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
     // And update or add it into the array as neccessary
-    if(matchIndex){
+    if( matchIndex ) {
       // Update existing
       views[matchIndex] = viewDesign;
     }
-    else {
+    else  {
       // Insert new
-      views.add(viewDesign);
+      views.add( viewDesign );
     }
     // recreate the entire design document with the new view
-    designDocument = newDesignDocument(arguments.designDocumentName, views);
+    designDocument = newDesignDocument( arguments.designDocumentName, views );
     // create or update the design document
-    variables.couchbaseClient
+    variables.couchbaseBucket
       .bucketManager()
         .upsertDesignDocument(
           designDocument,
-          javaCast("boolean", arguments.development)
+          javaCast( "boolean", arguments.development )
         );
     return true;
   }
@@ -2240,9 +2593,9 @@ component serializable="false" accessors="true"{
   * client.saveView(
   * &nbsp;&nbsp;'manager',
   * &nbsp;&nbsp;'listBreweries',
-  * &nbsp;&nbsp;'function (doc, meta) {
-  * &nbsp;&nbsp;if ( doc.type == ''brewery'' ) {
-  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;emit(doc.name, null);
+  * &nbsp;&nbsp;'function ( doc, meta )  {
+  * &nbsp;&nbsp;if ( doc.type == ''brewery'' )  {
+  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;emit( doc.name, null );
   * &nbsp;&nbsp;&nbsp;&nbsp;}
   * &nbsp;&nbsp;}',
   * &nbsp;&nbsp;'_count'
@@ -2268,24 +2621,24 @@ component serializable="false" accessors="true"{
     waitFor=20,
     boolean development=false,
     string viewType="default"
-  ){
+  ) {
     // save the view
-    var viewSaved = asyncSaveView(argumentCollection=arguments);
+    var viewSaved = asyncSaveView( argumentCollection=arguments );
 
     // Bail now if no save actually occurred
-    if(!viewSaved){
+    if( !viewSaved ) {
       return true;
     }
 
     // View creation and population is asynchronous so we'll wait a while until it's ready.
     var attempts = 0;
-    while(++attempts <= arguments.waitFor){
-      try{
+    while( ++attempts <= arguments.waitFor ) {
+      try {
         // Access the view
         this.query(
           designDocumentName=arguments.designDocumentName,
           viewName=arguments.viewName,
-          options={
+          options= {
             limit = 20,
             stale = "FALSE"
           }
@@ -2293,9 +2646,9 @@ component serializable="false" accessors="true"{
         // The view is ready to be used!
         return true;
       }
-      catch(Any e) {
+      catch( Any e )  {
         // Wait 1 second before trying again
-        sleep(1000);
+        sleep( 1000 );
       }
     }
 
@@ -2315,7 +2668,6 @@ component serializable="false" accessors="true"{
   * @designDocumentName.hint The name of the design document for the view to be deleted from
   * @viewName.hint The name of the view to be deleted from
   * @development.hint Whether or not to get the development or production view
-  * @timeout.hint The timeout in milliseconds
   * @removeIfEmpty.hint If there are no views should the design doc be created as empty or deleted?
   *
   * @viewName.hint The name of the view to be created
@@ -2324,32 +2676,31 @@ component serializable="false" accessors="true"{
     required string designDocumentName,
     required string viewName,
     boolean development=false,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout(),
     removeIfEmpty=true
-  ){
+  ) {
     // Check for this view by name
-    var matchIndex = viewExists(arguments.designDocumentName, arguments.viewName);
+    var matchIndex = viewExists( arguments.designDocumentName, arguments.viewName );
 
     // Only bother continuing if it exists
-    if(matchIndex){
-      var designDocument = getDesignDocument(arguments.designDocumentName);
+    if( matchIndex ) {
+      var designDocument = getDesignDocument( arguments.designDocumentName );
       var views = designDocument.views();
 
       // Remove the view from the array
-      arrayDeleteAt(views, matchIndex);
+      arrayDeleteAt( views, matchIndex );
 
-      if(!arrayLen(views) && arguments.removeIfEmpty){
-        this.removeDesignDocument(argumentCollection=arguments);
+      if( !arrayLen( views ) && arguments.removeIfEmpty ) {
+        this.removeDesignDocument( argumentCollection=arguments );
       }
-      else{
+      else {
         // recreate the entire design document with the view removed
-        designDocument = newDesignDocument(arguments.designDocumentName, views);
+        designDocument = newDesignDocument( arguments.designDocumentName, views );
         // create or update the design document
-        variables.couchbaseClient
+        variables.couchbaseBucket
           .bucketManager()
             .upsertDesignDocument(
               designDocument,
-              javaCast("boolean", arguments.development)
+              javaCast( "boolean", arguments.development )
             );
       }
     }
@@ -2365,35 +2716,31 @@ component serializable="false" accessors="true"{
   *
   * @designDocumentName.hint The name of the design document for the view to be deleted from
   * @overwrite.hint Whether or not to overwrite the design document if it exists
-  * @timeout.hint The timeout in milliseconds
   *
   * @viewName.hint Whether or not the design document was published successfully
   */
   public boolean function publishDesignDocument(
     required string designDocumentName,
-    required boolean overwrite=false,
-    numeric timeout=variables.couchbaseConfig.getOpTimeout()
-  ){
+    required boolean overwrite=false
+  ) {
     var published = true;
-    try{
-      variables.couchbaseClient
+    try {
+      variables.couchbaseBucket
         .bucketManager()
           .publishDesignDocument(
             arguments.designDocumentName,
-            javaCast("boolean", arguments.overwrite),
-            javaCast("long", arguments.timeout),
-            variables.timeUnit.MILLISECONDS
+            javaCast( "boolean", arguments.overwrite )
           );
     }
-    catch(Expression e){
+    catch( Expression e ) {
       // if there was a timeout exception or the design document already exists
       if(
         e.type == "java.util.concurrent.TimeoutException" ||
         e.type == "com.couchbase.client.java.error.DesignDocumentAlreadyExistsException"
-      ){
+      ) {
         published = false;
       }
-      else{
+      else {
         rethrow;
       }
     }
@@ -2407,7 +2754,7 @@ component serializable="false" accessors="true"{
   * Deserializes an incoming data string via JSON and according to our rules. It can also accept an optional
   * inflateTo parameter wich can be an object we should inflate our data to.
   *
-  * @ID.hint The ID of the document being deserialized
+  * @id.hint The ID of the document being deserialized
   * @data.hint A JSON document to deserialize according to our rules
   * @inflateTo.hint The object that will be used to inflate the data with according to our conventions
   * @deserialize.hint The boolean value that marks if we should deserialize or not. Default is true
@@ -2420,9 +2767,9 @@ component serializable="false" accessors="true"{
     required string data,
     any inflateTo="",
     boolean deserialize=true,
-    struct deserializeOptions={}
-  ){
-    if(arguments.deserialize){
+    struct deserializeOptions= {}
+  ) {
+    if( arguments.deserialize ) {
       return variables.dataMarshaller
         .deserializeData(
           arguments.id,
@@ -2431,7 +2778,7 @@ component serializable="false" accessors="true"{
           arguments.deserializeOptions
         );
     }
-    else{
+    else {
       return arguments.data;
     }
   }
@@ -2443,9 +2790,9 @@ component serializable="false" accessors="true"{
   *
   * @Return A string representation, usually JSON.
   */
-  public string function serializeData(required any data){
+  public string function serializeData( required any data ) {
     // Go to data marshaler
-    return variables.dataMarshaller.serializeData(arguments.data);
+    return variables.dataMarshaller.serializeData( arguments.data );
   }
 
   /************************* JAVA INTEGRATION ***********************************/
@@ -2455,8 +2802,8 @@ component serializable="false" accessors="true"{
   *
   * @Return The javaLoader CFC.
   */
-  public any function getJavaLoader(){
-    if(!structKeyExists(server, variables.javaLoaderID)){
+  public any function getJavaLoader() {
+    if( !structKeyExists( server, variables.javaLoaderID ) ) {
       loadSDK();
     }
     return server[variables.javaLoaderID];
@@ -2470,8 +2817,8 @@ component serializable="false" accessors="true"{
   *
   * @Return The java class specified.
   */
-  public any function newJava(required string className){
-      return (variables.couchbaseConfig.getUseClassloader() ? getJavaLoader().create(arguments.className) : createObject("java", arguments.className));
+  public any function newJava( required string className ) {
+      return ( variables.couchbaseConfig.getUseClassloader() ? getJavaLoader().create( arguments.className ) : createObject( "java", arguments.className ) );
   }
 
   /************************* PRIVATE ***********************************/
@@ -2483,16 +2830,16 @@ component serializable="false" accessors="true"{
   *
   * @Return The data marshaller
   */
-  private any function buildDataMarshaller( required any config ){
+  private any function buildDataMarshaller( required any config  ) {
     var marshaller = arguments.config.getDataMarshaller();
     // Build the data marshaller
-    if(isSimpleValue(marshaller) && len(marshaller)){
+    if( isSimpleValue( marshaller ) && len( marshaller ) ) {
       return new "#marshaller#"();
     }
-    else if(isObject(marshaller)){
+    else if( isObject( marshaller ) ) {
       return marshaller;
     }
-    else {
+    else  {
       // build core marshaller.
       return new data.CoreMarshaller();
     }
@@ -2503,23 +2850,116 @@ component serializable="false" accessors="true"{
   *
   * @config.hint The CFCouchbase config object
   *
-  * @Return The java CouchbaseClient class (com.couchbase.client.java.CouchbaseBucket).
+  * @Return The java CouchbaseClient class ( com.couchbase.client.java.CouchbaseBucket ).
   */
-  private any function buildCouchbaseClient(required any config){
-		// get config options
-		var configData = arguments.config.getMemento();
-		// cleanup server URIs
-		var serverURIs = !isArray(configData.servers) ? listToArray(configData.servers) : configData.servers;
-		// connect to the cluster
-		variables['cluster'] = newJava("com.couchbase.client.java.CouchbaseCluster").create(serverURIs);
-		// connect to the bucket
-		var bucket = variables.cluster.openBucket(
-      javaCast("string", configData.bucketName),
-      javaCast("string", configData.password),
-      javaCast("long", configData.connectionTimeout),
-      variables.timeUnit.SECONDS
+  private any function buildCouchbaseClient( required any config ) {
+    // get config options
+    var configData = arguments.config.getMemento();
+    // cleanup server URIs
+    var servers = variables.util.formatServers( configData.servers );
+    // get the environment
+    var env = buildCouchbaseEnvironment( configData );
+    // connect to the cluster
+    variables['couchbaseCluster'] = newJava( "com.couchbase.client.java.CouchbaseCluster" ).create(
+      env,
+      servers
+    );
+    // connect to the bucket
+    var bucket = variables.couchbaseCluster.openBucket(
+      javaCast( "string", configData.bucketName ),
+      javaCast( "string", configData.password )
     );
     return bucket;
+  }
+
+  /**
+  * Build a couchbase environment
+  *
+  * @config.hint The CFCouchbase config object
+  *
+  * @Return The java environment class ( com.couchbase.client.java.env.DefaultCouchbaseEnvironment )
+  */
+  private any function buildCouchbaseEnvironment( required any config ) {
+    // get the environment builder
+    var builder = newJava( "com.couchbase.client.java.env.DefaultCouchbaseEnvironment" ).builder();
+    // build the environment
+    builder = builder
+      .sslEnabled( javaCast( "boolean", arguments.config.sslEnabled ) )
+      .queryEnabled( javaCast( "boolean", arguments.config.queryEnabled ) )
+      .queryPort( javaCast( "int", arguments.config.queryPort ) )
+      .bootstrapHttpEnabled( javaCast( "boolean", arguments.config.bootstrapHttpEnabled ) )
+      .bootstrapHttpDirectPort( javaCast( "int", arguments.config.bootstrapHttpDirectPort ) )
+      .bootstrapHttpSslPort( javaCast( "int", arguments.config.bootstrapHttpSslPort ) )
+      .bootstrapCarrierEnabled( javaCast( "boolean", arguments.config.bootstrapCarrierEnabled ) )
+      .bootstrapCarrierDirectPort( javaCast( "int", arguments.config.bootstrapCarrierDirectPort ) )
+      .bootstrapCarrierSslPort( javaCast( "int", arguments.config.bootstrapCarrierSslPort ) )
+      .dnsSrvEnabled( javaCast( "boolean", arguments.config.dnsSrvEnabled ) )
+      .mutationTokensEnabled( javaCast( "boolean", arguments.config.mutationTokensEnabled ) )
+      .kvTimeout( javaCast( "long", arguments.config.kvTimeout ) )
+      .viewTimeout( javaCast( "long", arguments.config.viewTimeout ) )
+      .queryTimeout( javaCast( "long", arguments.config.queryTimeout ) )
+      .connectTimeout( javaCast( "long", arguments.config.connectTimeout ) )
+      .disconnectTimeout( javaCast( "long", arguments.config.disconnectTimeout ) )
+      .managementTimeout( javaCast( "long", arguments.config.managementTimeout ) )
+      .maxRequestLifetime( javaCast( "long", arguments.config.maxRequestLifetime ) )
+      .keepAliveInterval( javaCast( "long", arguments.config.keepAliveInterval ) )
+      .kvEndpoints( javaCast( "int", arguments.config.kvEndpoints ) )
+      .viewEndpoints( javaCast( "int", arguments.config.viewEndpoints ) )
+      .queryEndpoints( javaCast( "int", arguments.config.queryEndpoints ) )
+      .tcpNodelayEnabled( javaCast( "boolean", arguments.config.tcpNodelayEnabled ) )
+      .requestBufferSize( javaCast( "int", arguments.config.requestBufferSize ) )
+      .responseBufferSize( javaCast( "int", arguments.config.responseBufferSize ) )
+      .dcpEnabled( javaCast( "boolean", arguments.config.dcpEnabled ) )
+      .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) );
+    if( len( arguments.config.sslKeystoreFile ) ) {
+      builder = builder.sslKeystoreFile( javaCast( "string", arguments.config.sslKeystoreFile ) );
+    }
+    if( len( arguments.config.sslKeystorePassword ) ) {
+      builder = builder.sslKeystorePassword( javaCast( "string", arguments.config.sslKeystorePassword ) );
+    }
+    if( isObject( arguments.config.reconnectDelay ) ) {
+      builder = builder.reconnectDelay( arguments.config.reconnectDelay );
+    }
+    if( isObject( arguments.config.retryDelay ) ) {
+      builder = builder.retryDelay( arguments.config.retryDelay );
+    }
+    if( isObject( arguments.config.retryStrategy ) ) {
+      builder = builder.retryStrategy( arguments.config.retryStrategy );
+    }
+    if( isObject( arguments.config.observeIntervalDelay ) ) {
+      builder = builder.observeIntervalDelay( arguments.config.observeIntervalDelay );
+    }
+    if( arguments.config.ioPoolSize ) {
+      builder = builder.ioPoolSize( javaCast( "int", arguments.config.ioPoolSize ) );
+    }
+    if( arguments.config.computationPoolSize ) {
+      builder = builder.computationPoolSize( javaCast( "int", arguments.config.computationPoolSize ) );
+    }
+    if( isObject( arguments.config.ioPool ) ) {
+      builder = builder.ioPool( arguments.config.ioPool );
+    }
+    if( isObject( arguments.config.scheduler ) ) {
+      builder = builder.scheduler( arguments.config.scheduler );
+    }
+    if( len( arguments.config.userAgent ) ) {
+      builder = builder.userAgent( javaCast( "string", arguments.config.userAgent ) );
+    }
+    if( len( arguments.config.packageNameAndVersion ) ) {
+      builder = builder.packageNameAndVersion( javaCast( "string", arguments.config.packageNameAndVersion ) );
+    }
+    if( isObject( arguments.config.eventBus ) ) {
+      builder = builder.eventBus( arguments.config.eventBus );
+    }
+    if( isObject( arguments.config.runtimeMetricsCollectorConfig ) ) {
+      builder = builder.runtimeMetricsCollectorConfig( arguments.config.runtimeMetricsCollectorConfig );
+    }
+    if( isObject( arguments.config.networkLatencyMetricsCollectorConfig ) ) {
+      builder = builder.networkLatencyMetricsCollectorConfig( arguments.config.networkLatencyMetricsCollectorConfig );
+    }
+    if( isObject( arguments.config.defaultMetricsLoggingConsumer ) ) {
+      builder = builder.defaultMetricsLoggingConsumer( arguments.config.defaultMetricsLoggingConsumer );
+    }
+    return builder.build();
   }
 
   /**
@@ -2529,18 +2969,18 @@ component serializable="false" accessors="true"{
   *
   * @Return The CFCouchbase config CFC
   */
-  private any function validateConfig( required any config ){
+  private any function validateConfig( required any config  ) {
     // do we have a simple path to inflate
-    if(isSimpleValue(arguments.config)){
+    if( isSimpleValue( arguments.config ) ) {
       // build out cfc
       arguments.config = new "#arguments.config#"();
     }
 
     // We've been given a CFC instance
-    if(isObject( arguments.config)){
+    if( isObject( arguments.config ) ) {
 
       // Validate the configure() method
-      if(!structKeyExists( arguments.config, "configure")){
+      if( !structKeyExists( arguments.config, "configure" ) ) {
         throw(
           message="Config file must have a configure() method",
           detail="Valid config CFCs must set their config settings into the variables scope in a configure() method.",
@@ -2552,21 +2992,21 @@ component serializable="false" accessors="true"{
       arguments.config.configure();
 
       // check family, for memento injection
-      if(isInstanceOf(arguments.config, "cfcouchbase.config.CouchbaseConfig")){
+      if( isInstanceOf( arguments.config, "cfcouchbase.config.CouchbaseConfig" ) ) {
         return arguments.config;
       }
-      else {
+      else  {
         // get memento out via mixin
         var oConfig = new config.CouchbaseConfig();
         arguments.config.getMemento = oConfig.getMemento;
-        return oConfig.init(argumentCollection=arguments.config.getMemento());
+        return oConfig.init( argumentCollection=arguments.config.getMemento() );
       }
     }
 
     // check if its a struct literal of config options
-    if(isStruct(arguments.config)){
+    if( isStruct( arguments.config ) ) {
       // init config object with memento
-      return new config.CouchbaseConfig(argumentCollection=arguments.config);
+      return new config.CouchbaseConfig( argumentCollection=arguments.config );
     }
 
   }
@@ -2576,28 +3016,28 @@ component serializable="false" accessors="true"{
   *
   * @Return An array of jar file names
   */
-  private array function getLibJars(){
+  private array function getLibJars() {
     return directoryList( variables.libPath, false, "path" );
   }
 
   /**
   * Load JavaLoader with the SDK
   */
-  private void function loadSDK(){
-    try{
+  private void function loadSDK() {
+    try {
 
       // verify if not in server scope
-      if(!structKeyExists(server, variables.javaLoaderID)){
-        lock name="#variables.javaLoaderID#" throwOnTimeout="true" timeout="15" type="exclusive"{
-          if(!structKeyExists( server, variables.javaLoaderID)){
+      if( !structKeyExists( server, variables.javaLoaderID ) ) {
+        lock name="#variables.javaLoaderID#" throwOnTimeout="true" timeout="15" type="exclusive" {
+          if( !structKeyExists( server, variables.javaLoaderID ) ) {
             // Create and load
-            server[variables.javaLoaderID] = new util.javaloader.JavaLoader(loadPaths=getLibJars());
+            server[variables.javaLoaderID] = new util.javaloader.JavaLoader( loadPaths=getLibJars() );
           }
         }
       } // end if static server check
 
     }
-    catch(any e){
+    catch( any e ) {
       e.printStackTrace();
       throw(
         message="Error Loading Couchbase Client Jars: " & e.message & " " & e.detail,
@@ -2612,17 +3052,17 @@ component serializable="false" accessors="true"{
   * @args.hint The argument collection to process
   * @Return The argument collection with the defaulted values.
   */
-  private any function defaultPersistReplicate(required struct args) {
+  private any function defaultPersistReplicate( required struct args )  {
     var validPersistTo = "NONE,MASTER,ONE,TWO,THREE,FOUR";
     var validReplicateTo = "NONE,ONE,TWO,THREE";
     // persistTo
-    if(structKeyExists(args, "persistTo")){
-      args['persistTo'] = trim(args.persistTo);
+    if( structKeyExists( args, "persistTo" ) ) {
+      args['persistTo'] = trim( args.persistTo );
       // if the value is ZERO set it to NONE for backwards compatibility
-      if(args.persistTo == "ZERO"){
+      if( args.persistTo == "ZERO" ) {
         args['persistTo'] = "NONE";
       }
-      if(!listFindNoCase(validPersistTo, args.persistTo)){
+      if( !listFindNoCase( validPersistTo, args.persistTo ) ) {
         throw(
           message="Invalid persistTo value of [" & args.persistTo & "]",
           detail="Valid values are [" & validPersistTo & "]",
@@ -2630,18 +3070,18 @@ component serializable="false" accessors="true"{
         );
       }
       args['persistTo'] = this.persistTo[args.persistTo];
-    } else {
+    } else  {
       // Default it
       args['persistTo'] = this.persistTo.NONE;
     }
     // replicateTo
-    if(structKeyExists(args, "replicateTo")){
-      args['replicateTo'] = trim(args.replicateTo);
+    if( structKeyExists( args, "replicateTo" ) ) {
+      args['replicateTo'] = trim( args.replicateTo );
       // if the value is ZERO set it to NONE for backwards compatibility
-      if(args.replicateTo == "ZERO"){
+      if( args.replicateTo == "ZERO" ) {
         args['replicateTo'] = "NONE";
       }
-      if(!listFindNoCase(validReplicateTo, args.replicateTo)){
+      if( !listFindNoCase( validReplicateTo, args.replicateTo ) ) {
         throw(
           message="Invalid replicateTo value of [" & args.replicateTo & "]",
           detail="Valid values are [" & validReplicateTo & "]",
@@ -2649,7 +3089,7 @@ component serializable="false" accessors="true"{
         );
       }
       args['replicateTo'] = this.replicateTo[args.replicateTo];
-    } else {
+    } else  {
       // Default it
       args['replicateTo'] = this.replicateTo.NONE;
     }
@@ -2657,34 +3097,47 @@ component serializable="false" accessors="true"{
   }
 
   /**
-	* Default timeout in arguments.  Will create "timeout" with a default value specified in settings
-	* Also accounts for timeouts over 30 days which must be represented as epoch date.
-	*
-	* @args.hint The argument collection to process
-	*
-	* @Return The argument collection with the defaulted values.
-	*/
-	private any function defaultTimeout( required args ) {
-		var secondsIn30Days = 30 * 24 * 60 * 60;
+  * Default timeout in arguments.  Will create "timeout" with a default value specified in settings
+  * Also accounts for timeouts over 30 days which must be represented as epoch date.
+  *
+  * @args.hint The argument collection to process
+  *
+  * @Return The argument collection with the defaulted values.
+  */
+  private any function defaultTimeout( required args ) {
+    var secondsIn30Days = 30 * 24 * 60 * 60;
 
-		args.timeout = ( !structKeyExists( args, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout );
+    args['timeout'] = !structKeyExists( args, "timeout" ) ? variables.couchbaseConfig.getDefaultTimeout() : args.timeout;
 
-		// Validate timeout
-		if( !isNumeric(args.timeout) || args.timeout < 0 ) {
-			throw( message='Invalid timeout value of [#args.timeout#]', detail='Valid values are positive integers', type='InvalidTimeout' );
-		}
+    // Validate timeout
+    if( !isNumeric( args.timeout ) || args.timeout < 0 ) {
+      throw(
+        message="Invalid timeout value of [" & args.timeout & "]",
+        detail="Valid values are positive integers",
+        type="InvalidTimeout"
+      );
+    }
 
-		// Convert minutes to seconds
-		args.timeout = args.timeout*60;
+    // Convert minutes to seconds
+    args['timeout'] = args.timeout * 60;
 
-		// Timeouts over 30 days must be treated as epoch dates (seconds since 1970)
-		// If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
-		if( args.timeout > secondsIn30Days ) {
-			var secondsSinceEpoch = datediff( 's', createdatetime( '1970','01','01','00','00','00' ), dateConvert( "local2Utc", now() ) );
-			args.timeout += secondsSinceEpoch;
-		}
+    // Timeouts over 30 days must be treated as epoch dates ( seconds since 1970 )
+    // If the times are greater than 30 days, add seconds since epoch to them so they become a full epoch date.
+    if( args.timeout > secondsIn30Days ) {
+      var secondsSinceEpoch = datediff( "s", createdatetime( 1970, 1, 1, 0, 0, 0 ), dateConvert( "local2Utc", now() ) );
+      args['timeout'] += secondsSinceEpoch;
+    }
 
-		return args;
-	}
+    return args;
+  }
+
+  /**
+  * Gets the utility helper
+  *
+  * @Return Return the utility helper
+  */
+  public any function getUtility() {
+    return variables.util;
+  }
 
 }

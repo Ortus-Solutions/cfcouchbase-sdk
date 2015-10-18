@@ -23,39 +23,39 @@
 ********************************************************************************
 */
 component extends="testbox.system.BaseSpec"{
-	
+
 /*********************************** LIFE CYCLE Methods ***********************************/
 
-	function beforeAll(){
-	}
+  function beforeAll(){
+  }
 
-	function afterAll(){
-	}
+  function afterAll(){
+  }
 
 /*********************************** BDD SUITES ***********************************/
 
-	function run(){
-		describe( "Couchbase Config", function(){
+  function run(){
+    describe( "Couchbase Config", function(){
 
-			beforeEach(function(){
-				config = new cfcouchbase.config.CouchbaseConfig();
-				debug( config.getMemento() );
-			});
+      beforeEach(function(){
+        config = new cfcouchbase.config.CouchbaseConfig();
+        debug( config.getMemento() );
+      });
 
-			it( "inits correctly", function(){
-				data = config.getMemento();
-				expect(	data ).toBeStruct();
-				expect( data.servers ).toBe( "http://127.0.0.1:8091" );
-			});
+      it( "inits correctly", function(){
+        data = config.getMemento();
+        expect( data ).toBeStruct();
+        expect( data.servers ).toBe( "127.0.0.1" );
+      });
 
-			it( "inits with name-value pairs", function(){
-				config.init( bucketname="test", password="bogus", obsPollMax=50 );
-				expect(	config.getBucketname() ).toBe( 'test' );
-				expect(	config.getPassword() ).toBe( 'bogus' );
-				expect(	config.getobsPollMax() ).toBe( '50' );
-			});
-		
-		});
-	}
-	
+      it( "inits with name-value pairs", function(){
+        config.init( bucketname="test", password="bogus", dnsSrvEnabled=true );
+        expect( config.getBucketname() ).toBe( 'test' );
+        expect( config.getPassword() ).toBe( 'bogus' );
+        expect( config.getDnsSrvEnabled() ).toBeTrue();
+      });
+
+    });
+  }
+
 }

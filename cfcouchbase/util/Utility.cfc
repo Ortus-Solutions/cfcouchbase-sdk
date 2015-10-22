@@ -9,7 +9,8 @@ component accessors="true" {
 /**
 * Constructor
 */
-public Utility function init() {
+public Utility function init( required any config ) {
+  variables['config'] = arguments.config.getMemento();
   return this;
 }
 
@@ -60,29 +61,17 @@ public string function getDataType( required any value ) {
 }
 
 /**
-* Verify if an exception is a timeout exception
-*/
-public boolean function isTimeoutException( required any exception ) {
-    return (
-      exception.type == 'net.spy.memcached.OperationTimeoutException'
-      || exception.message == 'Exception waiting for value'
-      || exception.message == 'Interrupted waiting for value'
-      || exception.message == 'Cancelled'
-     );
-}
-
-/**
 * Normalize document ID to be lowercase and trimmed.
 * @id.hint The ID to normalize, or an array of IDs
 */
 public any function normalizeID( required any id ) {
   if( isSimpleValue( arguments.id ) ) {
-    return lCase( trim( arguments.id ) );
+    return trim( variables.config.caseSensitiveKeys ? arguments.id : lCase( arguments.id ) );
   }
   else {
     var i = 1;
     for( var doc_id in arguments.id ) {
-      arguments['id'][i] = lCase( trim( doc_id ) );
+      arguments['id'][ i ] = trim( variables.config.caseSensitiveKeys ? doc_id : lCase( doc_id ) );
       i++;
     }
     return arguments.id;
@@ -99,7 +88,7 @@ public string function normalizeViewFunction( required string viewFunction ) {
   var CR = chr( 13 );
   var LF = chr( 10 );
   var CRLF = CR & LF;
-  var CRLFPlaceholder = '__CRLF__';
+  var CRLFPlaceholder = "__CRLF__";
 
   // I'm doing this in two steps since if I just remove CR's that have no LF, that would completely remove line breaks and cause syntax issues
   // but if I just replaced all CR's with LF's that would double all line breaks.  Therefore, all CR's and CRLF's will be converted to an LF.

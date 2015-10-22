@@ -23,6 +23,11 @@ component accessors="true"{
   * The default timeout of records sent to Couchbase for storage in minutes. 0 means persist forever.
   */
   property name="defaultTimeout" default="0" type="numeric";
+  /**
+  * The default value for keys / document ids.  The initial value is false, in this setting all keys are
+  * automatically lowercased for set / get / view operations
+  */
+  property name="caseSensitiveKeys" default="false" type="boolean";
 
   //****************************************************************************************
   // Couchbase Configuration Properties

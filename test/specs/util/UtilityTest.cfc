@@ -27,6 +27,8 @@ component extends="testbox.system.BaseSpec"{
 /*********************************** LIFE CYCLE Methods ***********************************/
 
   function beforeAll(){
+    couchbase = new cfcouchbase.CouchbaseClient();
+    util = couchbase.getUtil();
   }
 
   function afterAll(){
@@ -36,10 +38,6 @@ component extends="testbox.system.BaseSpec"{
 
   function run(){
     describe( "SDK Utility", function(){
-
-      beforeEach(function(){
-        util = new cfcouchbase.util.Utility();
-      });
 
       describe( "dataType operations", function(){
 
@@ -83,6 +81,26 @@ component extends="testbox.system.BaseSpec"{
         it( "can determine a string", function(){
           var data = "Aaron";
           expect( util.getDataType(data) ).toBe( "string" );
+        });
+
+        it( "can convert IDs to lowercase", function(){
+          var id = "TeSt";
+          expect( hash( util.normalizeID( id ) ) ).toBe( hash( "test" ) );
+        });
+
+        it( "can convert an array of IDs to lowercase", function(){
+          var id = [ "KeY1", "kEy2" ];
+          expect( hash( arrayToList( util.normalizeID( id ) ) ) ).toBe( hash( "key1,key2" ) );
+        });
+
+        it( "can maintain ID case", function(){
+          var id = "TeSt";
+          expect( hash( util.normalizeID( id ) ) ).toBe( hash( "test" ) );
+        });
+
+        it( "can convert an array of IDs to lowercase", function(){
+          var id = [ "KeY1", "kEy2" ];
+          expect( hash( arrayToList( util.normalizeID( id ) ) ) ).toBe( hash( "key1,key2" ) );
         });
 
       });

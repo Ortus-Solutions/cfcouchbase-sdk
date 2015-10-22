@@ -507,7 +507,7 @@ component extends="testbox.system.BaseSpec"{
         var indexes = couchbase.getIndexes( "travel-sample" );
 
         expect( indexes ).toBeArray();
-        expect( arrayLen( index ) ).toBeGT( 0 );
+        expect( arrayLen( indexes ) ).toBeGT( 0 );
       });
 
       it( "can produce a raw query object", function(){

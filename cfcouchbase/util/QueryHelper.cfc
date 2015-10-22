@@ -112,40 +112,18 @@ component accessors="true" {
         // startKeys
         case "startKey":
         case "rangeStart":  {
-          opts['startKey'] = isSimpleValue( arguments.options[ key ] ) ? arguments.options[ key ] : serializeJSON( arguments.options[ key ] );
+          opts['startKey'] = castViewKey( arguments.options[ key] );
           break;
         }
         // endKeys
         case "endKey":
         case "rangeEnd":  {
-          opts['endKey'] = isSimpleValue( arguments.options[ key ] ) ? arguments.options[ key ] : serializeJSON( arguments.options[ key ] );
+          opts['endKey'] = castViewKey( arguments.options[ key] );
           break;
         }
         // keys
         case "key":  {
-          dataType = variables.util.getDataType( arguments.options[ key ] );
-          // key can be string, array, long, double, object, boolean
-          switch( dataType ) {
-            case "array":
-              opts['key'] = variables.client.newJava( "com.couchbase.client.java.document.json.JsonArray" )
-                .create()
-                .from( arguments.options[ key ] );
-            break;
-            case "struct":
-              opts['key'] = variables.client.newJava( "com.couchbase.client.java.document.json.JsonObject" )
-                .create()
-                .from( arguments.options[ key ] );
-            break;
-            case "long":
-              opts['key'] = javaCast( "long", arguments.options[ key ] );
-            break;
-            case "double":
-              opts['key'] = javaCast( "double", arguments.options[ key ] );
-            break;
-            case "string":
-              opts['key'] = javaCast( "string", arguments.options[ key ] );
-            break;
-          }
+          opts['key'] = castViewKey( arguments.options[ key] );
           break;
         }
         case "keys":  {
@@ -166,6 +144,37 @@ component accessors="true" {
       );
     }
     return opts;
+  }
+
+  /**
+  * JavaCast View key correctly as the endKey, key and startKey can all be a different type
+  * @key.hint The key to cast
+  */
+  public any function castViewKey( required any key ) {
+    var dataType = variables.util.getDataType( arguments.key );
+    var castKey = "";
+    // key can be string, array, long, double, object, boolean
+    switch( dataType ) {
+      case "array":
+        castKey = variables.client.newJava( "com.couchbase.client.java.document.json.JsonArray" )
+          .create()
+          .from( arguments.key );
+      break;
+      case "struct":
+        castKey = variables.client.newJava( "com.couchbase.client.java.document.json.JsonObject" )
+          .create()
+          .from( arguments.key );
+      break;
+      case "long":
+        castKey = javaCast( "long", arguments.key );
+      break;
+      case "double":
+        castKey = javaCast( "double", arguments.key );
+      break;
+      default:
+        castKey = javaCast( "string", arguments.key.toString() );
+    }
+    return castKey;
   }
 
   /**

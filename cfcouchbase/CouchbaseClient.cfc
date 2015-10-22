@@ -68,10 +68,10 @@ component serializable="false" accessors="true" {
     variables['UUIDHelper'] = createobject( "java", "java.util.UUID" );
     // Java Time Units
     variables['timeUnit'] = createObject( "java", "java.util.concurrent.TimeUnit" );
-    // SDK Utility class
-    variables['util'] = new util.Utility();
     // validate configuration
     variables['couchbaseConfig'] = validateConfig( arguments.config );
+    // SDK Utility class
+    variables['util'] = new util.Utility( variables.couchbaseConfig );
 
     // Load up javaLoader with Couchbase SDK
     if( variables.couchbaseConfig.getUseClassloader() ) {
@@ -95,24 +95,23 @@ component serializable="false" accessors="true" {
   /************************* COUCHBASE SDK METHODS ***********************************/
 
   /**
-  * Upsert ( Update/Insert ) a value with durability options. It is synchronous by default so it returns immediatley without waiting for the actual set to complete.  Call future.set()
-  * if you need to confirm the document has been set.  Even then, the document is only guarunteed to be in memory on a single node.  To force the document to be replicated
+  * Upsert ( Update/Insert ) a value with durability options. It is synchronous by default so it waits for the set to complete. To force the document to be replicated
   * to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  ( This assumes you have replicas enabled )
   * To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc.
   * A PersistTo.TWO durability setting implies a replication to at least one node.
   *
   * <pre class='brush: cf'>
   * person = { name: "Brad", age: 33, hair: "red" };
-  * future = client.set( 'brad', person );
+  * client.upsert( 'brad', person );
   * </pre>
   *
   * @id.hint The unique id of the document to store
   * @value.hint The value to store
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
-  * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ NONE, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<T> ) or void ( null ) if a timeout exception occurs.
+  * @return A structure containing the id, cas, expiry and hashCode document metadata values
   */
   public any function upsert(
     required string id,
@@ -125,9 +124,7 @@ component serializable="false" accessors="true" {
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // we are dealing with a new sdk 2.x+ method set legacy to false
-    arguments['legacy'] = false;
-    // create a new RawJsonDocument to be saved
+    // create a new document to be saved
     var document = newPopulatedDocument( argumentCollection=arguments );
     var result = variables.couchbaseBucket.upsert(
       document,
@@ -143,13 +140,16 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * Creates a new Java object and populates the id, expiry and content
+  * Creates a new populated document java object with the id, expiry, content, cas.  To ensure that
+  * documents are correctly stored we need to generate the correct document type java object. This
+  * is even more important when string documents are going to be used with legacy operations such
+  * as append / prepend.
   *
   * @id.hint The unique id of the document to store
   * @value.hint The value to store
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @cas.hint The cas value of the document
-  * @legacy.hint Whether or not to create a legacy document
+  * @legacy.hint Whether or not to create a legacy document type
   * @dataType.hint An explicitly known data type otherwise it is determined
   *
   * @return The Java Object representation of the data
@@ -321,13 +321,15 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * Creates a new Java Document that is empty
+  * Creates a new populated document java object without any values.  This is used to ensure that
+  * retrieved documents are correctly represented once retrieved.  Older legacy documents cannot be
+  * correctly retrieved otherwise.
   *
   * @value.hint The value to store
   * @legacy.hint Whether or not to create a legacy document
   * @dataType.hint The data type to determine the type of Java Object to create
   *
-  * @return The Java Object representation of the data
+  * @return The Java Object representation of the data to be retrieved
   */
   public any function newEmptyDocument(
     boolean legacy=false,
@@ -387,15 +389,19 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * Set a value with durability options. It is synchronous by default so it returns immediatley without waiting for the actual set to complete.  Call future.set()
-  * if you need to confirm the document has been set.  Even then, the document is only guarunteed to be in memory on a single node.  To force the document to be replicated
-  * to additional nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two replica nodes, etc.  ( This assumes you have replicas enabled )
-  * To force the document to be perisited to disk, passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc.
-  * A PersistTo.TWO durability setting implies a replication to at least one node.
+  * Set a value with durability options. The set() method is no longer supported by the 2.x SDK and this actually calls
+  * upsert().  However the difference is the type of document that is created, upsert() will use the new Json*Document
+  * objects and this uses the legacy StringDocument, BinaryDocument or LegacyDocument. This is important especially for
+  * StringDocuments as string documents are the only documents that can truly be appended / prepended to. It is
+  * synchronous by default so it waits for the set to complete. To force the document to be replicated to additional
+  * nodes, pass the replicateTo argument.  A value of ReplicateTo.TWO ensures the document is copied to at least two
+  * replica nodes, etc.  ( This assumes you have replicas enabled ) To force the document to be perisited to disk,
+  * passing in PersistTo.ONE ensures it is stored on disk in a single node.  PersistTo.TWO ensures 2 nodes, etc. A
+  * PersistTo.TWO durability setting implies a replication to at least one node.
   *
   * <pre class='brush: cf'>
   * person = { name: "Brad", age: 33, hair: "red" };
-  * future = client.set( 'brad', person );
+  * client.set( 'brad', person );
   * </pre>
   *
   * @id.hint The unique id of the document to store
@@ -404,7 +410,7 @@ component serializable="false" accessors="true" {
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<T> ) or void ( null ) if a timeout exception occurs.
+  * @return A structure containing the id, cas, expiry and hashCode document metadata values
   */
   public any function set(
     required string id,
@@ -413,27 +419,9 @@ component serializable="false" accessors="true" {
     string persistTo,
     string replicateTo
   ) {
-    // default timeout
-    defaultTimeout( arguments );
-    // default persist and replicate
-    defaultPersistReplicate( arguments );
-    // set the document type we are dealing with, since set() is deprecated from the SDK assume that
-    // whoever is calling set() is using Legacy documents
+    // we are dealing with an old sdk 1.x method, assume that we are wanting to create legacy documents
     arguments['legacy'] = true;
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    // update the document
-    var result = variables.couchbaseBucket.upsert(
-      document,
-      arguments.persistTo,
-      arguments.replicateTo
-    );
-    return {
-      'id' = result.id(),
-      'cas' = result.cas(),
-      'expiry' = result.expiry(),
-      'hashCode' = result.hashCode()
-    };
+    return this.upsert( argumentCollection=arguments );
   }
 
   /**
@@ -444,7 +432,7 @@ component serializable="false" accessors="true" {
   *
   * <pre class='brush: cf'>
   * person = { name: "Brad", age: 33, hair: "red" };
-  * result = client.setWithCAS( 'brad', person, CAS );
+  * result = client.replaceWithCAS( 'brad', person, CAS );
   * </pre>
   *
   * @id.hint The unique id of the document to store
@@ -511,8 +499,22 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * ( deprecated )
-  * setWithCAS is no longer supported by the Java SDK, it has been replaced with replace(), leaving here for backwards compatibility
+  * Replace the value of an existing document with a CAS value, as set() is deprecated this calls replaceWithCas with the legacy document type set to true.
+  * The upsert() method does not support cas operations.
+  *
+  * <pre class='brush: cf'>
+  * person = { name: "Brad", age: 33, hair: "red" };
+  * result = client.setWithCas( 'brad', person, CAS );
+  * </pre>
+  *
+  * @id.hint The unique id of the document to store
+  * @value.hint The value to store
+  * @CAS.hint CAS value retrieved via getWithCAS()
+  * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
+  * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
+  * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  *
+  * @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED" indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or a regular set() commend to store the document.
   */
   public any function setWithCAS(
     required string id,
@@ -522,16 +524,18 @@ component serializable="false" accessors="true" {
     string persistTo,
     string replicateTo
   ) {
-    return replaceWithCAS( argumentCollection=arguments );
+    // we are dealing with an old sdk 1.x method, assume that we are wanting to create legacy documents
+    arguments['legacy'] = true;
+    return this.replaceWithCAS( argumentCollection=arguments );
   }
 
   /**
-  * This method is the same as upsert(), except it return true if the ID being set doesn't already exist.
+  * This method is the same as upsert(), except it will return true if the ID being set doesn't already exist.
   * It will return false if the item being set does already exist.
   *
   * <pre class='brush: cf'>
   * person = { name: "Brad", age: 33, hair: "red" };
-  * future = client.insert( 'brad', person );
+  * client.insert( 'brad', person );
   * </pre>
   *
   * @id.hint
@@ -540,7 +544,7 @@ component serializable="false" accessors="true" {
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<Boolean> ) or void ( null ) if a timeout exception occurs.
+  * @return A boolean indicating whether or not the insert was successful
   */
   public boolean function insert(
     required string id,
@@ -592,7 +596,7 @@ component serializable="false" accessors="true" {
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<Boolean> ) or void ( null ) if a timeout exception occurs.
+  * @return A boolean indicating whether or not the insert was successful
   */
   public boolean function add(
     required string id,
@@ -601,32 +605,9 @@ component serializable="false" accessors="true" {
     string persistTo,
     string replicateTo
   ) {
-    // default timeout
-    defaultTimeout( arguments );
-    // default persist and replicate
-    defaultPersistReplicate( arguments );
     // we are dealing with an old sdk 1.x method, assume that we are wanting to create legacy documents
     arguments['legacy'] = true;
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var success = true;
-    try {
-      variables.couchbaseBucket.insert(
-        document,
-        arguments.persistTo,
-        arguments.replicateTo
-      );
-    }
-    catch( Expression e ) {
-      // the document already exists and cannot be inserted
-      if( e.type == "com.couchbase.client.java.error.DocumentAlreadyExistsException" ) {
-        success = false;
-      }
-      else {
-        rethrow;
-      }
-    }
-    return success;
+    return this.insert( argumentCollection=arguments );
   }
 
   /**
@@ -700,23 +681,9 @@ component serializable="false" accessors="true" {
     string persistTo,
     string replicateTo
   ) {
-    var results = {};
-    // default persist and replicate
-    defaultPersistReplicate( arguments );
-    // default timeouts
-    defaultTimeout( arguments );
-    // Loop over incoming key/value pairs
-    for( var id in arguments.data ) {
-      // save the result
-      results[id] = this.set(
-        id=id,
-        value=serializeData( arguments.data[id] ),
-        timeout=arguments.timeout,
-        persistTo=arguments.persistTo,
-        replicateTo=arguments.replicateTo
-      );
-    }
-    return results;
+    // we are dealing with an old sdk 1.x method, assume that we are wanting to create legacy documents
+    arguments['legacy'] = true;
+    return this.upsertMulti( argumentCollection=arguments );
   }
 
   /**
@@ -724,8 +691,7 @@ component serializable="false" accessors="true" {
   *
   * <pre class='brush: cf'>
   * person = { name: "Brad", age: 33, hair: "red" };
-  * future = client.replace( 'brad', person );
-  * future.get();
+  * client.replace( 'brad', person );
   * </pre>
   *
   * @id.hint The ID of the document to replace.
@@ -734,9 +700,9 @@ component serializable="false" accessors="true" {
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A Java OperationFuture object ( net.spy.memcached.internal.OperationFuture<Boolean> ) or void ( null ) if a timeout exception occurs. future.get() will return true if the replace was successfull, and will return false if the ID didn't already exist to replace.
+  * @return A boolean indicating whether or not the replace was successful
   */
-  public any function replace(
+  public boolean function replace(
     required string id,
     required any value,
     numeric timeout,
@@ -748,7 +714,7 @@ component serializable="false" accessors="true" {
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new RawJsonDocument to be saved
+    // create a new document to be saved
     var document = newPopulatedDocument( argumentCollection=arguments );
     var success = true;
     try {
@@ -833,8 +799,7 @@ component serializable="false" accessors="true" {
   * Get an object from couchbase asynchronously.
   *
   * <pre class='brush: cf'>
-  * future = client.asyncGet( 'brad' );
-  * future.get();
+  * observable = client.asyncGet( 'brad' );
   * </pre>
   *
   * @id.hint The ID of the document to retrieve.
@@ -994,7 +959,7 @@ component serializable="false" accessors="true" {
   * @return A struct with "CAS" and "value" keys.  If the ID doesn't exist, this method will return null.
   */
   public any function getAndTouch(
-    required string ID,
+    required string id,
     required numeric timeout,
     boolean deserialize=true,
     struct deserializeOptions={},
@@ -1401,7 +1366,7 @@ component serializable="false" accessors="true" {
   ) {
     // since it is being passed to counter the value needs to be negative
     arguments['value'] *= -1;
-    return counter( argumentCollection=arguments );
+    return this.counter( argumentCollection=arguments );
   }
 
   /**
@@ -1416,7 +1381,7 @@ component serializable="false" accessors="true" {
   ) {
     // since it is being passed to counter the value needs to be negative
     arguments['value'] *= -1;
-    return asyncCounter( argumentCollection=arguments );
+    return this.asyncCounter( argumentCollection=arguments );
   }
 
   /**
@@ -1429,7 +1394,7 @@ component serializable="false" accessors="true" {
     numeric defaultValue=0,
     numeric timeout
   ) {
-    return counter( argumentCollection=arguments );
+    return this.counter( argumentCollection=arguments );
   }
 
   /**
@@ -1442,7 +1407,7 @@ component serializable="false" accessors="true" {
     numeric defaultValue=0,
     numeric timeout
   ) {
-    return asyncCounter( argumentCollection=arguments );
+    return this.asyncCounter( argumentCollection=arguments );
   }
 
   /**
@@ -1474,7 +1439,7 @@ component serializable="false" accessors="true" {
   * Delete a value with durability options. The durability options here operate similarly to those documented in the set method.
   *
   * <pre class='brush: cf'>
-  * future = client.delete( 'brad' );
+  * client.remove( 'brad' );
   * </pre>
   *
   * @id The ID of the document to delete, or an array of ID's to delete
@@ -1545,9 +1510,7 @@ component serializable="false" accessors="true" {
   *
   * @return Boolean indicating the existence of a document
   */
-  public boolean function exists(
-    required any id
-  ) {
+  public boolean function exists( required any id ) {
     return variables.couchbaseBucket.exists( arguments.id );
   }
 
@@ -1841,7 +1804,7 @@ component serializable="false" accessors="true" {
 
   /**
   * ( deprecated )
-  * newQuery() is no longer supported, it has been replaced with newViewQuery(), leaving here for backwards compatibility
+  * newQuery() is no longer supported, it has been replaced with newViewQuery() and newN1qlQuery, leaving here for backwards compatibility
   */
   public any function newQuery(
     string designDocumentName,

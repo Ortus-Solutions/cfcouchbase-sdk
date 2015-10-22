@@ -15,11 +15,12 @@
 		{ "type" : "railo", "version" : ">4.1" },
 		{ "type" : "adobe", "version" : ">9.0.2" }
 	],
-	"license"			: [ 
-		{ "type" : "Apache2", "url" : "http://www.apache.org/licenses/LICENSE-2.0.html" } 
+	"license"			: [
+		{ "type" : "Apache2", "url" : "http://www.apache.org/licenses/LICENSE-2.0.html" }
 	],
 	"contributors"		: [
-		"Brad Wood <bdw429s@gmail.com>"
+		"Brad Wood <bdw429s@gmail.com>",
+  		"Aaron Benton <bentonam@gmail.com>"
 	],
 	"ignore"			: [
 		"apidocs/*", "docs/*", "LICENSE"

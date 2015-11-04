@@ -8,3 +8,5 @@ apidocs/CFCouchbase-APIDocs
 test/results
 distributions/docs
 build/build.number
+samples/testing
+.DS_Store

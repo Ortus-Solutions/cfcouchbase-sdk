@@ -3,30 +3,30 @@
 // a $serialize() and $deserialize() method to facilitate that.
 component accessors="true"{
 
-	property name="firstName";
-	property name="lastName";
-	property name="age";
+  property name="firstName";
+  property name="lastName";
+  property name="age";
 
-	function init(){
-		firstName = "";
-		lastName = "";
-		age = 0;
-	}
+  function init(){
+    firstName = "";
+    lastName = "";
+    age = 0;
+  }
 
-	function $serialize(){
+  function $serialize(){
 
-		// Serialize as pipe-delimited list
-		return '#getFirstName()#|#getLastName()#|#getAge()#';
+    // Serialize as pipe-delimited list
+    return '#getFirstName()#|#getLastName()#|#getAge()#';
 
-	}
-	
-	function $deserialize( ID, data ){
+  }
 
-		// Deserialize the pipe-delimited list
-		setFirstName( listGetAt( data, 1, '|' ) );
-		setLastName( listGetAt( data, 2, '|' ) );
-		setAge( listGetAt( data, 3, '|' ) );
-		
-	}
+  function $deserialize( ID, data ){
+
+    // Deserialize the pipe-delimited list
+    setFirstName( listGetAt( data, 1, '|' ) );
+    setLastName( listGetAt( data, 2, '|' ) );
+    setAge( listGetAt( data, 3, '|' ) );
+
+  }
 
 }

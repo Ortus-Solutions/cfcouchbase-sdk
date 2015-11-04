@@ -1,29 +1,29 @@
 component accessors="true"{
 
-	property name="name";
-	property name="age";
+  property name="name";
+  property name="age";
 
-	function init(){
-		name = "";
-		age = 0;
-	}
+  function init(){
+    name = "";
+    age = 0;
+  }
 
-	function $serialize(){
+  function $serialize(){
 
-		return serializeJSON({
-			name = getName(),
-			age  = getAge(),
-			type = "UserCF",
-			when = now()
-		});
+    return serializeJSON({
+      name = getName(),
+      age  = getAge(),
+      type = "UserCF",
+      when = now()
+    });
 
-	}
-	
-	function $deserialize( ID, data ){
+  }
 
-		setName( data.name );
-		setAge( data.age );
-		
-	}
+  function $deserialize( ID, data ){
+
+    setName( data.name );
+    setAge( data.age );
+
+  }
 
 }

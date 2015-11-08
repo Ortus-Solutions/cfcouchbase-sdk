@@ -479,7 +479,7 @@ component serializable="false" accessors="true" {
         arguments.replicateTo
       );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       switch( e.type ) {
         // the cas value is invalid
         case "com.couchbase.client.java.error.CASMismatchException":
@@ -569,7 +569,7 @@ component serializable="false" accessors="true" {
         arguments.replicateTo
       );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       // the document already exists and cannot be inserted
       if( e.type == "com.couchbase.client.java.error.DocumentAlreadyExistsException" ) {
         success = false;
@@ -724,7 +724,7 @@ component serializable="false" accessors="true" {
         arguments.replicateTo
       );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       // the document does not exist and can't be replaced
       if( e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException" ) {
         success = false;
@@ -767,7 +767,7 @@ component serializable="false" accessors="true" {
     try {
       result = variables.couchbaseBucket.get( document );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       // basically an attempt was made to retrieve a legacy document that cannot be inflated
       // to the new Json*Document objects provided by the SDK.  try to get the document as a
       // legacy document
@@ -807,10 +807,11 @@ component serializable="false" accessors="true" {
   * @return A Java Observable ( rx.Observable )
   */
   public any function asyncGet( required string id ) {
-    // no inflation or deserialization as it is async.
-    return variables.couchbaseBucket
-      .async()
-      .get( variables.util.normalizeID( arguments.id ) ).single();
+    throw(
+      message="async options not supported",
+      detail="The asyncGet method is not currently supported.",
+      type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -856,10 +857,10 @@ component serializable="false" accessors="true" {
   * @return A bulk Java Future. ( net.spy.memcached.internal.BulkFuture )  Any document IDs not found will not exist in the future object.
   */
   public any function asyncGetMulti( required array id ) {
-   throw(
-     message="asyncGetMulti not supported",
-     detail="The asyncGetMulti method is not supported as it requires observables to issue separate gets.",
-     type="CouchbaseClient.NotSupported"
+    throw(
+      message="async options not supported",
+      detail="The asyncGetMulti method is not currently supported.",
+      type="CouchbaseClient.NotSupported"
     );
   }
 
@@ -895,7 +896,7 @@ component serializable="false" accessors="true" {
     try {
       result = variables.couchbaseBucket.get( document );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       // basically an attempt was made to retrieve a legacy document that cannot be inflated
       // to the new Json*Document objects provided by the SDK.  try to get the document as a
       // legacy document
@@ -934,8 +935,8 @@ component serializable="false" accessors="true" {
   */
   public any function asyncGetWithCAS( required string id ) {
     throw(
-      message="asyncGetWithCAS not supported",
-      detail="The asyncGetWithCAS method is not supported as it requires observables to issue separate gets.",
+      message="async options not supported",
+      detail="The asyncGetWithCAS method is not currently supported.",
       type="CouchbaseClient.NotSupported"
     );
   }
@@ -974,7 +975,7 @@ component serializable="false" accessors="true" {
     try {
       result = variables.couchbaseBucket.getAndTouch( document );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       // basically an attempt was made to retrieve a legacy document that cannot be inflated
       // to the new Json*Document objects provided by the SDK.  try to get the document as a
       // legacy document
@@ -1024,12 +1025,11 @@ component serializable="false" accessors="true" {
     required string id,
     required numeric timeout
   ) {
-    return variables.couchbaseBucket
-      .async()
-      .getAndTouch(
-        variables.util.normalizeID( arguments.id ),
-        variables.timeUnit.MINUTES.toMillis( javaCast( "long", arguments.timeout ) )
-      );
+    throw(
+      message="async options not supported",
+      detail="The asyncGetAndTouch method is not currently supported.",
+      type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -1078,8 +1078,8 @@ component serializable="false" accessors="true" {
         javaCast( "int", arguments.lockTime )
       );
     }
-    catch( Expression e ) {
-      // catch Expression exceptions to see if it is a lock exception
+    catch( any e ) {
+      // catch any exceptions to see if it is a lock exception
       // locked documents cannot be re-retrieved until the lockTime has exceeded
       // or the document has been updated with a CAS value or it explicly unlocked
       if( e.type == "com.couchbase.client.java.error.TemporaryLockFailureException" ) {
@@ -1312,6 +1312,7 @@ component serializable="false" accessors="true" {
   ) {
     // default timeouts
     defaultTimeout( arguments );
+
     var document = variables.couchbaseBucket.counter(
       variables.util.normalizeID( arguments.id ),
       javaCast( "long", arguments.value ),
@@ -1342,16 +1343,11 @@ component serializable="false" accessors="true" {
     numeric defaultValue=0,
     numeric timeout
   ) {
-    // default timeouts
-    defaultTimeout( arguments );
-    return variables.couchbaseBucket
-      .async()
-      .counter(
-        variables.util.normalizeID( arguments.id ),
-        javaCast( "long", arguments.value ),
-        javaCast( "long", arguments.defaultValue ),
-        javaCast( "long", arguments.timeout )
-      );
+    throw(
+      message="async options not supported",
+      detail="The asyncCounter method is not currently supported.",
+      type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -1379,14 +1375,16 @@ component serializable="false" accessors="true" {
     numeric defaultValue=0,
     numeric timeout
   ) {
-    // since it is being passed to counter the value needs to be negative
-    arguments['value'] *= -1;
-    return this.asyncCounter( argumentCollection=arguments );
+    throw(
+      message="async options not supported",
+      detail="The asyncDecr method is not currently supported.",
+      type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
   * ( deprecated )
-  * incr() is no longer supported, it has been replaced with asyncCounter(), leaving here for backwards compatibility
+  * incr() is no longer supported, it has been replaced with counter(), leaving here for backwards compatibility
   */
   public any function incr(
     required string id,
@@ -1407,7 +1405,11 @@ component serializable="false" accessors="true" {
     numeric defaultValue=0,
     numeric timeout
   ) {
-    return this.asyncCounter( argumentCollection=arguments );
+    throw(
+      message="async options not supported",
+      detail="The asyncDecr method is not currently supported.",
+      type="CouchbaseClient.NotSupported"
+    );
   }
 
   /**
@@ -1473,7 +1475,7 @@ component serializable="false" accessors="true" {
         // the operation returns the document that was deleted if we got here it was successful
         results[document_id] = true;
       }
-      catch( Expression e ) {
+      catch( any e ) {
         // if the document doesn't exist or the durability options couldn't be met set a false value for the key
         if( e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException" || e.type == "com.couchbase.client.java.error.DurabilityException" ) {
           results[document_id] = false;
@@ -2695,7 +2697,7 @@ component serializable="false" accessors="true" {
             javaCast( "boolean", arguments.overwrite )
           );
     }
-    catch( Expression e ) {
+    catch( any e ) {
       // if there was a timeout exception or the design document already exists
       if(
         e.type == "java.util.concurrent.TimeoutException" ||

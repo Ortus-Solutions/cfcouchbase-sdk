@@ -162,7 +162,10 @@ component extends="testbox.system.BaseSpec"{
         } );
 
         it( "can decrement values asynchronously", function(){
-          expect( false ).toBeTrue();
+          expect( function(){
+            couchbase.asyncCounter( "unit-decrement", -1 )
+          })
+          .toThrow( type="CouchbaseClient.NotSupported" );
         } );
 
         it( "can increment values", function(){
@@ -172,7 +175,10 @@ component extends="testbox.system.BaseSpec"{
         } );
 
         it( "can increment values asynchronously", function(){
-          expect( false ).toBeTrue();
+          expect( function(){
+            couchbase.asyncCounter( "unit-increment", 1 )
+          })
+          .toThrow( type="CouchbaseClient.NotSupported" );
         } );
 
         it( "will set multiple documents", function(){
@@ -408,31 +414,41 @@ component extends="testbox.system.BaseSpec"{
         /**************************************************************/
         describe( "that are asynchronous", function(){
 
-          it( "with valid object", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          } );
+          it( "will through with valid object", function(){
+            expect( function(){
+              var result = couchbase.asyncGet( "ID1" );
+            })
+            .toThrow( type="CouchbaseClient.NotSupported" );
+          });
 
           it( "with invalid object", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          } );
+            expect( function(){
+              var result = couchbase.asyncGet( "notfound" );
+            })
+            .toThrow( type="CouchbaseClient.NotSupported" );
+          });
 
           it( "with CAS", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          } );
+            expect( function(){
+              var result = couchbase.asyncGetWithCAS( "ID1" );
+            })
+            .toThrow( type="CouchbaseClient.NotSupported" );
+          });
 
           it( "with touch", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
+            expect( function(){
+              var result = couchbase.asyncGetAndTouch( "ID1", 5 );
+            })
+            .toThrow( type="CouchbaseClient.NotSupported" );
 
-          } );
+          });
 
           it( "with multiple IDs", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          } );
+            expect( function(){
+              var result = couchbase.asyncGetMulti( [ "ID1", "ID2" ] );
+            })
+            .toThrow( type="CouchbaseClient.NotSupported" );
+          });
 
 
         } );

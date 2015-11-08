@@ -28,9 +28,9 @@ component extends="testbox.system.BaseSpec"{
 /*********************************** LIFE CYCLE Methods ***********************************/
 
   function beforeAll(){
-    OP = new cfcouchbase.data.ObjectPopulator();
+    variables.OP = new cfcouchbase.data.ObjectPopulator();
 
-    data = {
+    variables.data = {
       firstname = "Brad",
       lastName = "Wood",
       age = "33",
@@ -51,51 +51,51 @@ component extends="testbox.system.BaseSpec"{
       it( "can populate a simple object with JSON", function(){
         var userSimple = new test.resources.UserSimple();
 
-        OP.populateFromJSON( userSimple, serializeJSON( data ) );
+        variables.OP.populateFromJSON( userSimple, serializeJSON( variables.data ) );
 
-        expect( userSimple.getFirstname() ).toBe( data.firstname );
-        expect( userSimple.getLastName() ).toBe( data.lastName );
-        expect( userSimple.getAge() ).toBe( data.age );
-        expect( userSimple.getID() ).toBe( data.id );
-        expect( userSimple.getCreatedDate() ).toBe( data.createdDate );
-        expect( userSimple.getUpdatedDate() ).toBe( data.updatedDate );
+        expect( userSimple.getFirstname() ).toBe( variables.data.firstname );
+        expect( userSimple.getLastName() ).toBe( variables.data.lastName );
+        expect( userSimple.getAge() ).toBe( variables.data.age );
+        expect( userSimple.getID() ).toBe( variables.data.id );
+        expect( userSimple.getCreatedDate() ).toBe( variables.data.createdDate );
+        expect( userSimple.getUpdatedDate() ).toBe( variables.data.updatedDate );
 
       });
 
       it( "can populate a simple object with struct", function(){
         var userSimple = new test.resources.UserSimple();
 
-        OP.populateFromStruct( userSimple, data );
+        variables.OP.populateFromStruct( userSimple, variables.data );
 
-        expect( userSimple.getFirstname() ).toBe( data.firstname );
-        expect( userSimple.getLastName() ).toBe( data.lastName );
-        expect( userSimple.getAge() ).toBe( data.age );
-        expect( userSimple.getID() ).toBe( data.id );
-        expect( userSimple.getCreatedDate() ).toBe( data.createdDate );
-        expect( userSimple.getUpdatedDate() ).toBe( data.updatedDate );
+        expect( userSimple.getFirstname() ).toBe( variables.data.firstname );
+        expect( userSimple.getLastName() ).toBe( variables.data.lastName );
+        expect( userSimple.getAge() ).toBe( variables.data.age );
+        expect( userSimple.getID() ).toBe( variables.data.id );
+        expect( userSimple.getCreatedDate() ).toBe( variables.data.createdDate );
+        expect( userSimple.getUpdatedDate() ).toBe( variables.data.updatedDate );
 
       });
 
       it( "can populate a simple object with scope injection", function(){
         var userSimple = new test.resources.UserSimple();
 
-        OP.populateFromStruct( userSimple, data, "variables" );
+        variables.OP.populateFromStruct( userSimple, variables.data, "variables" );
 
-        expect( userSimple.getFirstname() ).toBe( data.firstname );
-        expect( userSimple.getLastName() ).toBe( data.lastName );
-        expect( userSimple.getAge() ).toBe( data.age );
-        expect( userSimple.getID() ).toBe( data.id );
-        expect( userSimple.getCreatedDate() ).toBe( data.createdDate );
-        expect( userSimple.getUpdatedDate() ).toBe( data.updatedDate );
+        expect( userSimple.getFirstname() ).toBe( variables.data.firstname );
+        expect( userSimple.getLastName() ).toBe( variables.data.lastName );
+        expect( userSimple.getAge() ).toBe( variables.data.age );
+        expect( userSimple.getID() ).toBe( variables.data.id );
+        expect( userSimple.getCreatedDate() ).toBe( variables.data.createdDate );
+        expect( userSimple.getUpdatedDate() ).toBe( variables.data.updatedDate );
 
       });
 
       it( "can populate a only certain columns", function(){
         var userSimple = new test.resources.UserSimple();
 
-        OP.populateFromStruct( target = userSimple, memento = data, include = 'firstName');
+        variables.OP.populateFromStruct( target = userSimple, memento = variables.data, include = 'firstName');
 
-        expect( userSimple.getFirstname() ).toBe( data.firstname );
+        expect( userSimple.getFirstname() ).toBe( variables.data.firstname );
         expect( userSimple.getLastName() ).toBeEmpty();
 
       });
@@ -103,10 +103,10 @@ component extends="testbox.system.BaseSpec"{
       it( "can populate a everything but certain columns", function(){
         var userSimple = new test.resources.UserSimple();
 
-        OP.populateFromStruct( target = userSimple, memento = data, exclude = 'firstName');
+        variables.OP.populateFromStruct( target = userSimple, memento = variables.data, exclude = 'firstName');
 
         expect( userSimple.getFirstname() ).toBeEmpty();
-        expect( userSimple.getLastName() ).toBe( data.lastname );
+        expect( userSimple.getLastName() ).toBe( variables.data.lastname );
 
       });
 

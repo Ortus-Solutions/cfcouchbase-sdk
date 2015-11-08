@@ -127,7 +127,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "can decrement values", function(){
-          var doc = couchbase.set( id="unit-decrement", value=10 );
+          var doc = couchbase.upsert( id="unit-decrement", value=10 );
           var result = couchbase.decr( "unit-decrement", 1 );
           expect( result ).toBe( 9 );
         });
@@ -196,11 +196,17 @@ component extends="testbox.system.BaseSpec"{
         describe( "that are asynchronous", function() {
 
           it( "can decrement values asynchronously", function(){
-            expect( false ).toBeTrue();
+            expect( function(){
+              couchbase.asyncDecr( "unit-decrement", 1 )
+            })
+            .toThrow( type="CouchbaseClient.NotSupported" );
           });
 
           it( "can increment values asynchronously", function(){
-            expect( false ).toBeTrue();
+              expect( function(){
+                couchbase.asyncIncr( "unit-increment", 1 )
+              })
+              .toThrow( type="CouchbaseClient.NotSupported" );
           });
 
         });
@@ -365,40 +371,6 @@ component extends="testbox.system.BaseSpec"{
           expect( result.id3 ).toBe( "value3" );
 
           expect( result ).notToHaveKey( "not_existant" );
-        });
-
-        /**************************************************************/
-        /**************** async operations ******************************/
-        /**************************************************************/
-        describe( "that are asynchronous", function(){
-
-          it( "with valid object", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          });
-
-          it( "with invalid object", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          });
-
-          it( "with CAS", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          });
-
-          it( "with touch", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-
-          });
-
-          it( "with multiple IDs", function(){
-            // this test needs to be rewritten
-            expect( false ).toBe( true );
-          });
-
-
         });
 
       });

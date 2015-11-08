@@ -6,9 +6,9 @@ component accessors="true" extends="Base"{
 
   function init(){
     super.init();
-    firstname = "";
-    lastName = "";
-    age = "";
+    variables.firstname = "";
+    variables.lastName = "";
+    variables.age = "";
   }
 
 }

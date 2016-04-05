@@ -1943,7 +1943,23 @@ component serializable="false" accessors="true" {
       // if there is no id then the results are reduced
       var isReduced = isNull( row.id() );
       // if there is no id there will be no document
-      var hasDocs = !isReduced && !isNull( row.document() );
+      var hasDocs = !isReduced;
+      // if it is not reduced attempt to get the document, this has to be wrapped in a try / catch
+      // because of legacy documents
+      if(hasDocs){
+        try {
+          hasDocs = hasDocs && !isNull( row.document() );
+        }
+        catch( any e ) {
+          if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
+            // if this error happened it is because a legacy document was attempted to be retrieved
+            hasDocs = true;
+          }
+          else {
+            rethrow;
+          }
+        }
+      }
       /**
       * ID: The id of the document in Couchbase, but only available if the query is NOT reduced
       * Document: Only available if the query is NOT reduced

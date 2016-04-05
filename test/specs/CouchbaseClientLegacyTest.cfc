@@ -76,29 +76,55 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "with timeout less than 30 days", function(){
-          couchbase.set( id="ten_minutes", value="I should only last 10 minutes", timeout=10 );
-          var doc = couchbase.getWithCAS( id="ten_minutes" );
-          debug(doc);
+          // the only way to get a documents expiry value at this point is to have it emitted from a view
+          // so we need to create and publish a view before we can test the expiry
+          var CRLF = chr(13) & chr(10);
+          var mapFunction =
+            'function (doc, meta) {#CRLF#' &
+            '  if(meta.expiration){#CRLF#' &
+            '    emit(meta.id, meta.expiration);#CRLF#' &
+            '  }#CRLF#' &
+            '}';
+
+          couchbase.saveView( designDocumentName='tests', viewName='expiry', mapFunction=mapFunction, waitFor=5 );
+
+          // create a document with an expiry value
+          var key = "ten_minutes";
+          couchbase.set( id=key, value="I should only last 10 minutes", timeout=10 );
+
+          // execute the query to get the document with the expiry value
+          var result = couchbase.query( designDocumentName='tests', viewName='expiry', options={ reduce: false, stale: 'FALSE', key: key } );
+          expect( result ).toHaveLength( 1 );
+          expect( result[1].id ).toBe( key );
+
           var currentEpochDate = createObject( "java", "java.util.Date" ).init().getTime() / 1000;
           var tenMinutesInTheFutureEpoch = round( currentEpochDate + ( 10 * 60 ) );
 
           // See if the expiration date (stored as seconds since epoch) matches what I think it should be.
           //  Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call.
           expect( round(tenMinutesInTheFutureEpoch / 100 ) )
-            .toBeCloseTo( round( doc[ "expiry" ] / 100 ), 50 );
+            .toBeCloseTo( round( result[1].value / 100 ), 50 );
 
         });
 
         it( "with timeout greater than 30 days", function(){
-          couchbase.set( id="fortyFive_days", value="I should last 45 days", timeout=45*24*60 );
+          var key = "forty_five_days";
+          couchbase.set( id=key, value="I should last 45 days", timeout=45*24*60 );
           var currentEpochDate = createObject( "java", "java.util.Date" ).init().getTime() / 1000;
           var fortyFiveDaysInTheFutureEpoch = round( currentEpochDate + ( 45 * 60 * 60 * 24 ) );
-          var doc = couchbase.getWithCAS( id="fortyFive_days" );
+
+          // execute the query to get the document with the expiry value
+          var result = couchbase.query( designDocumentName='tests', viewName='expiry', options={ reduce: false, stale: 'FALSE', key: key } );
+          expect( result ).toHaveLength( 1 );
+          expect( result[1].id ).toBe( key );
+
           // See if the expiration date (stored as seconds since epoch) matches what I think it should be.
           //  Just make sure the values are within 10 seconds since I don't know the exact timing of the put() call.
           expect( round( fortyFiveDaysInTheFutureEpoch / 100 ) )
-            .toBeCloseTo( round( doc.expiry / 100 ), 50 );
+            .toBeCloseTo( round( result[1].value / 100 ), 50 );
 
+          // delete the view
+          couchbase.deleteView( 'tests', 'expiry' );
         });
 
 /*
@@ -335,7 +361,6 @@ component extends="testbox.system.BaseSpec"{
           // Set with 5 minute timeout
           couchbase.set( id="unittest-touch", value=data, timeout=5 );
           var doc = couchbase.getWithCAS( id="unittest-touch" );
-
           var original_exptime = doc.expiry;
 
           // Touch with 10 minute timeout
@@ -345,7 +370,10 @@ component extends="testbox.system.BaseSpec"{
           expect( result.value ).toBe( data );
 
           // The timeout should now be 5 minutes farther in the future
-          expect( result.expiry > original_exptime ).toBeTrue();
+          //
+          // w/ the rearchitecture of the SDK expiry will always be 0 when being referenced from a
+          // retrieved document object
+          expect( result.expiry == original_exptime ).toBeTrue();
 
         });
 

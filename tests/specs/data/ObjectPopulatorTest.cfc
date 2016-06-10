@@ -49,7 +49,7 @@ component extends="testbox.system.BaseSpec"{
     describe( "The Object Populator", function(){
 
       it( "can populate a simple object with JSON", function(){
-        var userSimple = new test.resources.UserSimple();
+        var userSimple = new tests.resources.UserSimple();
 
         variables.OP.populateFromJSON( userSimple, serializeJSON( variables.data ) );
 
@@ -63,7 +63,7 @@ component extends="testbox.system.BaseSpec"{
       });
 
       it( "can populate a simple object with struct", function(){
-        var userSimple = new test.resources.UserSimple();
+        var userSimple = new tests.resources.UserSimple();
 
         variables.OP.populateFromStruct( userSimple, variables.data );
 
@@ -77,7 +77,7 @@ component extends="testbox.system.BaseSpec"{
       });
 
       it( "can populate a simple object with scope injection", function(){
-        var userSimple = new test.resources.UserSimple();
+        var userSimple = new tests.resources.UserSimple();
 
         variables.OP.populateFromStruct( userSimple, variables.data, "variables" );
 
@@ -91,7 +91,7 @@ component extends="testbox.system.BaseSpec"{
       });
 
       it( "can populate a only certain columns", function(){
-        var userSimple = new test.resources.UserSimple();
+        var userSimple = new tests.resources.UserSimple();
 
         variables.OP.populateFromStruct( target = userSimple, memento = variables.data, include = 'firstName');
 
@@ -101,7 +101,7 @@ component extends="testbox.system.BaseSpec"{
       });
 
       it( "can populate a everything but certain columns", function(){
-        var userSimple = new test.resources.UserSimple();
+        var userSimple = new tests.resources.UserSimple();
 
         variables.OP.populateFromStruct( target = userSimple, memento = variables.data, exclude = 'firstName');
 

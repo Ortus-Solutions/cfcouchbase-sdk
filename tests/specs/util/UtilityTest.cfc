@@ -64,7 +64,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "can determine an object", function(){
-          var data = new test.resources.User();
+          var data = new tests.resources.User();
           expect( util.getDataType(data) ).toBe( "object" );
         });
 

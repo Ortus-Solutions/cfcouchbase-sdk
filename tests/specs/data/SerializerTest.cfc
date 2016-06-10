@@ -110,7 +110,7 @@ component extends="testbox.system.BaseSpec"{
       describe( "Serialize/deserialize CFCs", function(){
 
         it( "of objects with $serialize() methods", function(){
-          var data = new test.resources.User();
+          var data = new tests.resources.User();
           data.setName( "Luis Majano" );
           data.setAge( 999 );
 
@@ -126,13 +126,13 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "of objects with $deserialize() methods", function(){
-          var user = new test.resources.User();
+          var user = new tests.resources.User();
           user.setName( "Brad Wood" );
           user.setAge( 21 );
 
           couchbase.set( id="object-with-deserialize", value=user );
 
-          var reinflatedUser = couchbase.get( id="object-with-deserialize", inflateTo='test.resources.User' );
+          var reinflatedUser = couchbase.get( id="object-with-deserialize", inflateTo='tests.resources.User' );
 
           expect( reinflatedUser.getName() ).toBe( 'Brad Wood' );
           expect( reinflatedUser.getAge() ).toBe( 21 );
@@ -140,7 +140,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "of objects with properties", function(){
-          var data = new test.resources.UserSimple();
+          var data = new tests.resources.UserSimple();
           data.setFirstName( "Luis" );
           data.setLastName( "Majano" );
           data.setAge( 999 );
@@ -156,7 +156,7 @@ component extends="testbox.system.BaseSpec"{
           expect( rawData.firstName ).toBe( "Luis" );
 
           // Or get a reinflated object
-          var reinflatedUser = couchbase.get( id="object-funky", inflateTo='test.resources.UserSimple' );
+          var reinflatedUser = couchbase.get( id="object-funky", inflateTo='tests.resources.UserSimple' );
 
           expect( reinflatedUser ).toBeComponent();
           expect( reinflatedUser.getAge() ).toBe( 999 );
@@ -167,14 +167,14 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "with inflateTo object", function(){
-          var data = new test.resources.UserSimple();
+          var data = new tests.resources.UserSimple();
           data.setFirstName( "Luis" );
           data.setLastName( "Majano" );
           data.setAge( 999 );
 
           couchbase.set( id="object-funky", value=data );
 
-          var reinflatedUser = couchbase.get( id="object-funky", inflateTo= new test.resources.UserSimple() );
+          var reinflatedUser = couchbase.get( id="object-funky", inflateTo= new tests.resources.UserSimple() );
 
           expect( reinflatedUser ).toBeComponent();
           expect( reinflatedUser.getAge() ).toBe( 999 );
@@ -184,7 +184,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "with inflateTo closure", function(){
-          var data = new test.resources.UserSimple();
+          var data = new tests.resources.UserSimple();
           data.setFirstName( "Luis" );
           data.setLastName( "Majano" );
           data.setAge( 999 );
@@ -194,7 +194,7 @@ component extends="testbox.system.BaseSpec"{
           var reinflatedUser = couchbase.get(
             id="object-funky",
             inflateTo= function( data ) {
-              return new test.resources.UserSimple();
+              return new tests.resources.UserSimple();
             }
           );
 
@@ -206,7 +206,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "of objects with no properties", function(){
-          var data = new test.resources.Basic();
+          var data = new tests.resources.Basic();
 
           couchbase.set( id="object-noproperties", value=data );
 
@@ -220,7 +220,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "of objects with autoInflate and properties", function(){
-          var data = new test.resources.UserSimpleAuto();
+          var data = new tests.resources.UserSimpleAuto();
           data.setFirstName( "Luis" );
           data.setLastName( "Majano" );
           data.setAge( 999 );
@@ -237,7 +237,7 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "of autoInflate objects overridding inflateTo", function(){
-          var data = new test.resources.UserSimpleAuto();
+          var data = new tests.resources.UserSimpleAuto();
           data.setFirstName( "Luis" );
           data.setLastName( "Majano" );
           data.setAge( 999 );
@@ -247,7 +247,7 @@ component extends="testbox.system.BaseSpec"{
           var reinflatedUser = couchbase.get(
             id="object-auto",
             inflateTo= function( data ) {
-              var user = new test.resources.UserSimple();
+              var user = new tests.resources.UserSimple();
               user.foo = 'bar';
               return user;
             }
@@ -259,14 +259,14 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "of objects using their own non-JSON serialization", function(){
-          var user = new test.resources.CustomUser();
+          var user = new tests.resources.CustomUser();
           user.setFirstName( "Brad" );
           user.setLastName( "Wood" );
           user.setAge( 45 );
 
           couchbase.set( id="half-pipe", value=user );
 
-          var reinflatedUser = couchbase.get( id="half-pipe", inflateTo='test.resources.CustomUser' );
+          var reinflatedUser = couchbase.get( id="half-pipe", inflateTo='tests.resources.CustomUser' );
 
           expect( reinflatedUser.getFirstName() ).toBe( 'Brad' );
           expect( reinflatedUser.getLastName() ).toBe( 'Wood' );
@@ -283,7 +283,7 @@ component extends="testbox.system.BaseSpec"{
           couchbase.set( id="qrySimpleUsers", value=qrySimpleUsers );
 
           // Get back an array of user object
-          var reinflatedUsers = couchbase.get( id="qrySimpleUsers", inflateTo='test.resources.UserSimple' );
+          var reinflatedUsers = couchbase.get( id="qrySimpleUsers", inflateTo='tests.resources.UserSimple' );
 
           expect( reinflatedUsers ).toBeArray();
           expect( reinflatedUsers ).toHaveLength( 3 );
@@ -295,19 +295,19 @@ component extends="testbox.system.BaseSpec"{
 
         it( "of objects using a view", function(){
 
-          var data = new test.resources.UserSimpleAuto();
+          var data = new tests.resources.UserSimpleAuto();
           data.setFirstName( "Mickey" );
           data.setLastName( "Mouse" );
           data.setAge( 87 );
           couchbase.set( id="user42", value=data );
 
-          data = new test.resources.UserSimpleAuto();
+          data = new tests.resources.UserSimpleAuto();
           data.setFirstName( "Donald" );
           data.setLastName( "Duck" );
           data.setAge( 28 );
           couchbase.set( id="user43", value=data );
 
-          data = new test.resources.UserSimpleAuto();
+          data = new tests.resources.UserSimpleAuto();
           data.setFirstName( "Minney" );
           data.setLastName( "Mouse" );
           data.setAge( 100 );
@@ -318,7 +318,7 @@ component extends="testbox.system.BaseSpec"{
             'allUserSimples',
             'function (doc, meta) {
               if ( doc.type && doc.type == ''cfcouchbase-cfcdata''
-                   && doc.classpath && doc.classpath == ''test.resources.UserSimpleAuto'' ) {
+                   && doc.classpath && doc.classpath == ''tests.resources.UserSimpleAuto'' ) {
                 emit(doc.data.firstName, null);
               }
             }'

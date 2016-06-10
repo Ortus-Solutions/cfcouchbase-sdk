@@ -2,7 +2,7 @@
 * <strong>Copyright Since 2005 Ortus Solutions, Corp</strong><br>
 * <a href="http://www.ortussolutions.com">www.ortussolutions.com</a>
 * <p>CFCouchbase Module Configuration</p>
-* @author Luis Majano, Brad Wood
+* @author Luis Majano, Brad Wood, Aaron Benton
 */
 component{
 
@@ -11,7 +11,7 @@ component{
 	this.author 			= "Ortus Solutions, Corp";
 	this.webURL 			= "http://www.ortussolutions.com";
 	this.description 		= "ColdFusion SDK to interact with Couchbase NoSQL Server";
-	this.version			= "1.1.0.00074";
+	this.version			= "@build.version@+@build.number@";
 	// If true, looks for views in the parent first, if not found, then in the module. Else vice-versa
 	this.viewParentLookup 	= true;
 	// If true, looks for layouts in the parent first, if not found, then in module. Else vice-versa
@@ -30,7 +30,7 @@ component{
 	*/
 	function configure(){
 		// Map Config
-		binder.map( "CouchbaseConfig" )
+		binder.map( "CouchbaseConfig@cfcouchbase" )
 			.to( "cfcouchbase.config.CouchbaseConfig" );
 	}
 

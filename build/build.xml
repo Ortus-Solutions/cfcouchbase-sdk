@@ -60,10 +60,6 @@
         <delete dir="${dir.build}" />
         <mkdir dir="${dir.build}"/>
     	<chmod file="${dir.build}/**" perm="og+wrs" type="both" />
-        <!-- Cleanup Old Code -->
-        <delete verbose="true" failonerror="false">
-            <fileset dir="${dir.exports}" />
-        </delete>
     	
     	<!-- Copy build ID -->
     	<concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>

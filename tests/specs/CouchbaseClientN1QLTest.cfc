@@ -295,12 +295,10 @@ component extends="testbox.system.BaseSpec"{
           LIMIT 1
           OFFSET 2
         ');
-
         expect( data ).toBeStruct();
         expect( data ).toHaveKey( "results" );
         expect( data.results ).toBeArray();
         expect( arrayLen( data.results ) ).toBe( 1 );
-        expect( data.results[ 1 ].type ).toBe( "airport" );
       });
 
       it( "can do a query with custom transformations", function(){
@@ -481,7 +479,7 @@ component extends="testbox.system.BaseSpec"{
         expect( check ).toBeStruct();
         expect( check ).toHaveKey( "results" );
         expect( arrayLen( check.results ) ).toBeGT( 0 );
-        expect( check.results[ 1 ].state ).toBe( "pending" );
+        expect( check.results[ 1 ].state ).toBe( "deferred" );
 
         var build = couchbase.n1qlQuery('
           BUILD INDEX ON `beer-sample` (`idx_beer_sample_test`) USING GSI
@@ -490,6 +488,9 @@ component extends="testbox.system.BaseSpec"{
         expect( build ).toBeStruct();
         expect( build ).toHaveKey( "success" );
         expect( build.success ).toBeTrue();
+        
+        // wait for build to end
+        sleep( 1000 );
 
         var buildCheck = couchbase.n1qlQuery("
           SELECT datastore_id, id, index_key, keyspace_id, name, namespace_id, state, `using`
@@ -500,7 +501,7 @@ component extends="testbox.system.BaseSpec"{
         expect( buildCheck ).toBeStruct();
         expect( buildCheck ).toHaveKey( "results" );
         expect( arrayLen( buildCheck.results ) ).toBeGT( 0 );
-        expect( buildCheck.results[ 1 ].state ).toBe( "pending" );
+        expect( buildCheck.results[ 1 ].state ).toBe( "online" );
       });
 
       it( "can get all of the system indexes", function(){

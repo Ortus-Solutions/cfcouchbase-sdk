@@ -34,6 +34,9 @@ component extends="testbox.system.BaseSpec"{
     couchbase.shutdown( 10 );
   }
 
+  // Global Couchbase admin password, update as needed.
+  this.adminPassword = "couchbase";
+
 /*********************************** BDD SUITES ***********************************/
 
   function run(){
@@ -42,7 +45,7 @@ component extends="testbox.system.BaseSpec"{
       xit( "can flush docs", function(){
         couchbase.flush();
 
-        expect( couchbase.getAggregateStat( "Administrator", "password", "curr_items" ) ).toBeNumeric();
+        expect( couchbase.getAggregateStat( "Administrator", this.adminPassword, "curr_items" ) ).toBeNumeric();
       } );
 
       it( "can touch an expiration time", function(){
@@ -52,12 +55,12 @@ component extends="testbox.system.BaseSpec"{
       } );
 
       it( "can get available servers", function(){
-        var servers = couchbase.getAvailableServers( "Administrator", "password" );
+        var servers = couchbase.getAvailableServers( "Administrator", this.adminPassword );
         expect( arrayLen( servers ) ).toBeGTE( 1 );
       } );
 
       it( "can get unavailable servers", function(){
-        var servers = couchbase.getUnAvailableServers( "Administrator", "password" );
+        var servers = couchbase.getUnAvailableServers( "Administrator", this.adminPassword );
         expect( arrayLen( servers ) ).toBe( 0 );
       } );
 
@@ -651,9 +654,9 @@ component extends="testbox.system.BaseSpec"{
       describe( "stats operations", function(){
 
         it( "can get global stats", function(){
-          var stats = couchbase.getStats( "Administrator", "password" );
+          var stats = couchbase.getStats( "Administrator", this.adminPassword );
           expect( stats ).toBeArray();
-          expect( couchbase.getAggregateStat( "Administrator", "password", "curr_items" ) ).toBeNumeric();
+          expect( couchbase.getAggregateStat( "Administrator", this.adminPassword, "curr_items" ) ).toBeNumeric();
         } );
 
         it( "will throw for get doc stats", function(){

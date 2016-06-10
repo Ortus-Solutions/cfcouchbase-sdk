@@ -2,13 +2,12 @@
 <cfparam name="url.path" 	default="#expandPath( "./CFCouchbase-APIDocs" )#">
 <cfscript>
 	docName = "CFCouchbase-APIDocs";
-	base = expandPath( "/cfcouchbase" );
-
-	colddoc 	= new ColdDoc();
-	strategy 	= new colddoc.strategy.api.HTMLAPIStrategy( url.path, "CFCouchbase v#url.version#" );
-	colddoc.setStrategy( strategy );
-
-	colddoc.generate( inputSource=base, outputDir=url.path, inputMapping="cfcouchbase" );
+	base 	= expandPath( "/cfcouchbase" );
+	docbox 	= new docbox.DocBox( properties = {
+		projectTitle 	= "CFCouchbase v#url.version#",
+		outputDir 		= url.path
+	} );
+	docbox.generate( source=base, mapping="cfcouchbase" );
 </cfscript>
 
 <!---

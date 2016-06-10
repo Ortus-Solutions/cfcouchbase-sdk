@@ -1,19 +1,15 @@
 component{
 
-	this.name = "colddoc_" & hash(getCurrentTemplatePath());
+	this.name = "APIDocs" & hash(getCurrentTemplatePath());
 	this.sessionManagement = true;
 	this.sessionTimeout = createTimeSpan(0,0,1,0);
 
-	// mappings
-	this.mappings[ "/colddoc" ] = getDirectoryFromPath( getCurrentTemplatePath() );
+	// API Root
+	API_ROOT = getDirectoryFromPath( getCurrentTemplatePath() );
+	rootPath = REReplaceNoCase( API_ROOT, "apidocs(\\|\/)$", "" );
 
-	rootPath = REReplaceNoCase( this.mappings[ "/colddoc" ], "apidocs(\\|\/)$", "" );
-	this.mappings[ "/root" ] = rootPath;
+	this.mappings[ "/docbox" ] 		= API_ROOT & "docbox";
+	this.mappings[ "/root" ] 		= rootPath;
 	this.mappings[ "/cfcouchbase" ] = rootPath & "cfcouchbase";
-	
-	// request start
-	public boolean function onRequestStart(String targetPage){
-		return true;
-	}
-	
+
 }

@@ -4,11 +4,13 @@ node_modules
 settings.xml
 .project
 .svn
-apidocs/CFCouchbase-APIDocs
 test/results
 distributions/docs
 build/build.number
 samples/testing
 .DS_Store
-coldbox/
-testbox/
+## Dependencies
+coldbox/*
+testbox/*
+apidocs/CFCouchbase-APIDocs
+apidocs/docbox/*

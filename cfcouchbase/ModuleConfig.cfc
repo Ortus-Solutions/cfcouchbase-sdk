@@ -11,7 +11,7 @@ component{
 	this.author 			= "Ortus Solutions, Corp";
 	this.webURL 			= "http://www.ortussolutions.com";
 	this.description 		= "ColdFusion SDK to interact with Couchbase NoSQL Server";
-	this.version			= "2.0.0+@build.number@";
+	this.version			= "@build.version@+@build.number@";
 	// If true, looks for views in the parent first, if not found, then in the module. Else vice-versa
 	this.viewParentLookup 	= true;
 	// If true, looks for layouts in the parent first, if not found, then in module. Else vice-versa

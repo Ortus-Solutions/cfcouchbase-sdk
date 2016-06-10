@@ -1,6 +1,6 @@
 {
 	"name" 				: "CFCouchbase SDK",
-	"version"			: "2.0.0+@build.number@",
+	"version"			: "@build.version@+@build.number@",
 	"author" 			: "Ortus Solutions <info@ortussolutions.com>",
 	"slug"				: "cfcouchbase",
 	"type"				: "nosql",

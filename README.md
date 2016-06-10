@@ -8,7 +8,7 @@
 	      /_/   \____/_/    \____/\____/\__,_/\___/_/ /_/_.___/\__,_/____/\___/ 
 	                                                                            
 	                                                                                                                                                                                                                                                                       
-SDK v2.0.0+@build.number@
+SDK v@build.version@+@build.number@
 > Copyright Since 2013 [Ortus Solutions, Corp](https://www.ortussolutions.com/products/cfcouchbase)
 
 # WELCOME TO THE CFCOUCHBASE SDK

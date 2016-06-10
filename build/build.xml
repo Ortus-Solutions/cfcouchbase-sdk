@@ -1,15 +1,12 @@
 <?xml version="1.0"?>
-<!-- ====================================================================== 
-    CFCouchbase SDK build (www.ortussolutions.com)                                                 
-     ====================================================================== -->
-<project name="logbox-build" default="build.all" basedir="../">
+<project name="build" default="build.all" basedir="../">
     <description>
         Build a new distribution of the CFCouchbase SDK
     </description>
 	
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
     <property name="groupID"                value="ortussolutions" />
-    <property name="cfcouchbase.version"    value="1.1.0"/>
+    <property name="cfcouchbase.version"    value="2.0.0"/>
     <property name="cfcouchbase.slug"       value="cfcouchbase"/>
     
 	<!-- Build Labels -->
@@ -54,18 +51,24 @@
         <property file="build/build.number"/>
 
         <!-- Build Label -->
-        <property name="build.label" value="cfcouchbase-${cfcouchbase.version}.${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
+        <property name="build.label" value="cfcouchbase-${cfcouchbase.version}+${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
         
+        <!-- Get Build Dependencies -->
+        <antcall target="getDependencies" />
+
         <!-- Cleanup + Init -->
         <delete dir="${dir.build}" />
-        <delete dir="${dir.cfcouchbase.exports}" />
         <mkdir dir="${dir.build}"/>
-    	<!-- Update Permissions -->
-    	<antcall target="update.permissions" />
+    	<chmod file="${dir.build}/**" perm="og+wrs" type="both" />
+        <!-- Cleanup Old Code -->
+        <delete verbose="true" failonerror="false">
+            <fileset dir="${dir.exports}" />
+        </delete>
     	
     	<!-- Copy build ID -->
     	<concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
-    	<!-- Copy src -->    
+    	
+        <!-- Copy src -->    
         <copy todir="${dir.build}" encoding="UTF-8">
             <fileset dir="cfcouchbase" />
         </copy>
@@ -74,28 +77,23 @@
         <property name="src.isInit" value="true" />
     </target>
 
-    <!-- update permissions on reports -->
-    <target name="update.permissions" description="Update staging server permissions">
-        <!-- Integration permissions -->
-        <if>
-            <equals arg1="${environment}" arg2="auto" />
-            <then>
-                <chmod file="${dir.build}/**" perm="go+wrs" type="both" verbose="true" />
-                <chown owner="stg-ortus" verbose="true">
-                    <fileset dir="${dir.build}" />
-                </chown>
-            </then>
-            <else>
-            </else>
-        </if>
-    </target>
-
     <!-- Build test reports -->
     <target name="run-tests" description="execute test suite" depends="init">
+        <echo>Running Tests for CFCouchbase</echo>
         <trycatch property="testcatch">
             <try>
-                <subant target="run-junit">
-                  <fileset dir="test" includes="test.xml"/>
+                <!-- Determine Test target: Are we jenkins or local or travis -->
+                <if>
+                    <not><equals arg1="${environment}" arg2="auto" /></not>
+                    <then>
+                        <property name="test.target" value="run" />
+                    </then>
+                    <else>
+                        <property name="test.target" value="run-junit" />
+                    </else>
+                </if>
+                <subant target="${test.target}">
+                    <fileset dir="tests" includes="test.xml"/>
                     <property name="environment" value="${environment}" />
                 </subant>
             </try>
@@ -106,12 +104,12 @@
     </target>
     
     <!--build-->
-    <target name="build.sdk" description="Build the SDK distribution" depends="init,build.apidocs,build.docs">
+    <target name="build.sdk" description="Build the SDK distribution" depends="init">
         
         <!--Copy text files to root folder-->
         <copy todir="${dir.build}" encoding="UTF-8">
             <fileset file="LICENSE" />
-            <fileset file="readme.txt" />                        
+            <fileset file="README.md" />                        
         </copy>
     	
     	<!--Copy samples-->
@@ -119,68 +117,79 @@
         	<fileset dir="samples" />                    
         </copy>
 
-        <!-- Replace Build Numbers -->
+        <!-- Replace Version + Build Numbers -->
+        <replaceregexp match='@build.version@' replace="${cfcouchbase.version}" flags="ig" byline="true" encoding="UTF-8">
+          <fileset dir="${dir.build}" />
+        </replaceregexp>
         <replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
-          <fileset dir="${dir.build}">
-          </fileset>
+          <fileset dir="${dir.build}" />
         </replaceregexp>
         
         <!-- Zip Distro -->
-        <zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>
     </target>
 	
 	<!-- Build all distributions -->
-	<target name="build.all" description="Build all distributions" depends="run-tests,build.sdk,build.samples">
+	<target name="build.all" description="Build all distributions" depends="run-tests,build.sdk,build.apidocs,build.samples">
 		<!-- Build Checksum -->
 		<checksum forceoverwrite="true" fileext=".md5">
-			<fileset dir="${dir.cfcouchbase.exports}">
+			<fileset dir="${dir.exports}">
 				<include name="*.zip" />
 			</fileset>
 		</checksum>
+        <checksum forceoverwrite="true" algorithm="SHA-512" fileext=".sha512">
+            <fileset dir="${dir.exports}">
+                <include name="*.zip" />
+            </fileset>
+        </checksum>
+        <copy toDir="${dir.exports}" file="${dir.build}/box.json" overwrite="true" />
 		<!-- Create Box Repo From macrodef -->
-        <box-repo location="${dir.exports}/${cfcouchbase.slug}" 
+        <box-repo location="${dir.exports}" 
                   artifactID="${cfcouchbase.slug}" 
-                  groupID="${groupID}"
                   buildID="${build.number}"
+                  groupID="${groupID}"
                   latest="${cfcouchbase.version}"
-                  classifiers="apidocs,docs,module,samples"/>
-		 <!-- Cleanup -->
-		 <delete dir="${dir.build}" />
+                  classifiers="apidocs,samples"/>
 	</target>
 	
 	<!-- Build Samples -->
 	<target name="build.samples" description="Build the samples" depends="init">
 		<!-- Zip Samples -->
-        <zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-samples-${cfcouchbase.version}.zip" basedir="samples"></zip>
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-samples-${cfcouchbase.version}.zip" basedir="samples"></zip>
 	</target>
 	
 	<!-- Build API Docs -->
 	<target name="build.apidocs" description="Build the API docs" depends="init">
-		<!-- Execute APIDocs -->
-        <mkdir dir="${dir.build}/apidocs"/>
-        <!-- Update Permissions -->
-        <antcall target="update.permissions" />
-        <get dest="${dir.build}/colddoc.html" src="${url.api}${cfcouchbase.version}&amp;path=${dir.build}/apidocs" verbose="true"/>
-        <delete file="${dir.build}/colddoc.html" />
+		<!-- Create API apidocs dir -->
+        <mkdir dir="${dir.api}"/>
+        <!-- Install dependencies for docs -->
+        <exec executable="box" dir="${dir.apidocs}">
+            <arg line="install --force" />
+        </exec>
+        <!-- Startup the apidocs server, wait for a few seconds for server to start -->
+        <exec executable="box" dir="${dir.apidocs}">
+            <arg line="server start openbrowser=false --force port=${apidocs.port}" />
+        </exec>
+        <sleep seconds="5"/>
+        <!-- Get the apidocs now -->
+        <get dest="${dir.build}/docbox.html" 
+             src="${url.apidocs}?version=${cfcouchbase.version}&amp;path=${dir.api}" 
+             verbose="true"
+             retries="5"/>
+        <!-- stop server -->
+        <exec executable="box" dir="${dir.apidocs}">
+            <arg line="server stop" />
+        </exec>
         <!-- Zip API Docs -->
-        <zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-apidocs-${cfcouchbase.version}.zip" basedir="${dir.build}/apidocs"></zip>
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-apidocs-${cfcouchbase.version}.zip" basedir="${dir.api}"></zip>
 	</target>
 
-	<!-- Build Docs -->
-	<target name="build.docs" description="Build the docs" depends="init">
-		<!-- Build Documentation -->
-        <mkdir dir="${dir.build}/docs" />
-        <get dest="${dir.build}/docs/index.html" src="${url.docs}" verbose="true"/>
-        <!-- Copy assets to docs -->
-        <copy todir="${dir.build}/docs/includes"  encoding="UTF-8">
-            <fileset dir="${dir.docs}/includes" />
-        </copy>
-        <copy todir="${dir.build}/docs" encoding="UTF-8">
-            <fileset file="${dir.docs}/favicon.ico" />
-            <fileset file="${dir.docs}/.htaccess" />
-        </copy>
-		<!-- Zip Docs -->
-		<zip destfile="${dir.cfcouchbase.exports}/${cfcouchbase.slug}-docs-${cfcouchbase.version}.zip" basedir="${dir.build}/docs"></zip>
-	</target>
+    <!-- Get Dependencies -->
+    <target name="getDependencies" description="Get all the necessary dependencies for the build process">
+        <!-- Install dependencies for project -->
+        <exec executable="box" dir="${basedir}">
+            <arg line="install" />
+        </exec>
+    </target>
 	
 </project>

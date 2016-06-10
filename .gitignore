@@ -4,11 +4,14 @@ node_modules
 settings.xml
 .project
 .svn
-test/results
-distributions/docs
-build/build.number
-samples/testing
 .DS_Store
+# Build Process
+artifacts/*
+build/build.number
+build-cfcouchbase/*
+samples/testing
+# testing
+tests/results
 ## Dependencies
 coldbox/*
 testbox/*

@@ -1,0 +1,9 @@
+{
+    "force":true,
+    "openbrowser":"true",
+    "web":{
+        "http":{
+            "port":"9099"
+        }
+    }
+}

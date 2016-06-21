@@ -15,7 +15,7 @@ component{
 
 	rootPath = REReplaceNoCase( this.mappings[ "/tests" ], "tests(\\|\/)$", "" );
 	this.mappings[ "/root" ]        = rootPath;
-	this.mappings[ "/cfcouchbase" ] = rootPath & "/cfcouchbase";
+	this.mappings[ "/cfcouchbase" ] = rootPath & "cfcouchbase";
 
 	// request start
 	public boolean function onRequestStart( String targetPage ){

@@ -35,7 +35,7 @@ component extends="testbox.system.BaseSpec"{
   }
 
   // Global Couchbase admin password, update as needed.
-  this.adminPassword = "couchbase";
+  this.adminPassword = "password";
 
 /*********************************** BDD SUITES ***********************************/
 

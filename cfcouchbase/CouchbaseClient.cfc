@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.2.6";
+    variables['SDKVersion'] = "2.2.8"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -1298,11 +1298,11 @@ component serializable="false" accessors="true" {
   * </pre>
   *
   * @id.hint The id of the document to decrement
-  * @value.hint The amount to decrement
+  * @value.hint The amount to increment or decrement by
   * @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   *
-  * @return The new value, or -1 if we were unable to decrement or add
+  * @return The new value
   */
   public any function counter(
     required string id,

@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.2.8"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/
+    variables['SDKVersion'] = "2.3.1"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -1594,9 +1594,13 @@ component serializable="false" accessors="true" {
     settings['bootstrapHttpEnabled'] = env.BOOTSTRAP_HTTP_ENABLED;
     settings['bootstrapHttpSslPort'] = env.BOOTSTRAP_HTTP_SSL_PORT;
     settings['bufferPoolingEnabled'] = env.BUFFER_POOLING_ENABLED;
+    settings['callbacksOnIoPool'] = env.CALLBACKS_ON_IO_POOL;
     settings['computationPoolSize'] = env.COMPUTATION_POOL_SIZE;
     settings['connectTimeout'] = env.connectTimeout();
     settings['dcpEnabled'] = env.DCP_ENABLED;
+    settings['dcpConnectionBufferSize'] = env.DCP_CONNECTION_BUFFER_SIZE;
+    settings['dcpConnectionBufferAckThreshold'] = env.DCP_CONNECTION_BUFFER_ACK_THRESHOLD;
+    settings['dcpConnectionName'] = env.DCP_CONNECTION_NAME;
     settings['disconnectTimeout'] = env.disconnectTimeout();
     settings['dnsSrvEnabled'] = env.dnsSrvEnabled();
     settings['ioPoolSize'] = env.IO_POOL_SIZE;
@@ -1608,9 +1612,7 @@ component serializable="false" accessors="true" {
     settings['mutationTokensEnabled'] = env.MUTATION_TOKENS_ENABLED;
     settings['observeIntervalDelay'] = env.OBSERVE_INTERVAL_DELAY;
     settings['packageNameAndVersion'] = env.PACKAGE_NAME_AND_VERSION;
-    settings['queryEnabled'] = env.QUERY_ENABLED;
     settings['queryEndpoints'] = env.QUERY_ENDPOINTS;
-    settings['queryPort'] = env.QUERY_PORT;
     settings['queryTimeout'] = env.queryTimeout();
     settings['reconnectDelay'] = env.RECONNECT_DELAY;
     settings['requestBufferSize'] = env.REQUEST_BUFFER_SIZE;
@@ -1618,6 +1620,7 @@ component serializable="false" accessors="true" {
     settings['retryDelay'] = env.RETRY_DELAY;
     settings['retryStrategy'] = env.RETRY_STRATEGY;
     settings['sdkPackageNameAndVersion'] = env.SDK_PACKAGE_NAME_AND_VERSION;
+    settings['socketConnectTimeout'] = env.SOCKET_CONNECT_TIMEOUT;
     settings['sslEnabled'] = env.SSL_ENABLED;
     settings['sslKeystoreFile'] = !isNull(env.SSL_KEYSTORE_FILE) ? env.SSL_KEYSTORE_FILE : "";
     settings['sslKeystorePassword'] = !isNull(env.SSL_KEYSTORE_PASSWORD) ? env.SSL_KEYSTORE_PASSWORD : "";
@@ -2855,6 +2858,7 @@ component serializable="false" accessors="true" {
 
   /**
   * Build a couchbase environment
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/env/DefaultCouchbaseEnvironment.html
   *
   * @config.hint The CFCouchbase config object
   *
@@ -2866,8 +2870,8 @@ component serializable="false" accessors="true" {
     // build the environment
     builder = builder
       .sslEnabled( javaCast( "boolean", arguments.config.sslEnabled ) )
-      .queryEnabled( javaCast( "boolean", arguments.config.queryEnabled ) )
-      .queryPort( javaCast( "int", arguments.config.queryPort ) )
+      // .queryEnabled( javaCast( "boolean", arguments.config.queryEnabled ) )
+      // .queryPort( javaCast( "int", arguments.config.queryPort ) )
       .bootstrapHttpEnabled( javaCast( "boolean", arguments.config.bootstrapHttpEnabled ) )
       .bootstrapHttpDirectPort( javaCast( "int", arguments.config.bootstrapHttpDirectPort ) )
       .bootstrapHttpSslPort( javaCast( "int", arguments.config.bootstrapHttpSslPort ) )
@@ -2891,7 +2895,20 @@ component serializable="false" accessors="true" {
       .requestBufferSize( javaCast( "int", arguments.config.requestBufferSize ) )
       .responseBufferSize( javaCast( "int", arguments.config.responseBufferSize ) )
       .dcpEnabled( javaCast( "boolean", arguments.config.dcpEnabled ) )
-      .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) );
+      .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) )
+      .callbacksOnIoPool( javaCast( "boolean", arguments.config.callbacksOnIoPool ) );
+    if( len( arguments.config.dcpConnectionName ) ) {
+      builder = builder.dcpConnectionName( javaCast( "string", arguments.config.dcpConnectionName ) );
+    }
+    if( arguments.config.dcpConnectionBufferSize ) {
+      builder = builder.dcpConnectionBufferSize( javaCast( "int", arguments.config.dcpConnectionBufferSize ) );
+    }
+    if( arguments.config.dcpConnectionBufferAckThreshold ) {
+      builder = builder.dcpConnectionBufferAckThreshold( javaCast( "double", arguments.config.dcpConnectionBufferAckThreshold ) );
+    }
+    if( arguments.config.socketConnectTimeout ) {
+      builder = builder.socketConnectTimeout( javaCast( "int", arguments.config.socketConnectTimeout ) );
+    }
     if( len( arguments.config.sslKeystoreFile ) ) {
       builder = builder.sslKeystoreFile( javaCast( "string", arguments.config.sslKeystoreFile ) );
     }

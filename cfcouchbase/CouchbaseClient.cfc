@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.2.8"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/
+    variables['SDKVersion'] = "2.3.0"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.0/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -1185,6 +1185,48 @@ component serializable="false" accessors="true" {
       );
     }
     return cfresults;
+  }
+
+  /**
+  * Performs a Sub Doc LookupIn operation that will return only specific attributes from a document instead of the whole document
+  *
+  * <pre class='brush: cf'>
+  * lookup = client.lookupIn( 'aaron' )
+  *                   .get( 'address' )
+  *                   .get( 'phones[0]' )
+  *                   .exists( 'dob' )
+  *                   .execute();
+  *  address = lookup.content( 'address' );
+  *  phone = lookup.content( 'phone' );
+  * </pre>
+  *
+  * @id.hint The ID of the document to retrieve.
+  *
+  * @return A Lookup builder
+  */
+  public any function lookupIn( required string id ) {
+    return new subdoc.LookupInBuilder( id=variables.util.normalizeID( arguments.id ), couchbaseClient=this );
+  }
+
+  /**
+  * Performs a Subdoc MutateIn operation that modify
+  *
+  * <pre class='brush: cf'>
+  * mutate = client.mutateIn( 'aaron' )
+  *                   .get( 'address' )
+  *                   .get( 'phone' )
+  *                   .exists( 'dob' )
+  *                   .execute();
+  *  address = lookup.content( 'address' );
+  *  phone = lookup.content( 'phone' );
+  * </pre>
+  *
+  * @id.hint The ID of the document to retrieve.
+  *
+  * @return A Lookup builder
+  */
+  public any function mutateIn( required string id ) {
+    return new subdoc.MutateInBuilder( id=variables.util.normalizeID( arguments.id ), couchbaseClient=this );
   }
 
   /**
@@ -2627,7 +2669,7 @@ component serializable="false" accessors="true" {
         // The view is ready to be used!
         return true;
       }
-      catch( Any e )  {
+      catch( any e )  {
         // Wait 1 second before trying again
         sleep( 1000 );
       }
@@ -2743,7 +2785,7 @@ component serializable="false" accessors="true" {
   *
   * @Return The deserialized data
   */
-  private any function deserializeData(
+  public any function deserializeData(
     required string id,
     required string data,
     any inflateTo="",
@@ -3033,7 +3075,7 @@ component serializable="false" accessors="true" {
   * @args.hint The argument collection to process
   * @Return The argument collection with the defaulted values.
   */
-  private any function defaultPersistReplicate( required struct args )  {
+  public any function defaultPersistReplicate( required struct args )  {
     var validPersistTo = "NONE,MASTER,ONE,TWO,THREE,FOUR";
     var validReplicateTo = "NONE,ONE,TWO,THREE";
     // persistTo

@@ -15,12 +15,12 @@ component serializable="false" accessors="true"{
   property name="couchbaseClient" type="CouchbaseClient";
   /**
   * A reference to the LookupInBuilder (com.couchbase.client.java.subdoc.LookupInBuilder)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/com/couchbase/client/java/subdoc/LookupInBuilder.html
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/LookupInBuilder.html
   */
   property name="builder";
   /**
   * A reference to the DocumentFragment (com.couchbase.client.java.subdoc.DocumentFragment<OPERATION>)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/com/couchbase/client/java/subdoc/DocumentFragment.html
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/DocumentFragment.html
   */
   property name="result";
 
@@ -60,8 +60,19 @@ component serializable="false" accessors="true"{
   *
   * @return LookupInBuilder
   */
-  public function get( required string path ) {
-    variables.builder.get( javaCast( "string", arguments.path ) );
+  public function get( required paths ) {
+    if( isSimpleValue(arguments.paths) ) {
+      variables.builder.get( javaCast( "string[]", [ arguments.paths ] ) );
+    }
+    else if ( isArray(arguments.paths) ) {
+      variables.builder.get( javaCast( "string[]", arguments.paths.toArray() ) );
+    } else {
+      throw(
+        message="Invalid path",
+        detail="Valid values are a string or array",
+        type="CouchbaseClient.LookupInBuilder.InvalidPath"
+      );
+    }
     return this;
   }
 
@@ -72,8 +83,19 @@ component serializable="false" accessors="true"{
   *
   * @return LookupInBuilder
   */
-  public function exists( required string path ) {
-    variables.builder.exists( javaCast( "string", arguments.path ) );
+  public function exists( required paths ) {
+    if( isSimpleValue(arguments.paths) ) {
+      variables.builder.exists( javaCast( "string[]", [ arguments.paths ] ) );
+    }
+    else if ( isArray(arguments.paths) ) {
+      variables.builder.exists( javaCast( "string[]", arguments.paths.toArray() ) );
+    } else {
+      throw(
+        message="Invalid path",
+        detail="Valid values are a string or array",
+        type="CouchbaseClient.LookupInBuilder.InvalidPath"
+      );
+    }
     return this;
   }
 
@@ -89,7 +111,7 @@ component serializable="false" accessors="true"{
   public function execute() {
     try {
       // execute
-      variables['result'] = variables.builder.execute();
+      variables['result'] = new DocumentFragment(variables.builder.execute(), variables.couchbaseClient);
     } catch( any e ) {
       if (e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException" ) { // trap not found exceptions
         variables['result'] = javaCast( "null", "" );
@@ -97,7 +119,7 @@ component serializable="false" accessors="true"{
         rethrow;
       }
     }
-    return !isNull(variables.result) ? this : javaCast( "null", "" );
+    return !isNull(variables.result) ? variables.result : javaCast( "null", "" );
   }
 
 }

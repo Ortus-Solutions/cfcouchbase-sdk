@@ -15,12 +15,12 @@ component serializable="false" accessors="true"{
   property name="couchbaseClient" type="CouchbaseClient";
   /**
   * A reference to the MutateInBuilder (com.couchbase.client.java.subdoc.MutateInBuilder)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/com/couchbase/client/java/subdoc/MutateInBuilder.html
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/MutateInBuilder.html
   */
   property name="builder";
   /**
   * A reference to the DocumentFragment (com.couchbase.client.java.subdoc.DocumentFragment<OPERATION>)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/com/couchbase/client/java/subdoc/DocumentFragment.html
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/DocumentFragment.html
   */
   property name="result";
 
@@ -288,9 +288,9 @@ component serializable="false" accessors="true"{
   /**
   * Set both a persistence and replication durability constraints for the whole mutation.
   *
-  * @persistTo.hint The persistence durability constraint to observe
-  * @replicateTo.hint The replication durability constraint to observe
-  *
+  * @persistTo.hint The persistence durability constraint to observe. Valid values: NONE, MASTER, ONE, TWO, THREE, FOUR
+  * @replicateTo.hint The replication durability constraint to observe. Valid values: NONE, ONE, TWO, THREE
+  * 
   * @return MutateInBuilder
   */
   public function withDurability( string persistTo, string replicateTo ) {

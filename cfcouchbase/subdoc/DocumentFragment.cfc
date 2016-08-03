@@ -8,7 +8,7 @@ component serializable="false" accessors="true"{
 
   /**
   * A reference to the DocumentFragment (com.couchbase.client.java.subdoc.DocumentFragment<OPERATION>)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.2.8/com/couchbase/client/java/subdoc/DocumentFragment.html
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/DocumentFragment.html
   */
   property name="document";
   /**
@@ -59,16 +59,14 @@ component serializable="false" accessors="true"{
   * @return value
   */
   public any function content( required string path, boolean raw=false ) {
-    var data = "";
-    if ( arguments.raw ) {
-      data = variables.document.content( javaCast( "string", arguments.path ) );
-    } else {
+    var data = variables.document.content( javaCast( "string", arguments.path ) );
+    if ( !arguments.raw && !isNull( data ) ) {
       data = variables.couchbaseClient.deserializeData(
-        variables.id,
-        variables.document.content( javaCast( "string", arguments.path ) )
+        variables.document.id(),
+        data
       );
     }
-    return data;
+    return isNull( data ) ? javaCast( "null", "" ) : data;
   }
 
   /**
@@ -86,7 +84,11 @@ component serializable="false" accessors="true"{
       path_exists = variables.document.exists( javaCast( "int", arguments.index ) );
     } else {
       path_exists = variables.document.exists( javaCast( "string", arguments.path ) );
+      if(path == 'path.notfound'){
+        dump(path_exists); abort;
+      }
     }
+    path_exists = isNull( path_exists ) ? false : path_exists;
     return path_exists;
   }
 

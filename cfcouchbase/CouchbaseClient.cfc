@@ -1191,13 +1191,13 @@ component serializable="false" accessors="true" {
   * Performs a Sub Doc LookupIn operation that will return only specific attributes from a document instead of the whole document
   *
   * <pre class='brush: cf'>
-  * lookup = client.lookupIn( 'aaron' )
+  * lookup = client.lookupIn( 'user_aaronb' )
   *                   .get( 'address' )
   *                   .get( 'phones[0]' )
   *                   .exists( 'dob' )
   *                   .execute();
   *  address = lookup.content( 'address' );
-  *  phone = lookup.content( 'phone' );
+  *  phone = lookup.content( 'phones[0]' );
   * </pre>
   *
   * @id.hint The ID of the document to retrieve.
@@ -1212,13 +1212,10 @@ component serializable="false" accessors="true" {
   * Performs a Subdoc MutateIn operation that modify
   *
   * <pre class='brush: cf'>
-  * mutate = client.mutateIn( 'aaron' )
-  *                   .get( 'address' )
-  *                   .get( 'phone' )
-  *                   .exists( 'dob' )
+  * mutate = client.mutateIn( 'user_aaronb' )
+  *                   .upsert( 'username', 'abenton' )
+  *                   .upsert( 'email', 'ab723893@gmail.com' )
   *                   .execute();
-  *  address = lookup.content( 'address' );
-  *  phone = lookup.content( 'phone' );
   * </pre>
   *
   * @id.hint The ID of the document to retrieve.
@@ -2912,8 +2909,6 @@ component serializable="false" accessors="true" {
     // build the environment
     builder = builder
       .sslEnabled( javaCast( "boolean", arguments.config.sslEnabled ) )
-      // .queryEnabled( javaCast( "boolean", arguments.config.queryEnabled ) )
-      // .queryPort( javaCast( "int", arguments.config.queryPort ) )
       .bootstrapHttpEnabled( javaCast( "boolean", arguments.config.bootstrapHttpEnabled ) )
       .bootstrapHttpDirectPort( javaCast( "int", arguments.config.bootstrapHttpDirectPort ) )
       .bootstrapHttpSslPort( javaCast( "int", arguments.config.bootstrapHttpSslPort ) )

@@ -79,8 +79,8 @@ component serializable="false" accessors="true" {
     }
 
     // LOAD ENUMS
-		this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
-		this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
+    this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
+    this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
     this['replicaMode'] = newJava( "com.couchbase.client.java.ReplicaMode" );
 
     // Establish a connection to the Couchbase bucket
@@ -611,16 +611,16 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * Upsert multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
+  * Upsert multiple documents with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
   * The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
   *
   * <pre class='brush: cf'>
-  * data = {
+  * people = {
   * &nbsp;&nbsp;brad = { name: "Brad", age: 33, hair: "red" },
   * &nbsp;&nbsp;luis = { name: "Luis", age: 35, hair: "black" },
   * &nbsp;&nbsp;bill = { name: "Bill", age: 21, hair: "blond" }
   * };
-  * future = client.setMulti( data );
+  * client.upsertMulti( people );
   * </pre>
   *
   * @data.hint A struct ( key/value pair ) of documents to set into Couchbase.
@@ -628,7 +628,7 @@ component serializable="false" accessors="true" {
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
+  * @return A structure containing the id, cas, expiry and hashCode document metadata values for each upserted document
   */
   public any function upsertMulti(
     required struct data,
@@ -646,7 +646,7 @@ component serializable="false" accessors="true" {
       // save the result
       results[id] = this.upsert(
         id=id,
-        value=serializeData( arguments.data[id] ),
+        value=arguments.data[id],
         timeout=arguments.timeout,
         persistTo=arguments.persistTo,
         replicateTo=arguments.replicateTo
@@ -1500,7 +1500,7 @@ component serializable="false" accessors="true" {
     defaultPersistReplicate( arguments );
 
     // simple or array
-		arguments['id'] = isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id;
+    arguments['id'] = isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id;
 
     var results = {};
     // iterate over the results
@@ -1525,7 +1525,7 @@ component serializable="false" accessors="true" {
       }
     }
     // if > 1 futures, return struct, else return the only one future
-		return structCount( results ) > 1 ? results : results[ arguments.id[ 1 ] ];
+    return structCount( results ) > 1 ? results : results[ arguments.id[ 1 ] ];
   }
 
   /**

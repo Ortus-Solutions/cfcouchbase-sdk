@@ -2016,7 +2016,13 @@ component serializable="false" accessors="true" {
       };
       // Add value if not null
       if( !isNull( row.value() ) ) {
-        document['value'] = row.value();
+        document['value'] = deserializeData(
+          "",
+          row.value().toString(),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        );
       }
 
       // Add key if not null
@@ -2042,7 +2048,7 @@ component serializable="false" accessors="true" {
 
       // Do we have a transformer?
       if( structKeyExists( arguments, "transform" ) && isClosure( arguments.transform ) ) {
-        arguments.transform( document );
+        document = arguments.transform( document );
       }
 
       // Do we have a filter?

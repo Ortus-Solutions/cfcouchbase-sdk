@@ -54,8 +54,8 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
     // if query, then do native serialization
     else if( isQuery( arguments.data ) ) {
       var nativeQuery = {
-        "binary" = toBase64( objectSave( arguments.data ) ),
-        "type" = "cfcouchbase-query",
+        "data" = arguments.data,
+        "type" = "cfcouchbase-query2",
         "recordcount" = arguments.data.recordcount,
         "columnlist" = arguments.data.columnlist
       };
@@ -135,8 +135,13 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
     var results = arguments.data;
 
     if( isJSON( arguments.data ) ) {
+    	
       // Deserialize JSON
-      results = deserializeJSON( arguments.data );
+      if( structKeyExists( arguments.deserializeOptions, 'JSONStrictMapping' ) ) {
+      	results = deserializeJSON( arguments.data, arguments.deserializeOptions.JSONStrictMapping );
+      } else {
+      	results = deserializeJSON( arguments.data, false );      	
+      }
 
       // Do we have a cfcouchbase CFC memento to inflate?
       if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-cfcdata" ) {
@@ -151,11 +156,15 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       // Do we have a cfcouchbase native CFC?
       else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-cfc" ) {
         // this is an object already, just return, no inflations necessary
-        return objectLoad( toBinary( results.binary  ) );
+        return objectLoad( toBinary( results.binary ) );
       }
-      // Do we have a cfcouchbase query?
+      // Do we have a cfcouchbase query (deprecated)?
       else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-query" ) {
-        results = objectLoad( toBinary( results.binary  ) );
+        results = objectLoad( toBinary( results.binary ) );
+      }
+      // Do we have a cfcouchbase query (version 2)?
+      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-query2" ) {
+        results = results.data;
       }
 
     }

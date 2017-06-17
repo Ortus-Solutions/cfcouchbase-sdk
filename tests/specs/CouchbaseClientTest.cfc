@@ -193,7 +193,7 @@ component extends="testbox.system.BaseSpec"{
 
         it( "can decrement values asynchronously", function(){
           expect( function(){
-            couchbase.asyncCounter( "unit-decrement", -1 )
+            couchbase.asyncCounter( "unit-decrement", -1 );
           })
           .toThrow( type="CouchbaseClient.NotSupported" );
         } );
@@ -206,7 +206,7 @@ component extends="testbox.system.BaseSpec"{
 
         it( "can increment values asynchronously", function(){
           expect( function(){
-            couchbase.asyncCounter( "unit-increment", 1 )
+            couchbase.asyncCounter( "unit-increment", 1 );
           })
           .toThrow( type="CouchbaseClient.NotSupported" );
         } );
@@ -293,7 +293,7 @@ component extends="testbox.system.BaseSpec"{
                   }).toThrow( type="InvalidReplicateTo" );
           } );
 
-          it( "with valid persisTo", function(){
+          it( "with valid persistTo", function(){
             var cas = 0;
             // Extra whitespace
             var doc = couchbase.upsert( id="unittest", value="hello", persistTo=" ZERO " );
@@ -302,6 +302,7 @@ component extends="testbox.system.BaseSpec"{
             cas = doc.cas;
 
             var doc = couchbase.upsert( id="unittest", value="hello", persistTo="ZERO" );
+            sleep( 500 );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
@@ -323,6 +324,7 @@ component extends="testbox.system.BaseSpec"{
             cas = doc.cas;
 
             var doc = couchbase.upsert( id="unittest", value="hello", replicateTo="ZERO" );
+            sleep( 500 );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
@@ -590,6 +592,7 @@ component extends="testbox.system.BaseSpec"{
             cas = doc.cas;
 
             var doc = couchbase.upsert( id="unittest", value="hello", persistTo="ZERO" );
+            sleep( 500 );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
@@ -606,11 +609,11 @@ component extends="testbox.system.BaseSpec"{
           it( "with valid replicateTo", function(){
             var cas = 0;
             // Extra whitespace
-            var doc = couchbase.upsert( id="unittest", value="hello", replicateTo=" ZERO " );
+            var doc = couchbase.upsert( id="unittest", value="hello1", replicateTo=" ZERO " );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
-            var doc = couchbase.upsert( id="unittest", value="hello", replicateTo="ZERO" );
+            var doc = couchbase.upsert( id="unittest", value="hello2", replicateTo="ZERO" );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 

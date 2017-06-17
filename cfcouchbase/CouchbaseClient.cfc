@@ -2048,7 +2048,11 @@ component serializable="false" accessors="true" {
 
       // Do we have a transformer?
       if( structKeyExists( arguments, "transform" ) && isClosure( arguments.transform ) ) {
-        document = arguments.transform( document );
+        var refLocal = arguments.transform( document );
+        // If a value is returned, use it as the document
+        if( !isNull( local.refLocal ) ) {
+        	document = refLocal;
+        }
       }
 
       // Do we have a filter?

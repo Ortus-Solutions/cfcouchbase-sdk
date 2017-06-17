@@ -1,9 +1,9 @@
 {
     "name":"CFCouchbase SDK Shell",
     "author":"Ortus Solutions <info@ortussolutions.com>",
-    "private":true,
+    "private":false,
     "dependencies":{
-        "testbox":"2.3.0+00044"
+        "testbox":"^2.3.0+00044"
     },
     "installPaths":{
         "testbox":"testbox"

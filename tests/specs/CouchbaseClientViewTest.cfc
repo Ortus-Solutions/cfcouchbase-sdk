@@ -55,7 +55,8 @@ component extends="testbox.system.BaseSpec"{
         expect(  oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.view.ViewQuery" );
         // there are not getting methods for values that have been set but we can verify the values
         // set by calling the toString() method of the ViewQuery object
-        expect(  oQuery.toString() ).toBe( "limit=10&debug=true" );
+        expect(  oQuery.toString() ).toInclude( "limit=10" );
+        expect(  oQuery.toString() ).toInclude( "debug=true" );
       });
 
       it( "can do a raw query", function(){
@@ -108,7 +109,7 @@ component extends="testbox.system.BaseSpec"{
         //expect( results[ 1 ].document ).toBeStruct();
       });
 
-      it( "can do a query with custom transformations", function(){
+      it( "can do a query with custom transformations by reference", function(){
         // filter out beers
         var results = couchbase.query( designDocumentName='beer',
                          viewName='brewery_beers',
@@ -117,7 +118,21 @@ component extends="testbox.system.BaseSpec"{
                          transform=function( row ){
                            arguments.row.document = deserializeJSON( arguments.row.document );
                            } );
-        //debug( results );
+        expect(  results ).toBeArray();
+        expect(  arrayLen( results ) ).toBeGT( 1 );
+        expect(  results[ 1 ].document ).notToBeString();
+      });
+
+      it( "can do a query with custom transformations that return a value", function(){
+        // filter out beers
+        var results = couchbase.query( designDocumentName='beer',
+                         viewName='brewery_beers',
+                         options={ limit: 100, includeDocs: true },
+                         deserialize=false,
+                         transform=function( row ){
+                           arguments.row.document = deserializeJSON( arguments.row.document );
+                           return arguments.row;
+                           } );
         expect(  results ).toBeArray();
         expect(  arrayLen( results ) ).toBeGT( 1 );
         expect(  results[ 1 ].document ).notToBeString();

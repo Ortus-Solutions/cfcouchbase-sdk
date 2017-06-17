@@ -490,7 +490,8 @@ component extends="testbox.system.BaseSpec"{
         expect( build.success ).toBeTrue();
         
         // wait for build to end
-        sleep( 1000 );
+        // This is an arbitrary sleep and may not be enough on a slow machine.
+        sleep( 5000 );
 
         var buildCheck = couchbase.n1qlQuery("
           SELECT datastore_id, id, index_key, keyspace_id, name, namespace_id, state, `using`
@@ -540,7 +541,12 @@ component extends="testbox.system.BaseSpec"{
         expect( oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.query.SimpleN1qlQuery" );
         // there are not getting methods for values that have been set but we can verify the values
         // set by calling the toString() method of the N1qlQuery.params() object
-        expect( oQuery.params().toString() ).toBe( "N1qlParams{serverSideTimeout='2500ms', consistency=STATEMENT_PLUS, scanWait='2500ms', clientContextId='client-id', maxParallelism=2, adhoc=true}" );
+        expect( oQuery.params().toString() ).toInclude( "serverSideTimeout='2500ms'" );
+        expect( oQuery.params().toString() ).toInclude( "consistency=STATEMENT_PLUS" );
+        expect( oQuery.params().toString() ).toInclude( "scanWait='2500ms'" );
+        expect( oQuery.params().toString() ).toInclude( "clientContextId='client-id'" );
+        expect( oQuery.params().toString() ).toInclude( "maxParallelism=2" );
+        expect( oQuery.params().toString() ).toInclude( "adhoc=true" );
       });
 
       it( "can do a raw query", function(){

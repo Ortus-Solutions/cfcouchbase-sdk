@@ -41,6 +41,12 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       return arguments.data;
     }
 
+    // binary objects need to be com.couchbase.client.deps.io.netty.buffer.ByteBuf
+    if( isBinary( arguments.data ) ) {
+      return getCouchbaseClient().newJava("com.couchbase.client.deps.io.netty.buffer.Unpooled")
+        .wrappedBuffer(arguments.data);
+    }
+
     // if string wrap it in quotes and return it
     // this is required otherwise it is seen as a binary document
     if( isSimpleValue( arguments.data ) ) {
@@ -128,19 +134,59 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   */
   public any function deserializeData(
     required string id,
-    required string data,
+    required any data,
     any inflateTo="",
     struct deserializeOptions={}
   ) {
     var results = arguments.data;
+    // is the data json? if so convert it.  it may not be json if it is a binary, string (that's not json),
+    // atomic integer document.  or someone could have their own data marshaller and is calling this as the
+    // super
+    if( isJSON( arguments.data ) ) {
+      // Deserialize JSON
+      if( structKeyExists( arguments.deserializeOptions, "JSONStrictMapping" ) ) {
+        results = deserializeJSON( arguments.data, arguments.deserializeOptions.JSONStrictMapping );
+      } else {
+        results = deserializeJSON( arguments.data, false );
+      }
+    }
+
+    // is it a structure that has our custom type values?
+    if ( isStruct( results ) && structKeyExists( results, "type" ) && isSimpleValue( results.type ) ) {
+      switch (results.type) {
+        // Do we have a cfcouchbase CFC memento to inflate?
+        case "cfcouchbase-cfcdata":
+          // Use class path from JSON unless it's being overridden
+          if( isSimpleValue( arguments.inflateTo ) && !len( trim( arguments.inflateTo ) ) ) {
+            arguments['inflateTo'] = results.classpath;
+            return deserializeObjects( arguments.id, results.data, arguments.inflateTo, arguments.deserializeOptions );
+          }
+        break;
+        // Do we have a cfcouchbase native CFC?
+        case "cfcouchbase-cfc":
+          // this is an object already, just return, no inflations necessary
+          return objectLoad( toBinary( results.binary  ) );
+        break;
+        // Do we have a cfcouchbase query?
+        case "cfcouchbase-query": // DEPRECATED
+          // this is an object already, just return, no inflations necessary
+          return objectLoad( toBinary( results.binary  ) );
+        break;
+        // Do we have a cfcouchbase query?
+        case "cfcouchbase-query2":
+          // this is an object already, just return, no inflations necessary
+          results = results.data;
+        break;
+      }
+    }
 
     if( isJSON( arguments.data ) ) {
-    	
+
       // Deserialize JSON
       if( structKeyExists( arguments.deserializeOptions, 'JSONStrictMapping' ) ) {
       	results = deserializeJSON( arguments.data, arguments.deserializeOptions.JSONStrictMapping );
       } else {
-      	results = deserializeJSON( arguments.data, false );      	
+      	results = deserializeJSON( arguments.data, false );
       }
 
       // Do we have a cfcouchbase CFC memento to inflate?
@@ -174,9 +220,10 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       return deserializeObjects( arguments.ID, results, arguments.inflateTo, arguments.deserializeOptions );
     }
 
-    // We reach this if it's not JSON, or we're not inflating to a CFC
+    // We reach this if it's not JSON, or we're not inflating to a CFC, maybe binary, string or number? ¯\_(ツ)_/¯
     return results;
   }
+
   /**
   * Does object inflation
   */

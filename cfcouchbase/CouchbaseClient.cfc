@@ -135,7 +135,8 @@ component serializable="false" accessors="true" {
       'id' = result.id(),
       'cas' = result.cas(),
       'expiry' = result.expiry(),
-      'hashCode' = result.hashCode()
+      // hash code errors for binary documents
+      'hashCode' = !isBinary(arguments.value) ? result.hashCode() : 0
     };
   }
 
@@ -272,7 +273,7 @@ component serializable="false" accessors="true" {
             // set the expiry / timeout in minutes
             javaCast( "int", arguments.timeout ),
             // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
-            arguments.value,
+            serializeData( arguments.value ),
             // set the cas value
             javaCast( "long", arguments.cas )
           );
@@ -2797,7 +2798,7 @@ component serializable="false" accessors="true" {
   */
   public any function deserializeData(
     required string id,
-    required string data,
+    required any data,
     any inflateTo="",
     boolean deserialize=true,
     struct deserializeOptions= {}

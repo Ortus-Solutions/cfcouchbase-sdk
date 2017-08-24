@@ -180,44 +180,9 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       }
     }
 
-    if( isJSON( arguments.data ) ) {
-
-      // Deserialize JSON
-      if( structKeyExists( arguments.deserializeOptions, 'JSONStrictMapping' ) ) {
-      	results = deserializeJSON( arguments.data, arguments.deserializeOptions.JSONStrictMapping );
-      } else {
-      	results = deserializeJSON( arguments.data, false );
-      }
-
-      // Do we have a cfcouchbase CFC memento to inflate?
-      if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-cfcdata" ) {
-
-        // Use class path from JSON unless it's being overridden
-        if( isSimpleValue( arguments.inflateTo ) && !len( trim( arguments.inflateTo ) ) ) {
-          arguments['inflateTo'] = results.classpath;
-        }
-
-        return deserializeObjects( arguments.ID, results.data, arguments.inflateTo, arguments.deserializeOptions );
-      }
-      // Do we have a cfcouchbase native CFC?
-      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-cfc" ) {
-        // this is an object already, just return, no inflations necessary
-        return objectLoad( toBinary( results.binary ) );
-      }
-      // Do we have a cfcouchbase query (deprecated)?
-      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-query" ) {
-        results = objectLoad( toBinary( results.binary ) );
-      }
-      // Do we have a cfcouchbase query (version 2)?
-      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-query2" ) {
-        results = results.data;
-      }
-
-    }
-
     // If there's an inflateTo, then we're sending back a CFC!
     if( !isSimpleValue( arguments.inflateTo ) || len( trim( arguments.inflateTo ) ) ) {
-      return deserializeObjects( arguments.ID, results, arguments.inflateTo, arguments.deserializeOptions );
+      return deserializeObjects( arguments.id, results, arguments.inflateTo, arguments.deserializeOptions );
     }
 
     // We reach this if it's not JSON, or we're not inflating to a CFC, maybe binary, string or number? ¯\_(ツ)_/¯

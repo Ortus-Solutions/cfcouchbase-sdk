@@ -29,6 +29,14 @@ component extends="testbox.system.BaseSpec"{
 
   function beforeAll(){
     couchbase = new cfcouchbase.CouchbaseClient( { bucketName="travel-sample" } );
+
+    // add custom matcher
+    addMatchers({
+      // checks to see if the passed value is in the first argument which is an array
+      toBeOneOf: function( expectation, args={} ) {
+        return arrayFind( args[ 1 ], expectation.actual );
+      }
+    });
   }
 
   function afterAll(){
@@ -215,11 +223,11 @@ component extends="testbox.system.BaseSpec"{
           FROM travel-sample
           LIMIT 1
         ");
-
         expect( data ).toBeStruct();
         expect( data ).toHaveKey( "errors" );
         expect( arrayLen( data.errors ) ).toBe( 1 );
-        expect( data.errors[1].code ).toBe( 3000 );
+        // depending on the version of couchbase this can be different error codes
+        expect( data.errors[1].code ).toBeOneOf( [ 3000, 4010 ] );
         expect( data ).toHaveKey( "success" );
         expect( data.success ).toBeFalse();
       });
@@ -488,7 +496,7 @@ component extends="testbox.system.BaseSpec"{
         expect( build ).toBeStruct();
         expect( build ).toHaveKey( "success" );
         expect( build.success ).toBeTrue();
-        
+
         // wait for build to end
         // This is an arbitrary sleep and may not be enough on a slow machine.
         sleep( 5000 );

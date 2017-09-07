@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.3.1"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/
+    variables['SDKVersion'] = "2.4.7"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.4.7/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -3161,6 +3161,9 @@ component serializable="false" accessors="true" {
   * @Return An array of jar file names
   */
   private array function getLibJars() {
+    // couchbase-java-client-2.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/java-client/2.4.7
+    // couchbase-core-io-1.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/core-io/1.4.7
+    // rxjava-1.2.7.jar - https://mvnrepository.com/artifact/io.reactivex/rxjava/1.2.7
     return directoryList( variables.libPath, false, "path" );
   }
 

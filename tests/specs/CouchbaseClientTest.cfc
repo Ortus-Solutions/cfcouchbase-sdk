@@ -88,6 +88,22 @@ component extends="testbox.system.BaseSpec"{
           expect( doc.id ).toBe( key );
         } );
 
+        it( "with binary value", function(){
+          var key = "unittest";
+          var data = objectSave({
+            "name": "Aaron"
+          });
+          var doc = couchbase.upsert( id="unittest", value=data );
+
+          expect( doc ).toBeStruct();
+          expect( doc ).toHaveKey( "id" );
+          expect( doc ).toHaveKey( "cas" );
+          expect( doc ).toHaveKey( "expiry" );
+          expect( doc ).toHaveKey( "hashCode" );
+          expect( doc.hashCode ).toBe( 0 );
+          expect( doc.id ).toBe( key );
+        } );
+
         it( "with invalid timeout", function(){
             expect( function(){
               couchbase.upsert( id="unittest", value="hello", timeout=-5 );
@@ -362,6 +378,20 @@ component extends="testbox.system.BaseSpec"{
           var data = now();
           couchbase.upsert( id="unittest", value=data );
           expect( couchbase.get( "unittest" ) ).toBe( data );
+        } );
+
+        it( "of binary value", function(){
+          var key = "unittest";
+          var data = {
+            "name": "Aaron"
+          };
+          var binary_data = objectSave( data );
+          couchbase.upsert( id="unittest", value=binary_data, dataType="binary" );
+          var doc = couchbase.get( id="unittest" );
+
+          expect( doc ).toBeBinary();
+          expect( doc ).toBe( binary_data );
+          expect( objectLoad( doc ) ).toBe( data );
         } );
 
         it( "of an invalid object", function(){

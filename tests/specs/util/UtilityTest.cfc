@@ -32,6 +32,7 @@ component extends="testbox.system.BaseSpec"{
   }
 
   function afterAll(){
+    couchbase.shutdown( 10 );
   }
 
 /*********************************** BDD SUITES ***********************************/

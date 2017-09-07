@@ -11,6 +11,7 @@ build/build.number
 build-cfcouchbase/*
 samples/testing
 # testing
+server.json
 tests/results
 ## Dependencies
 coldbox/*

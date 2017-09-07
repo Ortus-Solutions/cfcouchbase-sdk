@@ -22,7 +22,7 @@ interface {
   */
   public any function deserializeData(
     required string ID,
-    required string data,
+    required any data,
     any inflateTo="",
     struct deserializeOptions={}
   );

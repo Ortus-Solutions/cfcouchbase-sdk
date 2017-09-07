@@ -23,10 +23,8 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   function init() {
     variables['system'] = createObject( "java", "java.lang.System" );
     variables['objectPopulator'] = new cfcouchbase.data.ObjectPopulator();
-
     return this;
   }
-
 
   // ************************ Serialization ************************
 
@@ -39,6 +37,11 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
     // if json or a number just return back no serialization needed
     if( isJSON( arguments.data ) || isNumeric( arguments.data ) ) {
       return arguments.data;
+    }
+
+    // binary objects need to be com.couchbase.client.deps.io.netty.buffer.ByteBuf
+    if( isBinary( arguments.data ) ) {
+      return variables.Unpooled.copiedBuffer(arguments.data);
     }
 
     // if string wrap it in quotes and return it
@@ -128,55 +131,79 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   */
   public any function deserializeData(
     required string id,
-    required string data,
+    required any data,
     any inflateTo="",
     struct deserializeOptions={}
   ) {
     var results = arguments.data;
-
+    // is the data json? if so convert it.  it may not be json if it is a binary, string (that's not json),
+    // atomic integer document.  or someone could have their own data marshaller and is calling this as the
+    // super
     if( isJSON( arguments.data ) ) {
-    	
       // Deserialize JSON
-      if( structKeyExists( arguments.deserializeOptions, 'JSONStrictMapping' ) ) {
-      	results = deserializeJSON( arguments.data, arguments.deserializeOptions.JSONStrictMapping );
+      if( structKeyExists( arguments.deserializeOptions, "JSONStrictMapping" ) ) {
+        results = deserializeJSON( arguments.data, arguments.deserializeOptions.JSONStrictMapping );
       } else {
-      	results = deserializeJSON( arguments.data, false );      	
+        results = deserializeJSON( arguments.data, false );
       }
+    } else if ( arguments.data.getClass() contains "com.couchbase.client.deps.io.netty.buffer" ) { // is it ByteBuf?
+      // create a new empty byte array sized with the number of bytes from the ByteBuf
+      results = createObject("java","java.lang.reflect.Array").newInstance(
+       createObject("java", "java.io.ByteArrayOutputStream").init().toByteArray().getClass().getComponentType(),
+       arguments.data.readableBytes()
+      );
+      // read the bytes from the start of the ByteBuf to the end copying them into the results
+      arguments.data.getBytes(javaCast("int", 0), results);
+      // binary documents implement com.couchbase.client.deps.io.netty.buffer.ByteBuf which are unpooled.  when a binary
+      // document is retrieved from by the SDK it must be released.  We use the safeRelease() method instead of release(),
+      // release() will return true if class implements com.couchbase.client.deps.io.netty.util.ReferenceCounted if not
+      // it will return false.  However if there are no references to release and ReferenceCounted is implemented release()
+      // will throw an exception, safeRelease() does not as it traps and returns void regardless
+      variables.ReferenceCountUtil.safeRelease(arguments.data);
+    } else if(isBinary(arguments.data)) { // if the data is binary
+      // Means a LegacyDocument was created and returned, someone more than likely called the get() method w/o specifcying the
+      // data type and while a binary object is returned the ByteBuf will reamin open and we need to close it
+      variables.ReferenceCountUtil.safeRelease(arguments.data);
+    }
 
-      // Do we have a cfcouchbase CFC memento to inflate?
-      if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-cfcdata" ) {
-
-        // Use class path from JSON unless it's being overridden
-        if( isSimpleValue( arguments.inflateTo ) && !len( trim( arguments.inflateTo ) ) ) {
-          arguments['inflateTo'] = results.classpath;
-        }
-
-        return deserializeObjects( arguments.ID, results.data, arguments.inflateTo, arguments.deserializeOptions );
+    // is it a structure that has our custom type values?
+    if ( isStruct( results ) && structKeyExists( results, "type" ) && isSimpleValue( results.type ) ) {
+      switch (results.type) {
+        // Do we have a cfcouchbase CFC memento to inflate?
+        case "cfcouchbase-cfcdata":
+          // Use class path from JSON unless it's being overridden
+          if( isSimpleValue( arguments.inflateTo ) && !len( trim( arguments.inflateTo ) ) ) {
+            arguments['inflateTo'] = results.classpath;
+            return deserializeObjects( arguments.id, results.data, arguments.inflateTo, arguments.deserializeOptions );
+          }
+        break;
+        // Do we have a cfcouchbase native CFC?
+        case "cfcouchbase-cfc":
+          // this is an object already, just return, no inflations necessary
+          return objectLoad( toBinary( results.binary  ) );
+        break;
+        // Do we have a cfcouchbase query?
+        case "cfcouchbase-query": // DEPRECATED
+          // this is an object already, just return, no inflations necessary
+          return objectLoad( toBinary( results.binary  ) );
+        break;
+        // Do we have a cfcouchbase query?
+        case "cfcouchbase-query2":
+          // this is an object already, just return, no inflations necessary
+          results = results.data;
+        break;
       }
-      // Do we have a cfcouchbase native CFC?
-      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-cfc" ) {
-        // this is an object already, just return, no inflations necessary
-        return objectLoad( toBinary( results.binary ) );
-      }
-      // Do we have a cfcouchbase query (deprecated)?
-      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-query" ) {
-        results = objectLoad( toBinary( results.binary ) );
-      }
-      // Do we have a cfcouchbase query (version 2)?
-      else if( isStruct( results ) and structkeyExists( results, "type" ) and results.type == "cfcouchbase-query2" ) {
-        results = results.data;
-      }
-
     }
 
     // If there's an inflateTo, then we're sending back a CFC!
     if( !isSimpleValue( arguments.inflateTo ) || len( trim( arguments.inflateTo ) ) ) {
-      return deserializeObjects( arguments.ID, results, arguments.inflateTo, arguments.deserializeOptions );
+      return deserializeObjects( arguments.id, results, arguments.inflateTo, arguments.deserializeOptions );
     }
 
-    // We reach this if it's not JSON, or we're not inflating to a CFC
+    // We reach this if it's not JSON, or we're not inflating to a CFC, maybe binary, string or number? ¯\_(ツ)_/¯
     return results;
   }
+
   /**
   * Does object inflation
   */
@@ -249,10 +276,13 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   // ************************ Utility ************************
 
   /**
-  * A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
+  * A method that is called by the couchbase client upon creation so if the marshaller implements this function, it can talk back to the client.
   */
   public any function setCouchbaseClient( required couchcbaseClient ) {
-    variables.couchbaseClient = arguments.couchcbaseClient;
+    variables['couchbaseClient'] = arguments.couchcbaseClient;
+    // used for binary documents
+    variables['Unpooled'] = variables.couchbaseClient.newJava("com.couchbase.client.deps.io.netty.buffer.Unpooled");
+    variables['ReferenceCountUtil'] = variables.couchbaseClient.newJava("com.couchbase.client.deps.io.netty.util.ReferenceCountUtil");
     return this;
   }
 

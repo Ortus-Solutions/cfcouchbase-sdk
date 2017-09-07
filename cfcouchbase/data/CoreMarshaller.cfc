@@ -23,10 +23,8 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   function init() {
     variables['system'] = createObject( "java", "java.lang.System" );
     variables['objectPopulator'] = new cfcouchbase.data.ObjectPopulator();
-
     return this;
   }
-
 
   // ************************ Serialization ************************
 
@@ -43,8 +41,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
 
     // binary objects need to be com.couchbase.client.deps.io.netty.buffer.ByteBuf
     if( isBinary( arguments.data ) ) {
-      return getCouchbaseClient().newJava("com.couchbase.client.deps.io.netty.buffer.Unpooled")
-        .wrappedBuffer(arguments.data);
+      return variables.Unpooled.copiedBuffer(arguments.data);
     }
 
     // if string wrap it in quotes and return it
@@ -149,6 +146,24 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       } else {
         results = deserializeJSON( arguments.data, false );
       }
+    } else if ( arguments.data.getClass() contains "com.couchbase.client.deps.io.netty.buffer" ) { // is it ByteBuf?
+      // create a new empty byte array sized with the number of bytes from the ByteBuf
+      results = createObject("java","java.lang.reflect.Array").newInstance(
+       createObject("java", "java.io.ByteArrayOutputStream").init().toByteArray().getClass().getComponentType(),
+       arguments.data.readableBytes()
+      );
+      // read the bytes from the start of the ByteBuf to the end copying them into the results
+      arguments.data.getBytes(javaCast("int", 0), results);
+      // binary documents implement com.couchbase.client.deps.io.netty.buffer.ByteBuf which are unpooled.  when a binary
+      // document is retrieved from by the SDK it must be released.  We use the safeRelease() method instead of release(),
+      // release() will return true if class implements com.couchbase.client.deps.io.netty.util.ReferenceCounted if not
+      // it will return false.  However if there are no references to release and ReferenceCounted is implemented release()
+      // will throw an exception, safeRelease() does not as it traps and returns void regardless
+      variables.ReferenceCountUtil.safeRelease(arguments.data);
+    } else if(isBinary(arguments.data)) { // if the data is binary
+      // Means a LegacyDocument was created and returned, someone more than likely called the get() method w/o specifcying the
+      // data type and while a binary object is returned the ByteBuf will reamin open and we need to close it
+      variables.ReferenceCountUtil.safeRelease(arguments.data);
     }
 
     // is it a structure that has our custom type values?
@@ -261,10 +276,13 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   // ************************ Utility ************************
 
   /**
-  * A method that is called by the couchbase client upon creation so if the marshaller implemnts this function, it can talk back to the client.
+  * A method that is called by the couchbase client upon creation so if the marshaller implements this function, it can talk back to the client.
   */
   public any function setCouchbaseClient( required couchcbaseClient ) {
-    variables.couchbaseClient = arguments.couchcbaseClient;
+    variables['couchbaseClient'] = arguments.couchcbaseClient;
+    // used for binary documents
+    variables['Unpooled'] = variables.couchbaseClient.newJava("com.couchbase.client.deps.io.netty.buffer.Unpooled");
+    variables['ReferenceCountUtil'] = variables.couchbaseClient.newJava("com.couchbase.client.deps.io.netty.util.ReferenceCountUtil");
     return this;
   }
 

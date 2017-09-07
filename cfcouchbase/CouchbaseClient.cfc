@@ -110,7 +110,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ NONE, ONE, TWO, THREE ]
-  *
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value
   * @return A structure containing the id, cas, expiry and hashCode document metadata values
   */
   public any function upsert(
@@ -118,19 +118,47 @@ component serializable="false" accessors="true" {
     required any value,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var result = variables.couchbaseBucket.upsert(
-      document,
-      arguments.persistTo,
-      arguments.replicateTo
-    );
+    try {
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      // write the document
+      var result = variables.couchbaseBucket.upsert(
+        document,
+        arguments.persistTo,
+        arguments.replicateTo
+      );
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
+      }
+    }
     return {
       'id' = result.id(),
       'cas' = result.cas(),
@@ -180,7 +208,6 @@ component serializable="false" accessors="true" {
             javaCast( "string", variables.util.normalizeID( arguments.id ) ),
             // set the expiry / timeout in minutes
             javaCast( "int", arguments.timeout ),
-            // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
             arguments.value,
             // set the cas value
             javaCast( "long", arguments.cas )
@@ -272,8 +299,7 @@ component serializable="false" accessors="true" {
             javaCast( "string", variables.util.normalizeID( arguments.id ) ),
             // set the expiry / timeout in minutes
             javaCast( "int", arguments.timeout ),
-            // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
-            serializeData( arguments.value ),
+            arguments.value,
             // set the cas value
             javaCast( "long", arguments.cas )
           );
@@ -374,7 +400,7 @@ component serializable="false" accessors="true" {
           document = newJava( "com.couchbase.client.java.document.JsonLongDocument" );
         break;
         case "binary":
-          document = newJava( "com.couchbase.client.java.document.JsonDocument" );
+          document = newJava( "com.couchbase.client.java.document.BinaryDocument" );
         break;
         case "boolean":
           document = newJava( "com.couchbase.client.java.document.JsonDocument" );
@@ -442,6 +468,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value is then set to true
   *
   * @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED" indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or a regular set() commend to store the document.
   */
@@ -451,30 +478,37 @@ component serializable="false" accessors="true" {
     required numeric cas,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new RawJsonDocument to be saved
-    var document = newJava( "com.couchbase.client.java.document.RawJsonDocument" ).create(
-      // normalize the id before setting it
-      variables.util.normalizeID( arguments.id ),
-      // set the expiry / timeout in minutes
-      javaCast( "int", arguments.timeout ),
-      // serialize the data
-      serializeData( arguments.value ),
-      // set the cas value
-      javaCast( "long", arguments.cas )
-    );
-    var response = "";
-    var result = {
-      'status' = true,
-      'detail' = "SUCCESS"
-    };
     try {
-      response = variables.couchbaseBucket.replace(
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          cas=arguments.cas,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      var result = {
+        'status' = true,
+        'detail' = "SUCCESS"
+      };
+      // write the document
+      variables.couchbaseBucket.replace(
         document,
         arguments.persistTo,
         arguments.replicateTo
@@ -494,6 +528,16 @@ component serializable="false" accessors="true" {
         break;
         default:
           rethrow;
+      }
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
       }
     }
     return result;
@@ -544,6 +588,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value
   *
   * @return A boolean indicating whether or not the insert was successful
   */
@@ -552,18 +597,33 @@ component serializable="false" accessors="true" {
     required any value,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // we are dealing with a new sdk 2.x+ method set legacy to false
-    arguments['legacy'] = false;
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var success = true;
     try {
+      var success = true;
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          cas=arguments.cas,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      // insert the document
       variables.couchbaseBucket.insert(
         document,
         arguments.persistTo,
@@ -577,6 +637,16 @@ component serializable="false" accessors="true" {
       }
       else {
         rethrow;
+      }
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
       }
     }
     return success;
@@ -700,6 +770,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value
   *
   * @return A boolean indicating whether or not the replace was successful
   */
@@ -709,16 +780,33 @@ component serializable="false" accessors="true" {
     numeric timeout,
     string persistTo,
     string replicateTo,
-    numeric cas=0
+    numeric cas=0,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var success = true;
     try {
+      var success = true;
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          cas=arguments.cas,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      // write the document
       variables.couchbaseBucket.replace(
         document,
         arguments.persistTo,
@@ -732,6 +820,16 @@ component serializable="false" accessors="true" {
       }
       else {
         rethrow;
+      }
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
       }
     }
     return success;

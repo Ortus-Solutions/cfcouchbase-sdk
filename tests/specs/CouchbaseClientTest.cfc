@@ -386,7 +386,7 @@ component extends="testbox.system.BaseSpec"{
             "name": "Aaron"
           };
           var binary_data = objectSave( data );
-          couchbase.upsert( id="unittest", value=binary_data );
+          couchbase.upsert( id="unittest", value=binary_data, dataType="binary" );
           var doc = couchbase.get( id="unittest" );
 
           expect( doc ).toBeBinary();

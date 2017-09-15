@@ -6,7 +6,6 @@
 component{
 	this.name = "CFCouchbase Testing Suite";
 	this.sessionManagement = true;
-
 	// Turn on/off white space management
 	this.whiteSpaceManagement = "smart";
 

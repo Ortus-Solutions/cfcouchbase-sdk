@@ -1,20 +1,24 @@
 org.eclipse.core.resources.prefs
-node_modules
-/WEB-INF
+WEB-INF
 settings.xml
 .project
 .svn
 .DS_Store
+
 # Build Process
 artifacts/*
 build/build.number
 build-cfcouchbase/*
 samples/testing
+build/servers/.engine/**
+
 # testing
 server.json
 tests/results
+
 ## Dependencies
 coldbox/*
 testbox/*
 apidocs/CFCouchbase-APIDocs
 apidocs/docbox/*
+node_modules

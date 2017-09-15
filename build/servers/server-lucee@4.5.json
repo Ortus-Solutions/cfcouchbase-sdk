@@ -1,0 +1,18 @@
+{
+    "force":true,
+    "app":{
+        "cfengine":"lucee@4.5",
+        "serverHomeDirectory":"./.engine/lucee@4.5"
+    },
+    "openbrowser":"false",
+    "web":{
+        "http":{
+            "port":"50680"
+        },
+        "rewrites":{
+            "enable":true
+        },
+        "webroot":"/Users/lmajano/Sites/cboxdev/cfcouchbase-sdk//"
+    },
+    "name":"lucee@4.5"
+}

@@ -4,10 +4,11 @@
 	"author" 			: "Ortus Solutions <info@ortussolutions.com>",
 	"slug"				: "cfcouchbase",
 	"type"				: "nosql",
+	"location": "http://downloads.ortussolutions.com/ortussolutions/cfcouchbase/@build.version@/cfcouchbase-@build.version@.zip",
 	"directory"			: "modules",
 	"keywords"			: "nosql,couchbase,sdk",
 	"homepage"			: "https://www.ortussolutions.com/products/cfcouchbase",
-	"documentation"		: "https://www.ortussolutions.com/products/cfcouchbase",
+	"documentation"		: "https://cfcouchbase.ortusbooks.com/",
 	"repository"		: { "type" : "git", "url" : "https://github.com/Ortus-Solutions/cfcouchbase-sdk" },
 	"bugs"				: "https://ortussolutions.atlassian.net/browse/COUCHBASESDK",
 	"shortDescription"	: "A CFML Library for interacting with Couchbase NoSQL Server",
@@ -18,14 +19,11 @@
 		"Brad Wood <bdw429s@gmail.com>",
   		"Aaron Benton <bentonam@gmail.com>"
 	],
-	"ignore"			: [
-		"apidocs/*", "docs/*", "LICENSE", "tests/*"
-	],
-	"testbox"			: {
-		"runner" : [
-			{ "cf10" 	: "http://cf10cboxdev.jfetmac/cfcouchbase-sdk/test/runner.cfm" },
-			{ "cf11" 	: "http://cf11cboxdev.jfetmac/cfcouchbase-sdk/test/runner.cfm" },
-			{ "railo" 	: "http://railocboxdev.jfetmac/cfcouchbase-sdk/test/runner.cfm" }
-		]
-	}
+	"dependencies": {
+    },
+	"ignore": [
+        "**/.*",
+        "tests/*",
+        ".git*"
+    ]
 }

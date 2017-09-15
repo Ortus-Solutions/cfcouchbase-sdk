@@ -6,6 +6,6 @@
         "testbox":"^2.5.0"
     },
     "installPaths":{
-        "testbox":"testbox"
+        "testbox":"testbox/"
     }
 }

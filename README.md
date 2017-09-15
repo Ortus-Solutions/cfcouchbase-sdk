@@ -19,7 +19,7 @@ The CFCouchbase SDK is a CFML library for interacting with [Couchbase NoSQL Serv
 
 > Couchbase is copyright and a registered trademark by Couchbase, Inc.
 
-##LICENSE
+## LICENSE
 
 Apache License, Version 2.0.
 
@@ -28,14 +28,14 @@ Apache License, Version 2.0.
 - Source Code - [https://github.com/Ortus-Solutions/cfcouchbase-sdk](https://github.com/Ortus-Solutions/cfcouchbase-sdk)
 - Tracker Site (Bug Tracking, Issues) - [https://ortussolutions.atlassian.net/browse/COUCHBASESDK](https://ortussolutions.atlassian.net/browse/COUCHBASESDK)
 - Documentation - [https://cfcouchbase.ortusbooks.com/](https://cfcouchbase.ortusbooks.com/)
-- Blog - [http://www.ortussolutions.com/blog](http://www.ortussolutions.com/blog)
+- Blog - [https://www.ortussolutions.com/blog](http://www.ortussolutions.com/blog)
 - Official Site - [http://www.ortussolutions.com/products/cfcouchbase](http://www.ortussolutions.com/products/cfcouchbase)
 
 ## SYSTEM REQUIREMENTS
 
 - Couchbase Server 1.8+
 - Lucee 4.5+
-- Adobe ColdFusion 10+
+- Adobe ColdFusion 11+
 
 ## CommandBox Installation
 

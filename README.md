@@ -1,5 +1,7 @@
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![TestBox](https://img.shields.io/badge/tested_with-TestBox-blue.svg)](https://ortussolutions.com/products/testbox)
+[![ColdBox](https://img.shields.io/badge/ColdBox%20Module-Ready-green.svg)](https://ortussolutions.com/products/coldbox)
+[![Build Status](https://travis-ci.org/Ortus-Solutions/cfcouchbase-sdk.svg?branch=development)](https://travis-ci.org/Ortus-Solutions/cfcouchbase-sdk)
 
 	      __       __________________                 __    __                  
 	  ____\ \     / ____/ ____/ ____/___  __  _______/ /_  / /_  ____ _________

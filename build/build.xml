@@ -3,12 +3,12 @@
     <description>
         Build a new distribution of the CFCouchbase SDK
     </description>
-	
+
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
     <property name="groupID"                value="ortussolutions" />
-    <property name="cfcouchbase.version"    value="2.1.0"/>
+    <property name="cfcouchbase.version"    value="2.2.0"/>
     <property name="cfcouchbase.slug"       value="cfcouchbase"/>
-    
+
 	<!-- Build Labels -->
     <tstamp prefix="start"/>
     <!-- Load Contrib Tasks -->
@@ -21,7 +21,7 @@
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="cp" />
     <!-- Import Box-Repo Tasks -->
     <import><url url="https://raw.githubusercontent.com/Ortus-Solutions/box-tasks/master/box-repo.xml"/></import>
-    
+
     <!-- Init -->
     <target name="init" description="Init" unless="src.isInit">
         <!-- Default environment check, if not passed via -Denvironment -->
@@ -57,8 +57,8 @@
 			<not><isset property="build.number" /></not>
 			<then>
 				<propertyfile file="build/build.number" comment="Build Number for ANT. Edit not!">
-					<entry key="build.number" 
-							type="int" 
+					<entry key="build.number"
+							type="int"
 					     	operation="+"
 							pattern="00000"
 					     	default="1" />
@@ -70,7 +70,7 @@
 
         <!-- Build Label -->
         <property name="build.label" value="cfcouchbase-${cfcouchbase.version}+${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
-        
+
         <!-- Get Build Dependencies -->
         <antcall target="getDependencies" />
 
@@ -78,23 +78,23 @@
         <delete dir="${dir.build}" />
         <mkdir dir="${dir.build}"/>
     	<chmod file="${dir.build}/**" perm="og+wrs" type="both" />
-    	
+
     	<!-- Mark as init -->
         <property name="src.isInit" value="true" />
     </target>
 
     <!-- Build test reports -->
     <target name="run-tests" description="execute test suite" depends="init">
-        
+
         <property name="serverName" value="${cfengine}"/>
-        
+
         <echo>========= Running CFEngine Tests for: ${cfengine} ==============</echo>
 
     	<antcall target="startServer" inheritRefs="true" />
 
         <trycatch property="testcatch">
             <try>
-                
+
                 <subant target="runEngine">
 		          	<fileset dir="tests" includes="test.xml"/>
 		    		<property name="engine" value="${cfengine}" />
@@ -111,14 +111,14 @@
 
 		<echo>========= CFEngine Tests for ${cfengine} completed. ==============</echo>
     </target>
-    
+
     <!--build-->
     <target name="build.sdk" description="Build the SDK distribution" depends="init">
         <!-- Copy build ID -->
     	<concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
     	<concat destfile="${dir.build}/version.json">{ "version" : "${cfcouchbase.version}" }</concat>
-    	
-        <!-- Copy Src -->    
+
+        <!-- Copy Src -->
         <copy todir="${dir.build}" encoding="UTF-8">
             <fileset dir="cfcouchbase" />
         </copy>
@@ -126,18 +126,18 @@
         <!--Copy text files to root folder-->
         <copy todir="${dir.build}" encoding="UTF-8">
             <fileset file="LICENSE" />
-            <fileset file="README.md" />                    
+            <fileset file="README.md" />
         </copy>
-    	
+
     	<!--Copy samples-->
         <copy todir="${dir.build}/samples" encoding="UTF-8">
-        	<fileset dir="samples" />                    
+        	<fileset dir="samples" />
         </copy>
 
         <!-- Replace Version + Build Numbers -->
         <!-- Semantic Versioning for Unstable Builds -->
         <echo>Updating placeholders for version ${cfcouchbase.version}, branch ${build.branch}, build ${build.number}</echo>
-		
+
 		<!-- Replace Version + Build Numbers -->
 		<replaceregexp match='@build\.version@' replace="${cfcouchbase.version}" flags="ig" byline="true" encoding="UTF-8">
 			<fileset dir="${dir.build}" />
@@ -164,7 +164,7 @@
         	<exclude name="version.json" />
         </zip>
     </target>
-	
+
 	<!-- Build all distributions -->
 	<target name="build.all" description="Build all distributions" depends="run-tests,build.sdk,build.apidocs,build.samples">
 		<!-- Build Checksum -->
@@ -180,20 +180,20 @@
         </checksum>
         <copy toDir="${dir.exports}" file="${dir.build}/box.json" overwrite="true" />
 		<!-- Create Box Repo From macrodef -->
-        <box-repo location="${dir.exports}" 
-                  artifactID="${cfcouchbase.slug}" 
+        <box-repo location="${dir.exports}"
+                  artifactID="${cfcouchbase.slug}"
                   buildID="${build.number}"
                   groupID="${groupID}"
                   latest="${cfcouchbase.version}"
                   classifiers="apidocs,samples"/>
 	</target>
-	
+
 	<!-- Build Samples -->
 	<target name="build.samples" description="Build the samples" depends="init">
 		<!-- Zip Samples -->
         <zip destfile="${dir.exports}/${cfcouchbase.slug}-samples-${cfcouchbase.version}.zip" basedir="samples"></zip>
 	</target>
-	
+
 	<!-- Build API Docs -->
 	<target name="build.apidocs" description="Build the API docs" depends="init">
 		<!-- Create API apidocs dir -->
@@ -208,8 +208,8 @@
         </exec>
         <sleep seconds="5"/>
         <!-- Get the apidocs now -->
-        <get dest="${dir.build}/docbox.html" 
-             src="${url.apidocs}?version=${cfcouchbase.version}&amp;path=${dir.api}" 
+        <get dest="${dir.build}/docbox.html"
+             src="${url.apidocs}?version=${cfcouchbase.version}&amp;path=${dir.api}"
              verbose="true"
              retries="5"/>
         <!-- stop server -->
@@ -240,5 +240,5 @@
 			<arg line="server stop name=${serverName} directory=${basedir} serverConfigFile=${basedir}/build/servers/server-${serverName}.json" />
 		</exec>
 	</target>
-	
+
 </project>

@@ -1,0 +1,20 @@
+{
+    "force":true,
+    "app":{
+        "cfengine":"adobe@2016",
+        "serverHomeDirectory":"./.engine/adobe@2016"
+    },
+    "openbrowser":"false",
+    "name":"adobe@2016",
+    "web":{
+        "http":{
+            "port":"49616"
+        },
+        "rewrites" : {
+            "enable" : true
+        }
+    },
+    "JVM":{
+        "heapSize":"1024"
+    }
+}

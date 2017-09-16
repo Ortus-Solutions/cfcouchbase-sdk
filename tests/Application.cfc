@@ -6,7 +6,6 @@
 component{
 	this.name = "CFCouchbase Testing Suite";
 	this.sessionManagement = true;
-
 	// Turn on/off white space management
 	this.whiteSpaceManagement = "smart";
 
@@ -15,7 +14,7 @@ component{
 
 	rootPath = REReplaceNoCase( this.mappings[ "/tests" ], "tests(\\|\/)$", "" );
 	this.mappings[ "/root" ]        = rootPath;
-	this.mappings[ "/cfcouchbase" ] = rootPath & "/cfcouchbase";
+	this.mappings[ "/cfcouchbase" ] = rootPath & "cfcouchbase";
 
 	// request start
 	public boolean function onRequestStart( String targetPage ){

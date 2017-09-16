@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.2.6";
+    variables['SDKVersion'] = "2.4.7"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.4.7/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -79,8 +79,8 @@ component serializable="false" accessors="true" {
     }
 
     // LOAD ENUMS
-		this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
-		this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
+    this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
+    this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
     this['replicaMode'] = newJava( "com.couchbase.client.java.ReplicaMode" );
 
     // Establish a connection to the Couchbase bucket
@@ -110,7 +110,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ NONE, ONE, TWO, THREE ]
-  *
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value
   * @return A structure containing the id, cas, expiry and hashCode document metadata values
   */
   public any function upsert(
@@ -118,24 +118,53 @@ component serializable="false" accessors="true" {
     required any value,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var result = variables.couchbaseBucket.upsert(
-      document,
-      arguments.persistTo,
-      arguments.replicateTo
-    );
+    try {
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      // write the document
+      var result = variables.couchbaseBucket.upsert(
+        document,
+        arguments.persistTo,
+        arguments.replicateTo
+      );
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
+      }
+    }
     return {
       'id' = result.id(),
       'cas' = result.cas(),
       'expiry' = result.expiry(),
-      'hashCode' = result.hashCode()
+      // hash code errors for binary documents
+      'hashCode' = !isBinary(arguments.value) ? result.hashCode() : 0
     };
   }
 
@@ -179,7 +208,6 @@ component serializable="false" accessors="true" {
             javaCast( "string", variables.util.normalizeID( arguments.id ) ),
             // set the expiry / timeout in minutes
             javaCast( "int", arguments.timeout ),
-            // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
             arguments.value,
             // set the cas value
             javaCast( "long", arguments.cas )
@@ -271,7 +299,6 @@ component serializable="false" accessors="true" {
             javaCast( "string", variables.util.normalizeID( arguments.id ) ),
             // set the expiry / timeout in minutes
             javaCast( "int", arguments.timeout ),
-            // create a new binary from the value, should be a com.couchbase.client.deps.io.netty.buffer.ByteBuf object
             arguments.value,
             // set the cas value
             javaCast( "long", arguments.cas )
@@ -373,7 +400,7 @@ component serializable="false" accessors="true" {
           document = newJava( "com.couchbase.client.java.document.JsonLongDocument" );
         break;
         case "binary":
-          document = newJava( "com.couchbase.client.java.document.JsonDocument" );
+          document = newJava( "com.couchbase.client.java.document.BinaryDocument" );
         break;
         case "boolean":
           document = newJava( "com.couchbase.client.java.document.JsonDocument" );
@@ -441,6 +468,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value is then set to true
   *
   * @return A struct with a status and detail key.  Status will be true if the document was succesfully updated.  If status is false, that means nothing happened on the server and you need to re-issue a command to store your document.  When status is false, check the detail.  A value of "CAS_CHANGED" indicates that anothe rprocess has updated the document and your version is out-of-date.  You will need to retrieve the document again with getWithCAS() and attempt your setWithCAS again.  If status is false and details is "NOT_FOUND", that means a document with that ID was not found.  You can then issue an add() or a regular set() commend to store the document.
   */
@@ -450,30 +478,37 @@ component serializable="false" accessors="true" {
     required numeric cas,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new RawJsonDocument to be saved
-    var document = newJava( "com.couchbase.client.java.document.RawJsonDocument" ).create(
-      // normalize the id before setting it
-      variables.util.normalizeID( arguments.id ),
-      // set the expiry / timeout in minutes
-      javaCast( "int", arguments.timeout ),
-      // serialize the data
-      serializeData( arguments.value ),
-      // set the cas value
-      javaCast( "long", arguments.cas )
-    );
-    var response = "";
-    var result = {
-      'status' = true,
-      'detail' = "SUCCESS"
-    };
     try {
-      response = variables.couchbaseBucket.replace(
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          cas=arguments.cas,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      var result = {
+        'status' = true,
+        'detail' = "SUCCESS"
+      };
+      // write the document
+      variables.couchbaseBucket.replace(
         document,
         arguments.persistTo,
         arguments.replicateTo
@@ -493,6 +528,16 @@ component serializable="false" accessors="true" {
         break;
         default:
           rethrow;
+      }
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
       }
     }
     return result;
@@ -543,6 +588,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value
   *
   * @return A boolean indicating whether or not the insert was successful
   */
@@ -551,18 +597,33 @@ component serializable="false" accessors="true" {
     required any value,
     numeric timeout,
     string persistTo,
-    string replicateTo
+    string replicateTo,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // we are dealing with a new sdk 2.x+ method set legacy to false
-    arguments['legacy'] = false;
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var success = true;
     try {
+      var success = true;
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          cas=arguments.cas,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      // insert the document
       variables.couchbaseBucket.insert(
         document,
         arguments.persistTo,
@@ -576,6 +637,16 @@ component serializable="false" accessors="true" {
       }
       else {
         rethrow;
+      }
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
       }
     }
     return success;
@@ -611,16 +682,16 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * Upsert multiple documents in the cache with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
+  * Upsert multiple documents with a single operation.  Pass in a struct of documents to set where the IDs of the struct are the document IDs.
   * The values in the struct are the values being set.  All documents share the same timout, persistTo, and replicateTo settings.
   *
   * <pre class='brush: cf'>
-  * data = {
+  * people = {
   * &nbsp;&nbsp;brad = { name: "Brad", age: 33, hair: "red" },
   * &nbsp;&nbsp;luis = { name: "Luis", age: 35, hair: "black" },
   * &nbsp;&nbsp;bill = { name: "Bill", age: 21, hair: "blond" }
   * };
-  * future = client.setMulti( data );
+  * client.upsertMulti( people );
   * </pre>
   *
   * @data.hint A struct ( key/value pair ) of documents to set into Couchbase.
@@ -628,7 +699,7 @@ component serializable="false" accessors="true" {
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
   *
-  * @return A struct of IDs with each of the future objects from the set operations.  There will be no future object if a timeout occurs.
+  * @return A structure containing the id, cas, expiry and hashCode document metadata values for each upserted document
   */
   public any function upsertMulti(
     required struct data,
@@ -646,7 +717,7 @@ component serializable="false" accessors="true" {
       // save the result
       results[id] = this.upsert(
         id=id,
-        value=serializeData( arguments.data[id] ),
+        value=arguments.data[id],
         timeout=arguments.timeout,
         persistTo=arguments.persistTo,
         replicateTo=arguments.replicateTo
@@ -699,6 +770,7 @@ component serializable="false" accessors="true" {
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   * @persistTo.hint The number of nodes that need to store the document to disk before this call returns.  Valid options are [ ZERO, MASTER, ONE, TWO, THREE, FOUR ]
   * @replicateTo.hint The number of nodes to replicate the document to before this call returns.  Valid options are [ ZERO, ONE, TWO, THREE ]
+  * @legacy.hint Whether or not we are dealing with a new sdk 2.x+ method set legacy to false, under the hood legacy methods call this and the value
   *
   * @return A boolean indicating whether or not the replace was successful
   */
@@ -708,16 +780,33 @@ component serializable="false" accessors="true" {
     numeric timeout,
     string persistTo,
     string replicateTo,
-    numeric cas=0
+    numeric cas=0,
+    boolean legacy=false
   ) {
     // default timeout
     defaultTimeout( arguments );
     // default persist and replicate
     defaultPersistReplicate( arguments );
-    // create a new document to be saved
-    var document = newPopulatedDocument( argumentCollection=arguments );
-    var success = true;
     try {
+      var success = true;
+      var is_binary = isBinary(arguments.value);
+      if (is_binary) {
+        // binary data must be converted to a ByteBuf
+        var binary_value = serializeData( arguments.value );
+        // create a new binary document to be saved
+        var document = newPopulatedDocument(
+          id=arguments.id,
+          value=binary_value,
+          timeout=arguments.timeout,
+          cas=arguments.cas,
+          dataType="binary"
+        );
+      }
+      else {
+        // create a new document to be saved
+        var document = newPopulatedDocument( argumentCollection=arguments );
+      }
+      // write the document
       variables.couchbaseBucket.replace(
         document,
         arguments.persistTo,
@@ -731,6 +820,16 @@ component serializable="false" accessors="true" {
       }
       else {
         rethrow;
+      }
+    }
+    finally {
+      // regardless of whatever happens the ByteBuff has to be released since we are using Unpooled Buffers
+      // we call the release method of the ByteBuf's parent class io.netty.buffer.AbstractReferenceCountedByteBuf
+      if ( is_binary ) {
+        if ( binary_value.refCnt() ) { // check to see if anything needs to be released
+          binary_value.release();
+        }
+        binary_value = "";
       }
     }
     return success;
@@ -1188,6 +1287,45 @@ component serializable="false" accessors="true" {
   }
 
   /**
+  * Performs a Sub Doc LookupIn operation that will return only specific attributes from a document instead of the whole document
+  *
+  * <pre class='brush: cf'>
+  * lookup = client.lookupIn( 'user_aaronb' )
+  *                   .get( 'address' )
+  *                   .get( 'phones[0]' )
+  *                   .exists( 'dob' )
+  *                   .execute();
+  *  address = lookup.content( 'address' );
+  *  phone = lookup.content( 'phones[0]' );
+  * </pre>
+  *
+  * @id.hint The ID of the document to retrieve.
+  *
+  * @return A Lookup builder
+  */
+  public any function lookupIn( required string id ) {
+    return new subdoc.LookupInBuilder( id=variables.util.normalizeID( arguments.id ), couchbaseClient=this );
+  }
+
+  /**
+  * Performs a Subdoc MutateIn operation that modify
+  *
+  * <pre class='brush: cf'>
+  * mutate = client.mutateIn( 'user_aaronb' )
+  *                   .upsert( 'username', 'abenton' )
+  *                   .upsert( 'email', 'ab723893@gmail.com' )
+  *                   .execute();
+  * </pre>
+  *
+  * @id.hint The ID of the document to retrieve.
+  *
+  * @return A Lookup builder
+  */
+  public any function mutateIn( required string id ) {
+    return new subdoc.MutateInBuilder( id=variables.util.normalizeID( arguments.id ), couchbaseClient=this );
+  }
+
+  /**
   * Shutdown the native client connection
   *
   * <pre class='brush: cf'>
@@ -1298,11 +1436,11 @@ component serializable="false" accessors="true" {
   * </pre>
   *
   * @id.hint The id of the document to decrement
-  * @value.hint The amount to decrement
+  * @value.hint The amount to increment or decrement by
   * @defaultValue.hint The default value ( if the counter does not exist, this defaults to 0 );
   * @timeout.hint The expiration of the document in minutes, by default it is 0, so it lives forever
   *
-  * @return The new value, or -1 if we were unable to decrement or add
+  * @return The new value
   */
   public any function counter(
     required string id,
@@ -1461,7 +1599,7 @@ component serializable="false" accessors="true" {
     defaultPersistReplicate( arguments );
 
     // simple or array
-		arguments['id'] = isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id;
+    arguments['id'] = isSimpleValue( arguments.id ) ? listToArray( arguments.id ) : arguments.id;
 
     var results = {};
     // iterate over the results
@@ -1486,7 +1624,7 @@ component serializable="false" accessors="true" {
       }
     }
     // if > 1 futures, return struct, else return the only one future
-		return structCount( results ) > 1 ? results : results[ arguments.id[ 1 ] ];
+    return structCount( results ) > 1 ? results : results[ arguments.id[ 1 ] ];
   }
 
   /**
@@ -1594,9 +1732,13 @@ component serializable="false" accessors="true" {
     settings['bootstrapHttpEnabled'] = env.BOOTSTRAP_HTTP_ENABLED;
     settings['bootstrapHttpSslPort'] = env.BOOTSTRAP_HTTP_SSL_PORT;
     settings['bufferPoolingEnabled'] = env.BUFFER_POOLING_ENABLED;
+    settings['callbacksOnIoPool'] = env.CALLBACKS_ON_IO_POOL;
     settings['computationPoolSize'] = env.COMPUTATION_POOL_SIZE;
     settings['connectTimeout'] = env.connectTimeout();
     settings['dcpEnabled'] = env.DCP_ENABLED;
+    settings['dcpConnectionBufferSize'] = env.DCP_CONNECTION_BUFFER_SIZE;
+    settings['dcpConnectionBufferAckThreshold'] = env.DCP_CONNECTION_BUFFER_ACK_THRESHOLD;
+    settings['dcpConnectionName'] = env.DCP_CONNECTION_NAME;
     settings['disconnectTimeout'] = env.disconnectTimeout();
     settings['dnsSrvEnabled'] = env.dnsSrvEnabled();
     settings['ioPoolSize'] = env.IO_POOL_SIZE;
@@ -1608,9 +1750,7 @@ component serializable="false" accessors="true" {
     settings['mutationTokensEnabled'] = env.MUTATION_TOKENS_ENABLED;
     settings['observeIntervalDelay'] = env.OBSERVE_INTERVAL_DELAY;
     settings['packageNameAndVersion'] = env.PACKAGE_NAME_AND_VERSION;
-    settings['queryEnabled'] = env.QUERY_ENABLED;
     settings['queryEndpoints'] = env.QUERY_ENDPOINTS;
-    settings['queryPort'] = env.QUERY_PORT;
     settings['queryTimeout'] = env.queryTimeout();
     settings['reconnectDelay'] = env.RECONNECT_DELAY;
     settings['requestBufferSize'] = env.REQUEST_BUFFER_SIZE;
@@ -1618,6 +1758,7 @@ component serializable="false" accessors="true" {
     settings['retryDelay'] = env.RETRY_DELAY;
     settings['retryStrategy'] = env.RETRY_STRATEGY;
     settings['sdkPackageNameAndVersion'] = env.SDK_PACKAGE_NAME_AND_VERSION;
+    settings['socketConnectTimeout'] = env.SOCKET_CONNECT_TIMEOUT;
     settings['sslEnabled'] = env.SSL_ENABLED;
     settings['sslKeystoreFile'] = !isNull(env.SSL_KEYSTORE_FILE) ? env.SSL_KEYSTORE_FILE : "";
     settings['sslKeystorePassword'] = !isNull(env.SSL_KEYSTORE_PASSWORD) ? env.SSL_KEYSTORE_PASSWORD : "";
@@ -1974,7 +2115,13 @@ component serializable="false" accessors="true" {
       };
       // Add value if not null
       if( !isNull( row.value() ) ) {
-        document['value'] = row.value();
+        document['value'] = deserializeData(
+          "",
+          row.value().toString(),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        );
       }
 
       // Add key if not null
@@ -2000,7 +2147,11 @@ component serializable="false" accessors="true" {
 
       // Do we have a transformer?
       if( structKeyExists( arguments, "transform" ) && isClosure( arguments.transform ) ) {
-        arguments.transform( document );
+        var refLocal = arguments.transform( document );
+        // If a value is returned, use it as the document
+        if( !isNull( local.refLocal ) ) {
+        	document = refLocal;
+        }
       }
 
       // Do we have a filter?
@@ -2627,7 +2778,7 @@ component serializable="false" accessors="true" {
         // The view is ready to be used!
         return true;
       }
-      catch( Any e )  {
+      catch( any e )  {
         // Wait 1 second before trying again
         sleep( 1000 );
       }
@@ -2743,9 +2894,9 @@ component serializable="false" accessors="true" {
   *
   * @Return The deserialized data
   */
-  private any function deserializeData(
+  public any function deserializeData(
     required string id,
-    required string data,
+    required any data,
     any inflateTo="",
     boolean deserialize=true,
     struct deserializeOptions= {}
@@ -2855,6 +3006,7 @@ component serializable="false" accessors="true" {
 
   /**
   * Build a couchbase environment
+  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/env/DefaultCouchbaseEnvironment.html
   *
   * @config.hint The CFCouchbase config object
   *
@@ -2866,8 +3018,6 @@ component serializable="false" accessors="true" {
     // build the environment
     builder = builder
       .sslEnabled( javaCast( "boolean", arguments.config.sslEnabled ) )
-      .queryEnabled( javaCast( "boolean", arguments.config.queryEnabled ) )
-      .queryPort( javaCast( "int", arguments.config.queryPort ) )
       .bootstrapHttpEnabled( javaCast( "boolean", arguments.config.bootstrapHttpEnabled ) )
       .bootstrapHttpDirectPort( javaCast( "int", arguments.config.bootstrapHttpDirectPort ) )
       .bootstrapHttpSslPort( javaCast( "int", arguments.config.bootstrapHttpSslPort ) )
@@ -2891,7 +3041,20 @@ component serializable="false" accessors="true" {
       .requestBufferSize( javaCast( "int", arguments.config.requestBufferSize ) )
       .responseBufferSize( javaCast( "int", arguments.config.responseBufferSize ) )
       .dcpEnabled( javaCast( "boolean", arguments.config.dcpEnabled ) )
-      .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) );
+      .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) )
+      .callbacksOnIoPool( javaCast( "boolean", arguments.config.callbacksOnIoPool ) );
+    if( len( arguments.config.dcpConnectionName ) ) {
+      builder = builder.dcpConnectionName( javaCast( "string", arguments.config.dcpConnectionName ) );
+    }
+    if( arguments.config.dcpConnectionBufferSize ) {
+      builder = builder.dcpConnectionBufferSize( javaCast( "int", arguments.config.dcpConnectionBufferSize ) );
+    }
+    if( arguments.config.dcpConnectionBufferAckThreshold ) {
+      builder = builder.dcpConnectionBufferAckThreshold( javaCast( "double", arguments.config.dcpConnectionBufferAckThreshold ) );
+    }
+    if( arguments.config.socketConnectTimeout ) {
+      builder = builder.socketConnectTimeout( javaCast( "int", arguments.config.socketConnectTimeout ) );
+    }
     if( len( arguments.config.sslKeystoreFile ) ) {
       builder = builder.sslKeystoreFile( javaCast( "string", arguments.config.sslKeystoreFile ) );
     }
@@ -2998,6 +3161,9 @@ component serializable="false" accessors="true" {
   * @Return An array of jar file names
   */
   private array function getLibJars() {
+    // couchbase-java-client-2.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/java-client/2.4.7
+    // couchbase-core-io-1.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/core-io/1.4.7
+    // rxjava-1.2.7.jar - https://mvnrepository.com/artifact/io.reactivex/rxjava/1.2.7
     return directoryList( variables.libPath, false, "path" );
   }
 
@@ -3033,7 +3199,7 @@ component serializable="false" accessors="true" {
   * @args.hint The argument collection to process
   * @Return The argument collection with the defaulted values.
   */
-  private any function defaultPersistReplicate( required struct args )  {
+  public any function defaultPersistReplicate( required struct args )  {
     var validPersistTo = "NONE,MASTER,ONE,TWO,THREE,FOUR";
     var validReplicateTo = "NONE,ONE,TWO,THREE";
     // persistTo

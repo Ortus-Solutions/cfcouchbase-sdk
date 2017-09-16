@@ -6,7 +6,7 @@
 	
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
     <property name="groupID"                value="ortussolutions" />
-    <property name="cfcouchbase.version"    value="2.0.0"/>
+    <property name="cfcouchbase.version"    value="2.1.0"/>
     <property name="cfcouchbase.slug"       value="cfcouchbase"/>
     
 	<!-- Build Labels -->
@@ -36,19 +36,37 @@
                 <loadproperties srcFile="build/build-${environment}.properties"/>
             </then>
         </if>
+
         <!-- Load root properties -->
         <echo>Loading base properties</echo>
         <loadproperties srcFile="build/build.properties"/>
 
+        <!-- Property defaults -->
+		<condition property="cfengine" else="lucee@4.5">
+	      <isset property="cfengine"/>
+	    </condition>
+		<condition property="isTravis" else="false">
+	      <isset property="isTravis"/>
+	    </condition>
+	    <condition property="build.branch" else="development">
+	      <isset property="build.branch"/>
+	    </condition>
+
         <!-- Build Number -->
-        <propertyfile file="build/build.number" comment="Build Number for ANT. Edit not!">
-            <entry key="build.number" 
-                    type="int" 
-                    operation="+"
-                    pattern="00000"
-                    default="1" />
-        </propertyfile>
-        <property file="build/build.number"/>
+		<if>
+			<not><isset property="build.number" /></not>
+			<then>
+				<propertyfile file="build/build.number" comment="Build Number for ANT. Edit not!">
+					<entry key="build.number" 
+							type="int" 
+					     	operation="+"
+							pattern="00000"
+					     	default="1" />
+				</propertyfile>
+
+				<property file="build/build.number"/>
+			</then>
+		</if>
 
         <!-- Build Label -->
         <property name="build.label" value="cfcouchbase-${cfcouchbase.version}+${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
@@ -61,51 +79,54 @@
         <mkdir dir="${dir.build}"/>
     	<chmod file="${dir.build}/**" perm="og+wrs" type="both" />
     	
-    	<!-- Copy build ID -->
-    	<concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
-    	
-        <!-- Copy src -->    
-        <copy todir="${dir.build}" encoding="UTF-8">
-            <fileset dir="cfcouchbase" />
-        </copy>
-        
     	<!-- Mark as init -->
         <property name="src.isInit" value="true" />
     </target>
 
     <!-- Build test reports -->
     <target name="run-tests" description="execute test suite" depends="init">
-        <echo>Running Tests for CFCouchbase</echo>
+        
+        <property name="serverName" value="${cfengine}"/>
+        
+        <echo>========= Running CFEngine Tests for: ${cfengine} ==============</echo>
+
+    	<antcall target="startServer" inheritRefs="true" />
+
         <trycatch property="testcatch">
             <try>
-                <!-- Determine Test target: Are we jenkins or local or travis -->
-                <if>
-                    <not><equals arg1="${environment}" arg2="auto" /></not>
-                    <then>
-                        <property name="test.target" value="run" />
-                    </then>
-                    <else>
-                        <property name="test.target" value="run-junit" />
-                    </else>
-                </if>
-                <subant target="${test.target}">
-                    <fileset dir="tests" includes="test.xml"/>
-                    <property name="environment" value="${environment}" />
-                </subant>
+                
+                <subant target="runEngine">
+		          	<fileset dir="tests" includes="test.xml"/>
+		    		<property name="engine" value="${cfengine}" />
+		    		<property name="environment" value="${environment}" />
+		        </subant>
+
             </try>
             <catch>
                 <echo>Error Executing tests: ${testcatch}</echo>
             </catch>
         </trycatch>
+
+        <antcall target="stopServer" inheritRefs="true" />
+
+		<echo>========= CFEngine Tests for ${cfengine} completed. ==============</echo>
     </target>
     
     <!--build-->
     <target name="build.sdk" description="Build the SDK distribution" depends="init">
-        
+        <!-- Copy build ID -->
+    	<concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
+    	<concat destfile="${dir.build}/version.json">{ "version" : "${cfcouchbase.version}" }</concat>
+    	
+        <!-- Copy Src -->    
+        <copy todir="${dir.build}" encoding="UTF-8">
+            <fileset dir="cfcouchbase" />
+        </copy>
+
         <!--Copy text files to root folder-->
         <copy todir="${dir.build}" encoding="UTF-8">
             <fileset file="LICENSE" />
-            <fileset file="README.md" />                        
+            <fileset file="README.md" />                    
         </copy>
     	
     	<!--Copy samples-->
@@ -114,15 +135,34 @@
         </copy>
 
         <!-- Replace Version + Build Numbers -->
-        <replaceregexp match='@build.version@' replace="${cfcouchbase.version}" flags="ig" byline="true" encoding="UTF-8">
-          <fileset dir="${dir.build}" />
-        </replaceregexp>
-        <replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
-          <fileset dir="${dir.build}" />
-        </replaceregexp>
-        
+        <!-- Semantic Versioning for Unstable Builds -->
+        <echo>Updating placeholders for version ${cfcouchbase.version}, branch ${build.branch}, build ${build.number}</echo>
+		
+		<!-- Replace Version + Build Numbers -->
+		<replaceregexp match='@build\.version@' replace="${cfcouchbase.version}" flags="ig" byline="true" encoding="UTF-8">
+			<fileset dir="${dir.build}" />
+		</replaceregexp>
+
+		<!-- Determine snapshot vs master artifact -->
+		<if>
+			<equals arg1="${build.branch}" arg2="development" />
+			<then>
+				<!-- Update to version-snapshot -->
+				<replaceregexp match='\+@build.number@' replace="-snapshot" flags="ig" byline="true" encoding="UTF-8">
+				  <fileset dir="${dir.build}" />
+				</replaceregexp>
+			</then>
+			<else>
+				<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
+				  <fileset dir="${dir.build}" />
+				</replaceregexp>
+			</else>
+		</if>
+
         <!-- Zip Distro -->
-        <zip destfile="${dir.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}"></zip>
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}">
+        	<exclude name="version.json" />
+        </zip>
     </target>
 	
 	<!-- Build all distributions -->
@@ -176,6 +216,7 @@
         <exec executable="box" dir="${dir.apidocs}">
             <arg line="server stop" />
         </exec>
+        <delete file="${dir.build}/docbox.html" />
         <!-- Zip API Docs -->
         <zip destfile="${dir.exports}/${cfcouchbase.slug}-apidocs-${cfcouchbase.version}.zip" basedir="${dir.api}"></zip>
 	</target>
@@ -184,8 +225,20 @@
     <target name="getDependencies" description="Get all the necessary dependencies for the build process">
         <!-- Install dependencies for project -->
         <exec executable="box" dir="${basedir}">
-            <arg line="install" />
+            <arg line="install --force" />
         </exec>
     </target>
+
+    <target name="startServer" description="Starts a single server">
+		<exec executable="box" dir="${basedir}">
+			<arg line="server start --debug name=${serverName} directory=${basedir} serverConfigFile=${basedir}/build/servers/server-${serverName}.json" />
+		</exec>
+	</target>
+
+	<target name="stopServer" description="Stops a single server">
+		<exec executable="box" dir="${basedir}">
+			<arg line="server stop name=${serverName} directory=${basedir} serverConfigFile=${basedir}/build/servers/server-${serverName}.json" />
+		</exec>
+	</target>
 	
 </project>

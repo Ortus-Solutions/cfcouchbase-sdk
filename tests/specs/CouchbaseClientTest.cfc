@@ -35,7 +35,7 @@ component extends="testbox.system.BaseSpec"{
   }
 
   // Global Couchbase admin password, update as needed.
-  this.adminPassword = "couchbase";
+  this.adminPassword = "password";
 
 /*********************************** BDD SUITES ***********************************/
 
@@ -85,6 +85,22 @@ component extends="testbox.system.BaseSpec"{
           expect( doc ).toHaveKey( "cas" );
           expect( doc ).toHaveKey( "expiry" );
           expect( doc ).toHaveKey( "hashCode" );
+          expect( doc.id ).toBe( key );
+        } );
+
+        it( "with binary value", function(){
+          var key = "unittest";
+          var data = objectSave({
+            "name": "Aaron"
+          });
+          var doc = couchbase.upsert( id="unittest", value=data );
+
+          expect( doc ).toBeStruct();
+          expect( doc ).toHaveKey( "id" );
+          expect( doc ).toHaveKey( "cas" );
+          expect( doc ).toHaveKey( "expiry" );
+          expect( doc ).toHaveKey( "hashCode" );
+          expect( doc.hashCode ).toBe( 0 );
           expect( doc.id ).toBe( key );
         } );
 
@@ -193,7 +209,7 @@ component extends="testbox.system.BaseSpec"{
 
         it( "can decrement values asynchronously", function(){
           expect( function(){
-            couchbase.asyncCounter( "unit-decrement", -1 )
+            couchbase.asyncCounter( "unit-decrement", -1 );
           })
           .toThrow( type="CouchbaseClient.NotSupported" );
         } );
@@ -206,7 +222,7 @@ component extends="testbox.system.BaseSpec"{
 
         it( "can increment values asynchronously", function(){
           expect( function(){
-            couchbase.asyncCounter( "unit-increment", 1 )
+            couchbase.asyncCounter( "unit-increment", 1 );
           })
           .toThrow( type="CouchbaseClient.NotSupported" );
         } );
@@ -293,7 +309,7 @@ component extends="testbox.system.BaseSpec"{
                   }).toThrow( type="InvalidReplicateTo" );
           } );
 
-          it( "with valid persisTo", function(){
+          it( "with valid persistTo", function(){
             var cas = 0;
             // Extra whitespace
             var doc = couchbase.upsert( id="unittest", value="hello", persistTo=" ZERO " );
@@ -302,6 +318,7 @@ component extends="testbox.system.BaseSpec"{
             cas = doc.cas;
 
             var doc = couchbase.upsert( id="unittest", value="hello", persistTo="ZERO" );
+            sleep( 500 );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
@@ -323,6 +340,7 @@ component extends="testbox.system.BaseSpec"{
             cas = doc.cas;
 
             var doc = couchbase.upsert( id="unittest", value="hello", replicateTo="ZERO" );
+            sleep( 500 );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
@@ -360,6 +378,20 @@ component extends="testbox.system.BaseSpec"{
           var data = now();
           couchbase.upsert( id="unittest", value=data );
           expect( couchbase.get( "unittest" ) ).toBe( data );
+        } );
+
+        it( "of binary value", function(){
+          var key = "unittest";
+          var data = {
+            "name": "Aaron"
+          };
+          var binary_data = objectSave( data );
+          couchbase.upsert( id="unittest", value=binary_data, dataType="binary" );
+          var doc = couchbase.get( id="unittest" );
+
+          expect( doc ).toBeBinary();
+          expect( doc ).toBe( binary_data );
+          expect( objectLoad( doc ) ).toBe( data );
         } );
 
         it( "of an invalid object", function(){
@@ -590,6 +622,7 @@ component extends="testbox.system.BaseSpec"{
             cas = doc.cas;
 
             var doc = couchbase.upsert( id="unittest", value="hello", persistTo="ZERO" );
+            sleep( 500 );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
@@ -606,11 +639,11 @@ component extends="testbox.system.BaseSpec"{
           it( "with valid replicateTo", function(){
             var cas = 0;
             // Extra whitespace
-            var doc = couchbase.upsert( id="unittest", value="hello", replicateTo=" ZERO " );
+            var doc = couchbase.upsert( id="unittest", value="hello1", replicateTo=" ZERO " );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 
-            var doc = couchbase.upsert( id="unittest", value="hello", replicateTo="ZERO" );
+            var doc = couchbase.upsert( id="unittest", value="hello2", replicateTo="ZERO" );
             expect( cas ).notToBe( doc.cas );
             cas = doc.cas;
 

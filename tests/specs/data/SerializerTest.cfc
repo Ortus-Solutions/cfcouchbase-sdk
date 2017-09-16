@@ -71,7 +71,7 @@ component extends="testbox.system.BaseSpec"{
         var r = couchbase.serializeData( data );
         var d = deserializeJSON( r );
         expect( d ).toHaveKey( "type" );
-        expect( d ).toHaveKey( "binary" );
+        expect( d.type ).toBe( "cfcouchbase-query2" );
       });
 
     });
@@ -87,6 +87,7 @@ component extends="testbox.system.BaseSpec"{
         couchbase.set( id="complex-query", value=data );
 
         var r = couchbase.get( id="complex-query" );
+        expect( r ).toBeQuery();
         expect( r ).toBe( data );
       });
 

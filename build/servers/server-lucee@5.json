@@ -1,0 +1,20 @@
+{
+    "force":true,
+    "app":{
+        "cfengine":"lucee@5",
+        "serverHomeDirectory":"./.engine/lucee@5"
+    },
+    "openbrowser":"false",
+    "name":"lucee@5",
+    "web":{
+        "http":{
+            "port":"50685"
+        },
+        "rewrites" : {
+            "enable" : true
+        }
+    },
+    "JVM":{
+        "heapSize":"1024"
+    }
+}

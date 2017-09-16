@@ -31,7 +31,7 @@ component{
 	function configure(){
 		// Map Config
 		binder.map( "CouchbaseConfig@cfcouchbase" )
-			.to( "cfcouchbase.config.CouchbaseConfig" );
+			.to( "#moduleMapping#.config.CouchbaseConfig" );
 	}
 
 	/**
@@ -43,7 +43,7 @@ component{
 		parseParentSettings();
 		// Map our Couchbase Client using per-environment settings.
 		binder.map( "CouchbaseClient@cfcouchbase" )
-			.to( "cfcouchbase.CouchbaseClient" )
+			.to( "#moduleMapping#.CouchbaseClient" )
 			.initArg( name="config", value=configStruct.couchbase )
 			.asSingleton();
 	}
@@ -64,14 +64,14 @@ component{
 		var configStruct 	= controller.getConfigSettings();
 		var couchbase 		= oConfig.getPropertyMixin( "couchbase", "variables", structnew() );
 
-		//defaults
+		// defaults
 		configStruct.couchbase = {
 			servers 	= "http://127.0.0.1:8091",
 			bucketname 	= "default",
 			viewTimeout	= "1000"
 		};
 
-		//Check for IOC Framework
+		// configure settings
 		structAppend( configStruct.couchbase, couchbase, true );
 	}
 

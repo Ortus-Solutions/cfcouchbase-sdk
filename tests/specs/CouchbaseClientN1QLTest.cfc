@@ -29,6 +29,14 @@ component extends="testbox.system.BaseSpec"{
 
   function beforeAll(){
     couchbase = new cfcouchbase.CouchbaseClient( { bucketName="travel-sample" } );
+
+    // add custom matcher
+    addMatchers({
+      // checks to see if the passed value is in the first argument which is an array
+      toBeOneOf: function( expectation, args={} ) {
+        return arrayFind( args[ 1 ], expectation.actual );
+      }
+    });
   }
 
   function afterAll(){
@@ -215,11 +223,11 @@ component extends="testbox.system.BaseSpec"{
           FROM travel-sample
           LIMIT 1
         ");
-
         expect( data ).toBeStruct();
         expect( data ).toHaveKey( "errors" );
         expect( arrayLen( data.errors ) ).toBe( 1 );
-        expect( data.errors[1].code ).toBe( 3000 );
+        // depending on the version of couchbase this can be different error codes
+        expect( data.errors[1].code ).toBeOneOf( [ 3000, 4010 ] );
         expect( data ).toHaveKey( "success" );
         expect( data.success ).toBeFalse();
       });
@@ -488,9 +496,10 @@ component extends="testbox.system.BaseSpec"{
         expect( build ).toBeStruct();
         expect( build ).toHaveKey( "success" );
         expect( build.success ).toBeTrue();
-        
+
         // wait for build to end
-        sleep( 1000 );
+        // This is an arbitrary sleep and may not be enough on a slow machine.
+        sleep( 5000 );
 
         var buildCheck = couchbase.n1qlQuery("
           SELECT datastore_id, id, index_key, keyspace_id, name, namespace_id, state, `using`
@@ -540,7 +549,12 @@ component extends="testbox.system.BaseSpec"{
         expect( oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.query.SimpleN1qlQuery" );
         // there are not getting methods for values that have been set but we can verify the values
         // set by calling the toString() method of the N1qlQuery.params() object
-        expect( oQuery.params().toString() ).toBe( "N1qlParams{serverSideTimeout='2500ms', consistency=STATEMENT_PLUS, scanWait='2500ms', clientContextId='client-id', maxParallelism=2, adhoc=true}" );
+        expect( oQuery.params().toString() ).toInclude( "serverSideTimeout='2500ms'" );
+        expect( oQuery.params().toString() ).toInclude( "consistency=STATEMENT_PLUS" );
+        expect( oQuery.params().toString() ).toInclude( "scanWait='2500ms'" );
+        expect( oQuery.params().toString() ).toInclude( "clientContextId='client-id'" );
+        expect( oQuery.params().toString() ).toInclude( "maxParallelism=2" );
+        expect( oQuery.params().toString() ).toInclude( "adhoc=true" );
       });
 
       it( "can do a raw query", function(){

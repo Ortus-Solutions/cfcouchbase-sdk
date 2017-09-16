@@ -74,6 +74,7 @@ component accessors="true"{
   * server comes with N1QL embedded, because it will be advertised and picked up by the SDK automatically. This setting
   * should only be used to explicitly enable the N1QL service against a standalone N1QL. In addition, every Couchbase
   * Server node in the cluster is expected to run a N1QL instance when this flag is enabled.
+  * ** DEPRECATED **
   */
   property name="queryEnabled" default="true" type="boolean";
   /**
@@ -81,6 +82,7 @@ component accessors="true"{
   * N1QL service against this port. This setting is going to be deprecated as soon as the server comes with N1QL
   * embedded, because it will be advertised and picked up by the SDK automatically. This setting should only be used
   * to explicitly enable the N1QL service against a stand-alone N1QL.
+  * ** DEPRECATED **
   */
   property name="queryPort" default="8093" type="numeric";
   /**
@@ -338,6 +340,18 @@ component accessors="true"{
   */
   property name="dcpEnabled" default="false" type="boolean";
   /**
+  * Size of the buffer to control speed of DCP producer.
+  */
+  property name="dcpConnectionBufferSize" default="0" type="numeric";
+  /**
+  * When a DCP connection read bytes reaches this percentage of the CoreEnvironment.dcpConnectionBufferSize(), a DCP Buffer Acknowledge message is sent to the server
+  */
+  property name="dcpConnectionBufferAckThreshold" default="0" type="numeric";
+  /**
+  * The default DCP connection name
+  */
+  property name="dcpConnectionName" default="" type="string";
+  /**
   * If the SDK is suspect to buffer leaks (it pools buffers in its IO layer for performance) you can set this field to
   * false. This will make sure buffers are not pooled, but remember the tradeoff here is higher GC pressure on the system.
   * Only turn off to prevent a memory leak from happening (in production). If you suspect a memory leak, please open a
@@ -365,6 +379,14 @@ component accessors="true"{
   * changing it from the default value.
   */
   property name="autoReleaseAfter" default="2000" type="numeric";
+  /**
+  * Sets a custom socket connect timeout
+  */
+  property name="socketConnectTimeout" default="0" type="numeric";
+  /**
+  * Set to true if the Observable callbacks should be completed on the IO event loops.
+  */
+  property name="callbacksOnIoPool" default="false" type="boolean";
 
   // Default params, just in case using cf9
   variables['useClassLoader'] = true;
@@ -375,8 +397,8 @@ component accessors="true"{
   variables['sslEnabled'] = false;
   variables['sslKeystoreFile'] = "";
   variables['sslKeystorePassword'] = "";
-  variables['queryEnabled'] = true;
-  variables['queryPort'] = 8093;
+  variables['queryEnabled'] = true; // DEPRECATED
+  variables['queryPort'] = 8093; // DEPRECATED
   variables['bootstrapHttpEnabled'] = true;
   variables['bootstrapHttpDirectPort'] = 8091;
   variables['bootstrapHttpSslPort'] = 18091;
@@ -411,12 +433,16 @@ component accessors="true"{
   variables['packageNameAndVersion'] = "";
   variables['eventBus'] = "";
   variables['dcpEnabled'] = false;
+  variables['dcpConnectionBufferAckThreshold'] = 0;
+  variables['dcpConnectionBufferSize'] = 0;
+  variables['dcpConnectionName'] = "";
   variables['bufferPoolingEnabled'] = true;
   variables['runtimeMetricsCollectorConfig'] = "";
   variables['networkLatencyMetricsCollectorConfig'] = "";
   variables['defaultMetricsLoggingConsumer'] = "";
   variables['autoReleaseAfter'] = 2000;
-
+  variables['socketConnectTimeout'] = 0;
+  variables['callbacksOnIoPool'] = false;
   /**
   * Constructor
   * You can pass any name-value pair as arguments to the constructor that matches the properties in this configuration object to be set.

@@ -18,7 +18,7 @@ branches:
   - development
   - master
 
-  dist: trusty
+dist: trusty
 
 sudo: required
 

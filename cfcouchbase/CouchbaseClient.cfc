@@ -187,7 +187,7 @@ component serializable="false" accessors="true" {
     required string id,
     required any value,
     numeric timeout=0,
-    numeric cas=0
+    numeric cas=0,
     boolean legacy=false,
     string dataType=""
   ) {

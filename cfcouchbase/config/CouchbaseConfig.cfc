@@ -42,7 +42,13 @@ component accessors="true"{
   */
   property name="bucketName" default="default";
   /**
-  * The optional password of the bucket
+  * The RBAC user to use for authentication (in Couchbase Server 5.0 RBAC authentication is required)
+  * If you are using CB5.0 and have upgraded a bucket the default username is the name of the bucket
+  */
+  property name="username" default="";
+  /**
+  * The optional password to the bucket if using CB4.* or lower, if you are using CB5.* or newer, this is
+  * the RBAC users password
   */
   property name="password" default="";
 
@@ -335,20 +341,20 @@ component accessors="true"{
   */
   property name="eventBus" default="";
   /**
-  * DCP is not ready for prime time in clients, but this configuration switch is available because all parameters from
+  * **DEPRECATED** DCP is not ready for prime time in clients, but this configuration switch is available because all parameters from
   * the core-io module are inherited. If you have active need for DCP, get in touch with the Couchbase team.
   */
   property name="dcpEnabled" default="false" type="boolean";
   /**
-  * Size of the buffer to control speed of DCP producer.
+  * **DEPRECATED** Size of the buffer to control speed of DCP producer.
   */
   property name="dcpConnectionBufferSize" default="0" type="numeric";
   /**
-  * When a DCP connection read bytes reaches this percentage of the CoreEnvironment.dcpConnectionBufferSize(), a DCP Buffer Acknowledge message is sent to the server
+  * **DEPRECATED** When a DCP connection read bytes reaches this percentage of the CoreEnvironment.dcpConnectionBufferSize(), a DCP Buffer Acknowledge message is sent to the server
   */
   property name="dcpConnectionBufferAckThreshold" default="0" type="numeric";
   /**
-  * The default DCP connection name
+  * **DEPRECATED** The default DCP connection name
   */
   property name="dcpConnectionName" default="" type="string";
   /**

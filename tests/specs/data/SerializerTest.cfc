@@ -28,7 +28,11 @@ component extends="testbox.system.BaseSpec"{
 /*********************************** LIFE CYCLE Methods ***********************************/
 
   function beforeAll(){
-    couchbase = new cfcouchbase.CouchbaseClient( { bucketName="default" } );
+    couchbase = new cfcouchbase.CouchbaseClient( {
+      bucketName="default",
+      username="cfcouchbase",
+      password="password"
+    } );
   }
 
   function afterAll(){

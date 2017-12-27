@@ -2466,10 +2466,12 @@ component serializable="false" accessors="true" {
           .getDesignDocument(
             arguments.designDocumentName,
             javaCast( "boolean", arguments.development )
-            );
+          );
     }
     catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException) {
-      design_doc = javaCast( "null", 0 )
+      // if the design document does not exist, return null as this is the previously
+      // expected behavior
+      design_doc = javaCast( "null", 0 );
     }
     return isNull(design_doc) ? javaCast( "null", 0 ) : design_doc;
   }
@@ -2492,12 +2494,20 @@ component serializable="false" accessors="true" {
     boolean development=false
 
   ) {
-    return variables.couchbaseBucket
-      .bucketManager()
-        .removeDesignDocument(
-          arguments.designDocumentName,
-          javaCast( "boolean", arguments.development )
-        );
+    var success = false;
+    try {
+      success = variables.couchbaseBucket
+        .bucketManager()
+          .removeDesignDocument(
+            arguments.designDocumentName,
+            javaCast( "boolean", arguments.development )
+          );
+    } catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException) {
+      // if the design document does not exist an error is thrown, this is not the previous
+      // behavior so consider this a success
+      success = true;
+    }
+    return success;
   }
 
   /**

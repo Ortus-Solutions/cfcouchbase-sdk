@@ -41,17 +41,30 @@ component extends="testbox.system.BaseSpec"{
       });
 
       it( "with vanilla settings", function(){
-        couchbase = new cfcouchbase.CouchbaseClient();
+        couchbase = new cfcouchbase.CouchbaseClient( config={
+          username="cfcouchbase",
+          password="password"
+        });
         expect( couchbase ).toBeComponent();
       });
 
       it( "with config struct literal", function(){
-        couchbase = new cfcouchbase.CouchbaseClient( config={servers="http://127.0.0.1:8091", bucketname="default"} );
+        couchbase = new cfcouchbase.CouchbaseClient( config={
+          servers="http://127.0.0.1:8091",
+          bucketname="default",
+          username="cfcouchbase",
+          password="password"
+        } );
         expect( couchbase ).toBeComponent();
       });
 
       it( "with config object instance", function(){
-        var config = new cfcouchbase.config.CouchbaseConfig( bucketname="default", viewTimeout="1000" );
+        var config = new cfcouchbase.config.CouchbaseConfig(
+          bucketName="default",
+          viewTimeout="1000",
+          username="cfcouchbase",
+          password="password"
+        );
         couchbase = new cfcouchbase.CouchbaseClient( config=config );
         expect( couchbase ).toBeComponent();
       });

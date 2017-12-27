@@ -6,7 +6,7 @@ www.coldboxframework.com | www.luismajano.com | www.ortussolutions.com
 */
 component{
 	// Application properties
-	this.name = "beer-brewery-manager-" & hash(getCurrentTemplatePath());;
+	this.name = "beer-brewery-manager-" & hash(getCurrentTemplatePath());
 	this.sessionManagement = true;
 	this.sessionTimeout = createTimeSpan(0,0,30,0);
 	this.setClientCookies = true;
@@ -15,7 +15,12 @@ component{
 
 	// application start
 	public boolean function onApplicationStart(){
-		application.couchbase = new cfcouchbase.CouchbaseClient( { bucketName="beer-sample" } );
+		application.couchbase = new cfcouchbase.CouchbaseClient( {
+      bucketName="beer-sample",
+      // this is only needed for Couchbase Server 5.0+
+      username="cfcouchbase",
+      password="password"
+    } );
 
 		// Specify the views the applications needs here.  They will be created/updated
 		// when the client is initialized if they don't already exist.

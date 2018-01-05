@@ -4,6 +4,7 @@ settings.xml
 .project
 .svn
 .DS_Store
+*.log
 
 # Build Process
 artifacts/*

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  couchbase:
+    image: bentonam/couchbase-docker:enterprise
+    ports:
+      - 8091-8094:8091-8094
+      - 11207:11207
+      - 11210:11210
+      - 11211:11211
+      - 18091-18093:18091-18093
+    environment:
+      CLUSTER_USERNAME: Administrator
+      CLUSTER_PASSWORD: password
+      CLUSTER_NAME: CFCouchbase
+      SERVICES: data,index,query,fts
+      CLUSTER_RAMSIZE: 300
+      BUCKET: default
+      BUCKET_RAMSIZE: 100
+      ENABLE_FLUSH: 1
+      RBAC_USERNAME: cfcouchbase
+      RBAC_PASSWORD: password
+      SAMPLE_BUCKETS: beer-sample,travel-sample

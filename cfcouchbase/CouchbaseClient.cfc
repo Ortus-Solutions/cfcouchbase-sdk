@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.4.7"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.4.7/
+    variables['SDKVersion'] = "2.5.3"; // http://docs.couchbase.com/sdk-api/couchbase-java-client-2.5.3/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -1735,10 +1735,6 @@ component serializable="false" accessors="true" {
     settings['callbacksOnIoPool'] = env.CALLBACKS_ON_IO_POOL;
     settings['computationPoolSize'] = env.COMPUTATION_POOL_SIZE;
     settings['connectTimeout'] = env.connectTimeout();
-    settings['dcpEnabled'] = env.DCP_ENABLED;
-    settings['dcpConnectionBufferSize'] = env.DCP_CONNECTION_BUFFER_SIZE;
-    settings['dcpConnectionBufferAckThreshold'] = env.DCP_CONNECTION_BUFFER_ACK_THRESHOLD;
-    settings['dcpConnectionName'] = env.DCP_CONNECTION_NAME;
     settings['disconnectTimeout'] = env.disconnectTimeout();
     settings['dnsSrvEnabled'] = env.dnsSrvEnabled();
     settings['ioPoolSize'] = env.IO_POOL_SIZE;
@@ -2463,12 +2459,21 @@ component serializable="false" accessors="true" {
     required string designDocumentName,
     boolean development=false
   ) {
-    return variables.couchbaseBucket
-      .bucketManager()
-        .getDesignDocument(
-          arguments.designDocumentName,
-          javaCast( "boolean", arguments.development )
-        );
+    var design_doc = javaCast( "null", 0 );
+    try {
+      design_doc = variables.couchbaseBucket
+        .bucketManager()
+          .getDesignDocument(
+            arguments.designDocumentName,
+            javaCast( "boolean", arguments.development )
+          );
+    }
+    catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException) {
+      // if the design document does not exist, return null as this is the previously
+      // expected behavior
+      design_doc = javaCast( "null", 0 );
+    }
+    return isNull(design_doc) ? javaCast( "null", 0 ) : design_doc;
   }
 
   /**
@@ -2489,12 +2494,20 @@ component serializable="false" accessors="true" {
     boolean development=false
 
   ) {
-    return variables.couchbaseBucket
-      .bucketManager()
-        .removeDesignDocument(
-          arguments.designDocumentName,
-          javaCast( "boolean", arguments.development )
-        );
+    var success = false;
+    try {
+      success = variables.couchbaseBucket
+        .bucketManager()
+          .removeDesignDocument(
+            arguments.designDocumentName,
+            javaCast( "boolean", arguments.development )
+          );
+    } catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException) {
+      // if the design document does not exist an error is thrown, this is not the previous
+      // behavior so consider this a success
+      success = true;
+    }
+    return success;
   }
 
   /**
@@ -2997,10 +3010,25 @@ component serializable="false" accessors="true" {
       servers
     );
     // connect to the bucket
-    var bucket = variables.couchbaseCluster.openBucket(
-      javaCast( "string", configData.bucketName ),
-      javaCast( "string", configData.password )
-    );
+    var bucket = ""; // holds the bucket connection
+    // if there is a username and a password, we must be connecting to a CB5.0+ cluster
+    if (len(configData.username) && len(configData.password)) {
+      variables.couchbaseCluster.authenticate(
+        javaCast( "string", configData.username ),
+        javaCast( "string", configData.password )
+      );
+      bucket = variables.couchbaseCluster.openBucket(
+        javaCast( "string", configData.bucketName )
+      );
+    } else if (len(configData.password)) { // else we must be connecting to an older version of Couchbase
+      bucket = variables.couchbaseCluster.openBucket(
+        javaCast( "string", configData.bucketName )
+      );
+    } else { // there is no password we could be connecting to a 4.* and older or possibly connecting to a CB5.* or newer with a default RBAC user
+      bucket = variables.couchbaseCluster.openBucket(
+        javaCast( "string", configData.bucketName )
+      );
+    }
     return bucket;
   }
 
@@ -3040,18 +3068,8 @@ component serializable="false" accessors="true" {
       .tcpNodelayEnabled( javaCast( "boolean", arguments.config.tcpNodelayEnabled ) )
       .requestBufferSize( javaCast( "int", arguments.config.requestBufferSize ) )
       .responseBufferSize( javaCast( "int", arguments.config.responseBufferSize ) )
-      .dcpEnabled( javaCast( "boolean", arguments.config.dcpEnabled ) )
       .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) )
       .callbacksOnIoPool( javaCast( "boolean", arguments.config.callbacksOnIoPool ) );
-    if( len( arguments.config.dcpConnectionName ) ) {
-      builder = builder.dcpConnectionName( javaCast( "string", arguments.config.dcpConnectionName ) );
-    }
-    if( arguments.config.dcpConnectionBufferSize ) {
-      builder = builder.dcpConnectionBufferSize( javaCast( "int", arguments.config.dcpConnectionBufferSize ) );
-    }
-    if( arguments.config.dcpConnectionBufferAckThreshold ) {
-      builder = builder.dcpConnectionBufferAckThreshold( javaCast( "double", arguments.config.dcpConnectionBufferAckThreshold ) );
-    }
     if( arguments.config.socketConnectTimeout ) {
       builder = builder.socketConnectTimeout( javaCast( "int", arguments.config.socketConnectTimeout ) );
     }

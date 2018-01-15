@@ -6,6 +6,9 @@ component extends="cfcouchbase.config.CouchbaseConfig"{
     servers   = "http://127.0.0.1:8091";
     viewTimeout = 10000;
 
+    username = "cfcouchbase";
+    password = "password";
+
     return this;
   }
 

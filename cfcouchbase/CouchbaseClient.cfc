@@ -348,7 +348,7 @@ component serializable="false" accessors="true" {
   }
 
   /**
-  * Creates a new populated document java object without any values.  This is used to ensure that
+  * Creates a new empty document java object without any values.  This is used to ensure that
   * retrieved documents are correctly represented once retrieved.  Older legacy documents cannot be
   * correctly retrieved otherwise.
   *
@@ -1065,32 +1065,9 @@ component serializable="false" accessors="true" {
     struct deserializeOptions={},
     any inflateTo=""
   ) {
-    // couchbase expects a target class to inflate the results to, in this case we just want the raw
-    // result and we will handle the deserialization on our side
-    var document = newEmptyDocument( argumentCollection=arguments ).create(
-      variables.util.normalizeID( arguments.id )
-    );
-    var result = "";
-    try {
-      result = variables.couchbaseBucket.getAndTouch( document );
-    }
-    catch( any e ) {
-      // basically an attempt was made to retrieve a legacy document that cannot be inflated
-      // to the new Json*Document objects provided by the SDK.  try to get the document as a
-      // legacy document
-      if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
-        arguments['legacy'] = true;
-        // rebuild a new document shell
-        document = newEmptyDocument( argumentCollection=arguments ).create(
-          variables.util.normalizeID( arguments.id )
-        );
-        // try to get the results again
-        result = variables.couchbaseBucket.getAndTouch( document );
-      }
-      else {
-        rethrow;
-      }
-    }
+    // default the timeout
+    defaultTimeout( arguments );
+    var result = variables.couchbaseBucket.getAndTouch( arguments.id, javaCast("int", arguments.timeout) );
     if( !isNull( result ) ) {
       // build struct out.
       return {

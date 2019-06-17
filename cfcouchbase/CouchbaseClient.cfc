@@ -3022,7 +3022,8 @@ component serializable="false" accessors="true" {
       );
     } else if (len(configData.password)) { // else we must be connecting to an older version of Couchbase
       bucket = variables.couchbaseCluster.openBucket(
-        javaCast( "string", configData.bucketName )
+        javaCast( "string", configData.bucketName ),
+        javaCast( "string", configData.password )
       );
     } else { // there is no password we could be connecting to a 4.* and older or possibly connecting to a CB5.* or newer with a default RBAC user
       bucket = variables.couchbaseCluster.openBucket(

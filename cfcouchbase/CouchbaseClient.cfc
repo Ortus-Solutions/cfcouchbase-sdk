@@ -3183,7 +3183,8 @@ component serializable="false" accessors="true" {
     // couchbase-java-client-2.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/java-client/2.4.7
     // couchbase-core-io-1.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/core-io/1.4.7
     // rxjava-1.2.7.jar - https://mvnrepository.com/artifact/io.reactivex/rxjava/1.2.7
-    return directoryList( variables.libPath, false, "path" );
+	var jars = directoryList( variables.libPath, false, "path", "*.jar" );
+	return jars;
   }
 
   /**

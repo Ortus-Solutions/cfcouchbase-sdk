@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.5.4"; // docs.couchbase.com/sdk-api/couchbase-java-client-2.5.4/
+    variables['SDKVersion'] = "2.5.9"; // docs.couchbase.com/sdk-api/couchbase-java-client-2.5.9/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path

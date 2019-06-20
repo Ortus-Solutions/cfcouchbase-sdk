@@ -3,7 +3,7 @@
     "author":"Ortus Solutions <info@ortussolutions.com>",
     "private":false,
     "dependencies":{
-        "testbox":"^2.5.0"
+        "testbox":"3.0"
     },
     "installPaths":{
         "testbox":"testbox/"

@@ -1065,14 +1065,16 @@ component serializable="false" accessors="true" {
     struct deserializeOptions={},
     any inflateTo=""
   ) {
+  	
+    // default timeout
+    defaultTimeout( arguments );
+    
     // couchbase expects a target class to inflate the results to, in this case we just want the raw
     // result and we will handle the deserialization on our side
-    var document = newEmptyDocument( argumentCollection=arguments ).create(
-      variables.util.normalizeID( arguments.id )
-    );
+    var document = newEmptyDocument( argumentCollection=arguments );
     var result = "";
     try {
-      result = variables.couchbaseBucket.getAndTouch( document );
+      result = variables.couchbaseBucket.getAndTouch( arguments.id, javaCast( "int", timeout ), document.getClass() );
     }
     catch( any e ) {
       // basically an attempt was made to retrieve a legacy document that cannot be inflated
@@ -1081,11 +1083,9 @@ component serializable="false" accessors="true" {
       if( e.type == "com.couchbase.client.java.error.TranscodingException" ) {
         arguments['legacy'] = true;
         // rebuild a new document shell
-        document = newEmptyDocument( argumentCollection=arguments ).create(
-          variables.util.normalizeID( arguments.id )
-        );
+        document = newEmptyDocument( argumentCollection=arguments );
         // try to get the results again
-        result = variables.couchbaseBucket.getAndTouch( document );
+      	result = variables.couchbaseBucket.getAndTouch( arguments.id, javaCast( "int", timeout ), document.getClass() );
       }
       else {
         rethrow;

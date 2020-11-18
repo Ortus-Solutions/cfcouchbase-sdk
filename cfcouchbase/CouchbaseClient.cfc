@@ -3021,6 +3021,10 @@ component serializable="false" accessors="true" {
         javaCast( "string", configData.bucketName )
       );
     } else if (len(configData.password)) { // else we must be connecting to an older version of Couchbase
+      variables.couchbaseCluster.authenticate(
+        javaCast( "string", configData.bucketName ),
+        javaCast( "string", configData.password )
+      );
       bucket = variables.couchbaseCluster.openBucket(
         javaCast( "string", configData.bucketName )
       );

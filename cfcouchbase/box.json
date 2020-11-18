@@ -1,27 +1,32 @@
 {
-	"name" 				: "CFCouchbase SDK",
-	"version"			: "@build.version@+@build.number@",
-	"author" 			: "Ortus Solutions <info@ortussolutions.com>",
-	"slug"				: "cfcouchbase",
-	"type"				: "nosql",
-	"location": "http://downloads.ortussolutions.com/ortussolutions/cfcouchbase/@build.version@/cfcouchbase-@build.version@.zip",
-	"directory"			: "modules",
-	"keywords"			: "nosql,couchbase,sdk",
-	"homepage"			: "https://www.ortussolutions.com/products/cfcouchbase",
-	"documentation"		: "https://cfcouchbase.ortusbooks.com/",
-	"repository"		: { "type" : "git", "url" : "https://github.com/Ortus-Solutions/cfcouchbase-sdk" },
-	"bugs"				: "https://ortussolutions.atlassian.net/browse/COUCHBASESDK",
-	"shortDescription"	: "A CFML Library for interacting with Couchbase NoSQL Server",
-	"license"			: [
-		{ "type" : "Apache2", "url" : "http://www.apache.org/licenses/LICENSE-2.0.html" }
-	],
-	"contributors"		: [
-		"Brad Wood <bdw429s@gmail.com>",
-  		"Aaron Benton <bentonam@gmail.com>"
-	],
-	"dependencies": {
+    "name":"CFCouchbase SDK",
+    "version":"@build.version@+@build.number@",
+    "author":"Ortus Solutions <info@ortussolutions.com>",
+    "slug":"cfcouchbase",
+    "type":"modules",
+    "location":"http://downloads.ortussolutions.com/ortussolutions/cfcouchbase/@build.version@/cfcouchbase-@build.version@.zip",
+    "directory":"modules",
+    "keywords":"nosql,couchbase,sdk",
+    "homepage":"https://www.ortussolutions.com/products/cfcouchbase",
+    "documentation":"https://cfcouchbase.ortusbooks.com/",
+    "repository":{
+        "type":"git",
+        "url":"https://github.com/Ortus-Solutions/cfcouchbase-sdk"
     },
-	"ignore": [
+    "bugs":"https://ortussolutions.atlassian.net/browse/COUCHBASESDK",
+    "shortDescription":"A CFML Library for interacting with Couchbase NoSQL Server",
+    "license":[
+        {
+            "type":"Apache2",
+            "url":"http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    ],
+    "contributors":[
+        "Brad Wood <bdw429s@gmail.com>",
+        "Aaron Benton <bentonam@gmail.com>"
+    ],
+    "dependencies":{},
+    "ignore":[
         "**/.*",
         "tests/*",
         ".git*"

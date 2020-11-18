@@ -29,6 +29,13 @@ component{
 	* Fired on Module Registration
 	*/
 	function configure(){
+		
+		settings = {
+			servers 	= "http://127.0.0.1:8091",
+			bucketname 	= "default",
+			viewTimeout	= "1000"
+		};
+		
 		// Map Config
 		binder.map( "CouchbaseConfig@cfcouchbase" )
 			.to( "#moduleMapping#.config.CouchbaseConfig" );
@@ -38,13 +45,14 @@ component{
 	* Fired when the module is activated.
 	*/
 	function onLoad(){
-		var configStruct = controller.getConfigSettings();
-		// parse parent settings
-		parseParentSettings();
+		// Backwards compat for ColdBox settings
+		if( !isNull( controller ) ) {
+			settings = parseParentSettings();	
+		}
 		// Map our Couchbase Client using per-environment settings.
 		binder.map( "CouchbaseClient@cfcouchbase" )
 			.to( "#moduleMapping#.CouchbaseClient" )
-			.initArg( name="config", value=configStruct.couchbase )
+			.initArg( name="config", value=settings )
 			.asSingleton();
 	}
 
@@ -73,6 +81,7 @@ component{
 
 		// configure settings
 		structAppend( configStruct.couchbase, couchbase, true );
+		return configStruct.couchbase;
 	}
 
 }

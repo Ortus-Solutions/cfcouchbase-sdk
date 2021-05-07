@@ -8,8 +8,8 @@ env:
   global:
     - MODULE_ID=cfcouchbase
   matrix:
-    - ENGINE=lucee@4.5
-    #- ENGINE=lucee@5
+    #- ENGINE=lucee@4.5
+    - ENGINE=lucee@5
     #- ENGINE=adobe@11
     #- ENGINE=adobe@2016
 
@@ -18,15 +18,12 @@ branches:
   - development
   - master
 
-dist: trusty
-
 sudo: required
 
 before_install:
   # CommandBox Keys
-  - sudo apt-key adv --keyserver keys.gnupg.net --recv-key 6DA70622
-  - sudo echo "deb http://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a
-    /etc/apt/sources.list.d/commandbox.list
+  - curl -fsSl https://downloads.ortussolutions.com/debs/gpg | sudo apt-key add -
+  - echo "deb https://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a /etc/apt/sources.list.d/commandbox.list
 
 install:
   # Install Commandbox
@@ -65,7 +62,7 @@ deploy:
       branch: 
         - master
         - development
-      condition: "$ENGINE = lucee@4.5"
+      condition: "$ENGINE = lucee@5"
     skip_cleanup: true
     #AWS Credentials need to be set in Travis
     access_key_id: $AWS_ACCESS_KEY
@@ -81,7 +78,7 @@ deploy:
       branch: 
         - master
         - development
-      condition: "$ENGINE = lucee@4.5"
+      condition: "$ENGINE = lucee@5"
     skip_cleanup: true
     #AWS Credentials need to be set in Travis
     access_key_id: $AWS_ACCESS_KEY

@@ -2468,7 +2468,7 @@ component serializable="false" accessors="true" {
             javaCast( "boolean", arguments.development )
           );
     }
-    catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException) {
+    catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException e) {
       // if the design document does not exist, return null as this is the previously
       // expected behavior
       design_doc = javaCast( "null", 0 );
@@ -2502,7 +2502,7 @@ component serializable="false" accessors="true" {
             arguments.designDocumentName,
             javaCast( "boolean", arguments.development )
           );
-    } catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException) {
+    } catch (com.couchbase.client.java.error.DesignDocumentDoesNotExistException e) {
       // if the design document does not exist an error is thrown, this is not the previous
       // behavior so consider this a success
       success = true;

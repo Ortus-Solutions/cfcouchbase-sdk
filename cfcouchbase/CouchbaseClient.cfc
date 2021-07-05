@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.5.4"; // docs.couchbase.com/sdk-api/couchbase-java-client-2.5.4/
+    variables['SDKVersion'] = "2.5.9"; // docs.couchbase.com/sdk-api/couchbase-java-client-2.5.9/
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -3186,7 +3186,8 @@ component serializable="false" accessors="true" {
     // couchbase-java-client-2.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/java-client/2.4.7
     // couchbase-core-io-1.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/core-io/1.4.7
     // rxjava-1.2.7.jar - https://mvnrepository.com/artifact/io.reactivex/rxjava/1.2.7
-    return directoryList( variables.libPath, false, "path" );
+	var jars = directoryList( variables.libPath, false, "path", "*.jar" );
+	return jars;
   }
 
   /**

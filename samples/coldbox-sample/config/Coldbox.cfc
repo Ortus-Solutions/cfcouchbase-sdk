@@ -10,21 +10,9 @@
 
 			//Development Settings
 			reinitPassword			= "",
-			handlersIndexAutoReload = true,
-
-			//Implicit Events
-			defaultEvent			= "",
-			requestStartHandler		= "Main.onRequestStart",
-			requestEndHandler		= "",
-			applicationStartHandler = "Main.onAppInit",
-			applicationEndHandler	= "",
-			sessionStartHandler 	= "",
-			sessionEndHandler		= "",
-			missingTemplateHandler	= "",
 
 			//Extension Points
 			UDFLibraryFile 				= "includes/helpers/ApplicationHelper.cfm",
-			coldboxExtensionsLocation 	= "",
 			modulesExternalLocation		= [],
 			pluginsExternalLocation 	= "",
 			viewsExternalLocation		= "",
@@ -35,7 +23,7 @@
 			//Error/Exception Handling
 			exceptionHandler		= "",
 			onInvalidEvent			= "",
-			customErrorTemplate		= "/coldbox/system/includes/BugReport.cfm",
+			//customErrorTemplate		= "/coldbox/system/includes/BugReport.cfm",
 
 			//Application Aspects
 			handlerCaching 			= false,
@@ -51,16 +39,8 @@
 		// create a function with the name of the environment so it can be executed if that environment is detected
 		// the value of the environment is a list of regex patterns to match the cgi.http_host.
 		environments = {
-			development = "^cf.,^railo.,local"
+			development = "^cf.,^lucee.,local,^127"
 		};
-
-		//Register interceptors as an array, we need order
-		interceptors = [
-			//SES
-			{class="coldbox.system.interceptors.SES",
-			 properties={}
-			}
-		];
 
 		// Couchbase Configuration
 		couchbase = {
@@ -68,7 +48,7 @@
 			bucketname	= "beer-sample",
 			viewTimeout	= "1000",
       // this is only needed for Couchbase Server 5.0+
-      username="cfcouchbase",
+      username="beer-sample",
       password="password"
 		};
 

@@ -18,6 +18,6 @@ component{
 			beer.setUpdated( "#dateFormat(now(),"yyyy-mm-dd")# #timeFormat(now(),"HH:mm:ss")#" );			
 			beer.save();			
 		}		
-		setNextEvent( event="beer.view", queryString="beerID=#HTMLEditFormat( rc.beerID )#" );
+		relocate( event="beer.view", queryString="beerID=#HTMLEditFormat( rc.beerID )#" );
 	}	
 }

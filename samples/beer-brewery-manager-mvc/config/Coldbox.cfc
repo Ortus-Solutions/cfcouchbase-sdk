@@ -4,11 +4,7 @@
 
 		coldbox = {
 			appName 				= 'Brewery Manager',
-
-			debugMode				= false,
-			debugPassword			= '',
 			reinitPassword			= '',
-
 			defaultEvent			= 'brewery.list'
 		};
 
@@ -16,14 +12,13 @@
 			couchbaseSettings = {
 				servers='http://127.0.0.1:8091',
 				bucketname='beer-sample',
-        username="cfcouchbase",
+        username="beer-sample",
         password="password"
 			}
 		};
 
 		interceptors = [
-			 {class='coldbox.system.interceptors.SES'},
-			 {class='root.model.ensureViews'}
+			 {class='root.models.ensureViews'}
 		];
 
 	}

@@ -1,4 +1,4 @@
-component extends="coldbox.system.Coldbox" {
+component extends="coldbox.system.Bootstrap" {
   this.name = "beer-brewery-manager-mvc-" & hash(getCurrentTemplatePath());;
 	this.sessionManagement = true;
 	this.sessionTimeout = createTimeSpan(0,0,30,0);

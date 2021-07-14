@@ -19,7 +19,7 @@ component{
 		application.couchbase = new cfcouchbase.CouchbaseClient( {
       bucketName="beer-sample",
       // this is only needed for Couchbase Server 5.0+
-      username="cfcouchbase",
+      username="beer-sample",
       password="password"
     } );
 		application.breweryService = new root.model.BreweryService();

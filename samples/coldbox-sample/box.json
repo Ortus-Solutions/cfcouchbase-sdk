@@ -19,9 +19,7 @@
     "instructions":"",
     "changelog":"",
     "type":"",
-    "keywords":[
-        
-    ],
+    "keywords":[],
     "private":false,
     "engines":[
         {
@@ -42,31 +40,24 @@
             "url":""
         }
     ],
-    "contributors":[
-        
-    ],
+    "contributors":[],
     "dependencies":{
-        "coldbox-be" : "4.0.0",
-        "cfcouchbase" : "1.1.0"
+        "coldbox":"stable",
+        "cfcouchbase":"stable"
     },
-    "devDependencies":{
-        
-    },
+    "devDependencies":{},
     "installPaths":{
-        
+        "coldbox":"coldbox/",
+        "cfcouchbase":"modules/cfcouchbase/"
     },
-    "ignore":[
-        
-    ],
+    "ignore":[],
     "testbox":{
         "runner":[
             {
                 "default":""
             }
         ],
-        "labels":[
-            
-        ],
+        "labels":[],
         "reporter":"",
         "reporterResults":"",
         "bundles":[
@@ -76,13 +67,9 @@
             "mapping":"",
             "recurse":true
         },
-        "watchers":[
-            
-        ],
+        "watchers":[],
         "notify":{
-            "emails":[
-                
-            ],
+            "emails":[],
             "growl":"",
             "url":""
         }

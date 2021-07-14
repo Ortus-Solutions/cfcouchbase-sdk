@@ -31,7 +31,7 @@ component extends="testbox.system.BaseSpec"{
     couchbase = new cfcouchbase.CouchbaseClient( {
       bucketName="beer-sample",
       username="cfcouchbase",
-      password="password"
+      password=""
     } );
   }
 

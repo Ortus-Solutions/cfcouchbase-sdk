@@ -35,7 +35,7 @@ component{
 			brewery.save();			
 		}
 		
-		setNextEvent( event="brewery.view", queryString="breweryID=#HTMLEditFormat( rc.breweryID )#" );
+		relocate( event="brewery.view", queryString="breweryID=#HTMLEditFormat( rc.breweryID )#" );
 		
 	}
 

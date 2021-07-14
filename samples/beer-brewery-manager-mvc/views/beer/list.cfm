@@ -10,7 +10,7 @@
 		<cfloop array="#prc.breweryBeers#" index="beerRow">
 			<cfset beer = beerRow.document>
 			<tr>
-				<td><a href="#event.buildLink( linkTo="beer.view", queryString="beerID=#beer.getBeerID()#" )#">View</a></td>
+				<td><a href="#event.buildLink( to="beer.view", queryString="beerID=#beer.getBeerID()#" )#">View</a></td>
 				<td>#HTMLEditFormat( beer.getName() )#</td>
 				<td>
 					#HTMLEditFormat( beer.getCategory() )#

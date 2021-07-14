@@ -9,8 +9,8 @@
 	
 	<cfelse>
 				
-		<a href="#event.buildLink( linkTo="brewery.view", queryString="breweryID=#HTMLEditFormat( prc.beer.getBrewery_id() )#" )#">Back to Brewery Details</a><br><br>
-		<a href="#event.buildLink( linkTo="beer.edit", queryString="beerID=#HTMLEditFormat( prc.beer.getBeerID() )#" )#">Edit this beer's Details</a><br><br>
+		<a href="#event.buildLink( to="brewery.view", queryString="breweryID=#HTMLEditFormat( prc.beer.getBrewery_id() )#" )#">Back to Brewery Details</a><br><br>
+		<a href="#event.buildLink( to="beer.edit", queryString="beerID=#HTMLEditFormat( prc.beer.getBeerID() )#" )#">Edit this beer's Details</a><br><br>
 
 		<table>
 			<tr>

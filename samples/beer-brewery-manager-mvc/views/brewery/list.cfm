@@ -9,7 +9,7 @@
 		<cfset brewery = breweryRow.document>
 		
 		<h4>
-			<a href="#event.buildLink( linkTo="brewery.view", queryString="breweryID=#brewery.getBreweryID()#" )#">
+			<a href="#event.buildLink( to="brewery.view", queryString="breweryID=#brewery.getBreweryID()#" )#">
 				#HTMLEditFormat(brewery.getName())#
 			</a>
 			(#brewery.getBeerCount()# Beers)

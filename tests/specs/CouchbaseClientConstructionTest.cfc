@@ -24,26 +24,21 @@
 */
 component extends="testbox.system.BaseSpec"{
 
-  /*********************************** LIFE CYCLE Methods ***********************************/
-  function beforeAll(){
-  }
-
-  function afterAll(){
-  }
-
   /*********************************** BDD SUITES ***********************************/
   function run(){
 
     describe( "Couchbase Client Construction", function(){
 
       afterEach(function( currentSpec ){
-        couchbase.shutdown();
+      	if( !isNull( couchbase ) ) {
+      		couchbase.shutdown();	
+      	}
       });
 
       it( "with vanilla settings", function(){
         couchbase = new cfcouchbase.CouchbaseClient( config={
           username="cfcouchbase",
-          password="password"
+          password=""
         });
         expect( couchbase ).toBeComponent();
       });
@@ -53,7 +48,7 @@ component extends="testbox.system.BaseSpec"{
           servers="http://127.0.0.1:8091",
           bucketname="default",
           username="cfcouchbase",
-          password="password"
+          password=""
         } );
         expect( couchbase ).toBeComponent();
       });
@@ -63,7 +58,7 @@ component extends="testbox.system.BaseSpec"{
           bucketName="default",
           viewTimeout="1000",
           username="cfcouchbase",
-          password="password"
+          password=""
         );
         couchbase = new cfcouchbase.CouchbaseClient( config=config );
         expect( couchbase ).toBeComponent();

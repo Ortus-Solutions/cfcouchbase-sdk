@@ -2,10 +2,10 @@
     "name":"CFCouchbase SDK Shell",
     "author":"Ortus Solutions <info@ortussolutions.com>",
     "private":false,
-    "dependencies":{
-        "testbox":"^2.5.0"
-    },
     "installPaths":{
         "testbox":"testbox/"
+    },
+    "devDependencies":{
+        "testbox":"^4.4.0-snapshot"
     }
 }

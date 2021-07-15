@@ -7,7 +7,7 @@ component extends="cfcouchbase.config.CouchbaseConfig"{
     viewTimeout = 10000;
 
     username = "cfcouchbase";
-    password = "";
+    password = "password";
 
     return this;
   }

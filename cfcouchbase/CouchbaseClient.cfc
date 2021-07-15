@@ -57,7 +57,7 @@ component serializable="false" accessors="true" {
 
     // The version of the client and sdk
     variables['version'] = "@build.version@+@build.number@";
-    variables['SDKVersion'] = "2.5.4"; // docs.couchbase.com/sdk-api/couchbase-java-client-2.5.4/
+    variables['SDKVersion'] = "3.1.6"; // https://docs.couchbase.com/sdk-api/couchbase-java-client-3.1.6/index.html
     // The unique version of this client
     variables['libID'] = createObject( "java", "java.lang.System" ).identityHashCode( this );
     // lib path
@@ -78,10 +78,16 @@ component serializable="false" accessors="true" {
       loadSDK();
     }
 
-    // LOAD ENUMS
-    this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
-    this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
-    this['replicaMode'] = newJava( "com.couchbase.client.java.ReplicaMode" );
+    // Java static class references
+    Optional = newJava( "java.util.Optional" );
+    Paths = newJava( "java.nio.file.Paths" );
+    Duration = newJava( "java.time.Duration" );
+    
+
+    // TODO: These don't exist in the 3.x client
+//    this['persistTo'] = newJava( "com.couchbase.client.java.PersistTo" );
+ //   this['replicateTo'] = newJava( "com.couchbase.client.java.ReplicateTo" );
+//   this['replicaMode'] = newJava( "com.couchbase.client.java.ReplicaMode" );
 
     // Establish a connection to the Couchbase bucket
     variables['couchbaseBucket'] = buildCouchbaseClient( variables.couchbaseConfig );
@@ -344,6 +350,7 @@ component serializable="false" accessors="true" {
           );
       }
     }
+    
     return document;
   }
 
@@ -1332,15 +1339,15 @@ component serializable="false" accessors="true" {
   * client.shutdown( 10 );
   * </pre>
   *
-  * @timeout.hint The timeout in seconds, we default to 10 seconds
+  * @timeout.hint The timeout in seconds
   *
   * @return A refernce to "this" CFC
   */
   public CouchbaseClient function shutdown( numeric timeout=10 ) {
-    // close the connection to the bucket
-    variables.couchbaseBucket.close( javaCast( "long", arguments.timeout ), variables.timeUnit.SECONDS );
-    // close the connection to the cluster
-    variables.couchbaseCluster.disconnect( javaCast( "long", arguments.timeout ), variables.timeUnit.SECONDS );
+    // There is a nasty error if you try to shutdown a client twice, so only do it if it has at least one endpoint defined.
+    if( structCount( variables.couchbaseCluster.diagnostics().endpoints() ) ) {
+      variables.couchbaseCluster.disconnect( Duration.ofSeconds( javaCast( "long", arguments.timeout ) ) );
+    }
     return this;
   }
 
@@ -3008,35 +3015,14 @@ component serializable="false" accessors="true" {
     // get the environment
     var env = buildCouchbaseEnvironment( configData );
     // connect to the cluster
-    variables['couchbaseCluster'] = newJava( "com.couchbase.client.java.CouchbaseCluster" ).create(
-      env,
-      servers
-    );
-    // connect to the bucket
-    var bucket = ""; // holds the bucket connection
-    // if there is a username and a password, we must be connecting to a CB5.0+ cluster
-    if (len(configData.username) && len(configData.password)) {
-      variables.couchbaseCluster.authenticate(
+    variables['couchbaseCluster'] = newJava( "com.couchbase.client.java.Cluster" ).connect(
+        javaCast( "string", servers.toList() ),
         javaCast( "string", configData.username ),
         javaCast( "string", configData.password )
-      );
-      bucket = variables.couchbaseCluster.openBucket(
-        javaCast( "string", configData.bucketName )
-      );
-    } else if (len(configData.password)) { // else we must be connecting to an older version of Couchbase
-      variables.couchbaseCluster.authenticate(
-        javaCast( "string", configData.bucketName ),
-        javaCast( "string", configData.password )
-      );
-      bucket = variables.couchbaseCluster.openBucket(
-        javaCast( "string", configData.bucketName )
-      );
-    } else { // there is no password we could be connecting to a 4.* and older or possibly connecting to a CB5.* or newer with a default RBAC user
-      bucket = variables.couchbaseCluster.openBucket(
-        javaCast( "string", configData.bucketName )
-      );
-    }
-    return bucket;
+    );
+    // connect to the bucket
+    return variables.couchbaseCluster.bucket( javaCast( "string", configData.bucketName ) );
+    
   }
 
   /**
@@ -3049,86 +3035,122 @@ component serializable="false" accessors="true" {
   */
   private any function buildCouchbaseEnvironment( required any config ) {
     // get the environment builder
-    var builder = newJava( "com.couchbase.client.java.env.DefaultCouchbaseEnvironment" ).builder();
-    // build the environment
-    builder = builder
-      .sslEnabled( javaCast( "boolean", arguments.config.sslEnabled ) )
+    var builder = newJava( "com.couchbase.client.java.env.ClusterEnvironment" ).builder();
+    
+    
+    // ============================ Security Config ============================
+    var SecurityConfig = newJava( "com.couchbase.client.core.env.SecurityConfig$Builder" );    
+    SecurityConfig.enableTls( javaCast( "boolean", arguments.config.sslEnabled ) )    
+    /*
+    TODO: This needs to use CertificateAuthenticator instead
+    if( len( arguments.config.sslKeystoreFile ) ) {
+      SecurityConfig.trustStore(
+          Paths.get( javaCast( "string", arguments.config.sslKeystoreFile ) ),
+          len( arguments.config.sslKeystorePassword ) ? javaCast( "string", arguments.config.sslKeystorePassword ) : javaCast( "null", "" ),
+          Optional.empty()
+      );
+    }*/
+    builder.securityConfig( SecurityConfig )
+    // ============================ Security Config ============================
+
+    /*
+        TODO: This needs to use SeedNode instead
+    
       .bootstrapHttpEnabled( javaCast( "boolean", arguments.config.bootstrapHttpEnabled ) )
       .bootstrapHttpDirectPort( javaCast( "int", arguments.config.bootstrapHttpDirectPort ) )
       .bootstrapHttpSslPort( javaCast( "int", arguments.config.bootstrapHttpSslPort ) )
       .bootstrapCarrierEnabled( javaCast( "boolean", arguments.config.bootstrapCarrierEnabled ) )
       .bootstrapCarrierDirectPort( javaCast( "int", arguments.config.bootstrapCarrierDirectPort ) )
       .bootstrapCarrierSslPort( javaCast( "int", arguments.config.bootstrapCarrierSslPort ) )
-      .dnsSrvEnabled( javaCast( "boolean", arguments.config.dnsSrvEnabled ) )
-      .mutationTokensEnabled( javaCast( "boolean", arguments.config.mutationTokensEnabled ) )
-      .kvTimeout( javaCast( "long", arguments.config.kvTimeout ) )
-      .viewTimeout( javaCast( "long", arguments.config.viewTimeout ) )
-      .queryTimeout( javaCast( "long", arguments.config.queryTimeout ) )
-      .connectTimeout( javaCast( "long", arguments.config.connectTimeout ) )
-      .disconnectTimeout( javaCast( "long", arguments.config.disconnectTimeout ) )
-      .managementTimeout( javaCast( "long", arguments.config.managementTimeout ) )
-      .maxRequestLifetime( javaCast( "long", arguments.config.maxRequestLifetime ) )
-      .keepAliveInterval( javaCast( "long", arguments.config.keepAliveInterval ) )
-      .kvEndpoints( javaCast( "int", arguments.config.kvEndpoints ) )
-      .viewEndpoints( javaCast( "int", arguments.config.viewEndpoints ) )
-      .queryEndpoints( javaCast( "int", arguments.config.queryEndpoints ) )
-      .tcpNodelayEnabled( javaCast( "boolean", arguments.config.tcpNodelayEnabled ) )
-      .requestBufferSize( javaCast( "int", arguments.config.requestBufferSize ) )
-      .responseBufferSize( javaCast( "int", arguments.config.responseBufferSize ) )
-      .bufferPoolingEnabled( javaCast( "boolean", arguments.config.bufferPoolingEnabled ) )
-      .callbacksOnIoPool( javaCast( "boolean", arguments.config.callbacksOnIoPool ) );
-    if( arguments.config.socketConnectTimeout ) {
-      builder = builder.socketConnectTimeout( javaCast( "int", arguments.config.socketConnectTimeout ) );
+    */
+
+    /*
+        TODO: This needs to use custom IoEnvironment pools instead
+        
+      if( arguments.config.ioPoolSize ) {
+        builder = builder.ioPoolSize( javaCast( "int", arguments.config.ioPoolSize ) );
+      }
+      if( isObject( arguments.config.ioPool ) ) {
+        builder = builder.ioPool( arguments.config.ioPool );
+      }
+    
+    */
+    
+    // ============================ IO Config ============================
+    var IoConfig = newJava( "com.couchbase.client.core.env.IoConfig$Builder" );    
+    IoConfig.enableDnsSrv( javaCast( "boolean", arguments.config.dnsSrvEnabled ) );
+    IoConfig.enableMutationTokens( javaCast( "boolean", arguments.config.mutationTokensEnabled ) );
+    IoConfig.enableTcpKeepAlives( javaCast( "boolean", arguments.config.tcpNodelayEnabled ) );
+    IoConfig.numKvConnections( javaCast( "int", arguments.config.kvEndpoints ) );
+    IoConfig.maxHttpConnections( arguments.config.queryEndpoints );      
+    builder.ioConfig( IoConfig )
+    // ============================ IO Config ============================
+
+
+
+    // ============================ Timeout Config ============================
+    var TimeoutConfig = newJava( "com.couchbase.client.core.env.TimeoutConfig$Builder" );    
+    TimeoutConfig.kvTimeout( Duration.ofMillis( javaCast( "long", arguments.config.kvTimeout ) ) ); 
+    TimeoutConfig.viewTimeout( Duration.ofMillis( javaCast( "long", arguments.config.viewTimeout ) ) );
+    TimeoutConfig.queryTimeout( Duration.ofMillis( javaCast( "long", arguments.config.queryTimeout ) ) );
+    TimeoutConfig.connectTimeout( Duration.ofMillis( javaCast( "long", arguments.config.connectTimeout ) ) );
+    TimeoutConfig.disconnectTimeout( Duration.ofMillis( javaCast( "long", arguments.config.disconnectTimeout ) ) );
+    TimeoutConfig.managementTimeout( Duration.ofMillis( javaCast( "long", arguments.config.managementTimeout ) ) )  ;
+
+    builder.timeoutConfig( TimeoutConfig )
+    // ============================ Timeout Config ============================
+
+
+    // ============================ Top level Config ============================
+    
+      if( isObject( arguments.config.retryStrategy ) ) {
+        builder.retryStrategy( newJava( arguments.config.retryStrategy ) );
+      }
+      if( isObject( arguments.config.scheduler ) ) {
+        builder.scheduler( newJava( arguments.config.scheduler ) );
+      }
+    // ============================ Top level Config ============================
+
+    // Removed Configs in Java SDK 3.x
+    // config.retryDelay
+    // config.reconnectDelay
+    // config.observeIntervalDelay
+    // config.packageNameAndVersion
+    // config.userAgent
+    // config.viewEndpoints
+    // config.socketConnectTimeout
+    // config.computationPoolSize
+    // config.requestBufferSize
+    // config.responseBufferSize
+    // config.maxRequestLifetime
+    // config.keepAliveInterval
+    // config.bufferPoolingEnabled
+    // config.callbacksOnIoPool
+    // config.eventBus
+    // config.runtimeMetricsCollectorConfig
+    // config.networkLatencyMetricsCollectorConfig
+    // config.defaultMetricsLoggingConsumer
+
+    if( len( arguments.config.propertyFile ) ) {
+      
+      var fis = CreateObject( 'java', 'java.io.FileInputStream' ).init( arguments.config.propertyFile );
+      var BOMfis = CreateObject( 'java', 'org.apache.commons.io.input.BOMInputStream' ).init( fis );
+      var propertyFile = newJava( "java.util.Properties" ).init();
+      propertyFile.load( BOMfis );
+      BOMfis.close();
+      var SystemPropertyLoader = newJava( "com.couchbase.client.core.env.SystemPropertyPropertyLoader" )
+        .init( propertyFile ); 
+        
+      builder.load( SystemPropertyLoader )
     }
-    if( len( arguments.config.sslKeystoreFile ) ) {
-      builder = builder.sslKeystoreFile( javaCast( "string", arguments.config.sslKeystoreFile ) );
-    }
-    if( len( arguments.config.sslKeystorePassword ) ) {
-      builder = builder.sslKeystorePassword( javaCast( "string", arguments.config.sslKeystorePassword ) );
-    }
-    if( isObject( arguments.config.reconnectDelay ) ) {
-      builder = builder.reconnectDelay( arguments.config.reconnectDelay );
-    }
-    if( isObject( arguments.config.retryDelay ) ) {
-      builder = builder.retryDelay( arguments.config.retryDelay );
-    }
-    if( isObject( arguments.config.retryStrategy ) ) {
-      builder = builder.retryStrategy( arguments.config.retryStrategy );
-    }
-    if( isObject( arguments.config.observeIntervalDelay ) ) {
-      builder = builder.observeIntervalDelay( arguments.config.observeIntervalDelay );
-    }
-    if( arguments.config.ioPoolSize ) {
-      builder = builder.ioPoolSize( javaCast( "int", arguments.config.ioPoolSize ) );
-    }
-    if( arguments.config.computationPoolSize ) {
-      builder = builder.computationPoolSize( javaCast( "int", arguments.config.computationPoolSize ) );
-    }
-    if( isObject( arguments.config.ioPool ) ) {
-      builder = builder.ioPool( arguments.config.ioPool );
-    }
-    if( isObject( arguments.config.scheduler ) ) {
-      builder = builder.scheduler( arguments.config.scheduler );
-    }
-    if( len( arguments.config.userAgent ) ) {
-      builder = builder.userAgent( javaCast( "string", arguments.config.userAgent ) );
-    }
-    if( len( arguments.config.packageNameAndVersion ) ) {
-      builder = builder.packageNameAndVersion( javaCast( "string", arguments.config.packageNameAndVersion ) );
-    }
-    if( isObject( arguments.config.eventBus ) ) {
-      builder = builder.eventBus( arguments.config.eventBus );
-    }
-    if( isObject( arguments.config.runtimeMetricsCollectorConfig ) ) {
-      builder = builder.runtimeMetricsCollectorConfig( arguments.config.runtimeMetricsCollectorConfig );
-    }
-    if( isObject( arguments.config.networkLatencyMetricsCollectorConfig ) ) {
-      builder = builder.networkLatencyMetricsCollectorConfig( arguments.config.networkLatencyMetricsCollectorConfig );
-    }
-    if( isObject( arguments.config.defaultMetricsLoggingConsumer ) ) {
-      builder = builder.defaultMetricsLoggingConsumer( arguments.config.defaultMetricsLoggingConsumer );
-    }
-    return builder.build();
+
+    var coreEnvironment = builder.build();
+
+    var ExportFormat = newJava( "com.couchbase.client.core.cnc.Context$ExportFormat" );
+    var exportedConfigJSON = coreEnvironment.exportAsString( ExportFormat.JSON_PRETTY );
+    writeDump( output='console', var="CFCouchbase SDK bootstrapped with the following configuration: #chr(13)##chr(10)#" & exportedConfigJSON );
+    
+    return coreEnvironment;
   }
 
   /**
@@ -3186,9 +3208,6 @@ component serializable="false" accessors="true" {
   * @Return An array of jar file names
   */
   private array function getLibJars() {
-    // couchbase-java-client-2.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/java-client/2.4.7
-    // couchbase-core-io-1.4.7.jar - https://mvnrepository.com/artifact/com.couchbase.client/core-io/1.4.7
-    // rxjava-1.2.7.jar - https://mvnrepository.com/artifact/io.reactivex/rxjava/1.2.7
     return directoryList( variables.libPath, false, "path" );
   }
 

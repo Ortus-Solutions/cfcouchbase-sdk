@@ -6,7 +6,7 @@ component{
     servers     = "http://127.0.0.1:8091";
     defaultTimeout   = 30;
     username = "cfcouchbase";
-    password = "";
+    password = "password";
 
     return this;
   }

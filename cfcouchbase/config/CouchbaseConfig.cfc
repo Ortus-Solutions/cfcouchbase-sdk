@@ -394,6 +394,13 @@ component accessors="true"{
   */
   property name="callbacksOnIoPool" default="false" type="boolean";
 
+  /**
+  * Pass the full path to a properties file to be loaded.  The keys must match Couchbase's internal
+  * documented names for proprties whcih is the same for JVM System properties.   The proprties file will be read and 
+  * loaded into the config builder
+  */
+  property name="propertyFile" default="" type="string";
+
   // Default params, just in case using cf9
   variables['useClassLoader'] = true;
   variables['dataMarshaller'] = "";
@@ -427,7 +434,7 @@ component accessors="true"{
   variables['observeIntervalDelay'] = "";
   variables['kvEndpoints'] = 1;
   variables['viewEndpoints'] = 1;
-  variables['queryEndpoints'] = 1;
+  variables['queryEndpoints'] = 3;
   variables['ioPoolSize'] = 0;
   variables['computationPoolSize'] = 0;
   variables['ioPool'] = "";
@@ -449,6 +456,8 @@ component accessors="true"{
   variables['autoReleaseAfter'] = 2000;
   variables['socketConnectTimeout'] = 0;
   variables['callbacksOnIoPool'] = false;
+  variables['propertyFile'] = "";
+  
   /**
   * Constructor
   * You can pass any name-value pair as arguments to the constructor that matches the properties in this configuration object to be set.

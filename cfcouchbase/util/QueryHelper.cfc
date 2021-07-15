@@ -12,8 +12,7 @@ component accessors="true" {
     variables['client'] = arguments.client;
 
     // load enums
-    this['stale'] = variables.client.newJava( "com.couchbase.client.java.view.Stale" );
-    this['scanConsistency'] = variables.client.newJava( "com.couchbase.client.java.query.consistency.ScanConsistency" );
+    this['scanConsistency'] = variables.client.newJava( "com.couchbase.client.java.view.ViewScanConsistency" );
 
     // Java Time Units
     variables['timeUnit'] = createObject( "java", "java.util.concurrent.TimeUnit" );
@@ -79,18 +78,17 @@ component accessors="true" {
         }
         // validate the stale parameter
         case "stale":  {
-          if( !listFindNoCase( "false,true,ok,update_after", arguments.options[ key ] ) ) {
+          if( !listFindNoCase( "NOT_BOUNDED,REQUEST_PLUS,UPDATE_AFTER", arguments.options[ key ] ) ) {
             throw(
               message="Invalid " & key & " value of " & arguments.options[ key ],
-              detail="Valid values are ok, update_after and false.",
+              detail="Valid values are NOT_BOUNDED, REQUEST_PLUS, and UPDATE_AFTER.",
               type="CouchbaseClient.Invalid" & key
             );
           }
-          // set the stale value to the key enum, the value "ok" is no longer supported
-          // so normalize it to "true"
-          opts[ key ] = this.stale[uCase( arguments.options[ key ] == "ok" ? "true" : arguments.options[ key ] )];
+          opts[ key ] = this.scanConsistency[uCase( arguments.options[ key ] )];
           break;
         }
+      
         // validate / set the sortOrder option
         case "sortOrder":  {
           var sortOrder = arguments.options[ 'sortOrder' ];
@@ -268,7 +266,7 @@ component accessors="true" {
       if( !listFindNoCase( "NOT_BOUNDED,REQUEST_PLUS,STATEMENT_PLUS", arguments.options.consistency ) ) {
         throw(
           message="Invalid consistency Value",
-          detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, STATEMENT_PLUS",
+          detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, REQUEST_PLUS",
           type="CouchbaseClient.N1qlParam.ConsistencyException"
         );
       }

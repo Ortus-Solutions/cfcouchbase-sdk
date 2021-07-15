@@ -40,10 +40,10 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
     }
 
     // binary objects need to be com.couchbase.client.deps.io.netty.buffer.ByteBuf
-    if( isBinary( arguments.data ) ) {
+/*    if( isBinary( arguments.data ) ) {
       return variables.Unpooled.copiedBuffer(arguments.data);
     }
-
+*/
     // if string wrap it in quotes and return it
     // this is required otherwise it is seen as a binary document
     if( isSimpleValue( arguments.data ) ) {
@@ -146,7 +146,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       } else {
         results = deserializeJSON( arguments.data, false );
       }
-    } else if ( arguments.data.getClass() contains "com.couchbase.client.deps.io.netty.buffer" ) { // is it ByteBuf?
+    } /* else if ( arguments.data.getClass() contains "com.couchbase.client.deps.io.netty.buffer" ) { // is it ByteBuf?
       // create a new empty byte array sized with the number of bytes from the ByteBuf
       results = createObject("java","java.lang.reflect.Array").newInstance(
        createObject("java", "java.io.ByteArrayOutputStream").init().toByteArray().getClass().getComponentType(),
@@ -165,7 +165,7 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
       // data type and while a binary object is returned the ByteBuf will reamin open and we need to close it
       variables.ReferenceCountUtil.safeRelease(arguments.data);
     }
-
+*/
     // is it a structure that has our custom type values?
     if ( isStruct( results ) && structKeyExists( results, "type" ) && isSimpleValue( results.type ) ) {
       switch (results.type) {
@@ -280,9 +280,6 @@ component accessors="true" implements="cfcouchbase.data.IDataMarshaller" {
   */
   public any function setCouchbaseClient( required couchcbaseClient ) {
     variables['couchbaseClient'] = arguments.couchcbaseClient;
-    // used for binary documents
-    variables['Unpooled'] = variables.couchbaseClient.newJava("com.couchbase.client.deps.io.netty.buffer.Unpooled");
-    variables['ReferenceCountUtil'] = variables.couchbaseClient.newJava("com.couchbase.client.deps.io.netty.util.ReferenceCountUtil");
     return this;
   }
 

@@ -52,16 +52,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayAddUnique( required string path, required any value ) {
+  public function arrayAddUnique( required string path, required any value, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.arrayAddUnique(
         javaCast( "string", arguments.path ),
         arguments.value
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 
@@ -70,11 +74,12 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayAppend( required string path, required any value ) {
-    return arrayAppendAll( path, [ value ] );
+  public function arrayAppend( required string path, required any value, boolean createParents=true ) {
+    return arrayAppendAll( path, [ value ], createParents );
   }
 
   /**
@@ -83,16 +88,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @values.hint The collection of values to individually append to the end of the array
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayAppendAll( required string path, required any values ) {
+  public function arrayAppendAll( required string path, required any values, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.arrayAppend(
         javaCast( "string", arguments.path ),
         arguments.values
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 
@@ -117,7 +126,7 @@ component serializable="false" accessors="true"{
   *
   * @return MutateInBuilder
   */
-  public function arrayInsertAll( required string path, required any values ) {
+  public function arrayInsertAll( required string path, required any values) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.arrayInsert(
         javaCast( "string", arguments.path ),
@@ -132,11 +141,12 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayPrepend( required string path, required any value ) {
-    return arrayPrependAll( path, [ value ] );
+  public function arrayPrepend( required string path, required any value, boolean createParents=true ) {
+    return arrayPrependAll( path, [ value ], createParents );
   }
 
   /**
@@ -145,16 +155,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The collection of values to individually preprend to the front of the array
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayPrependAll( required string path, required any values ) {
+  public function arrayPrependAll( required string path, required any values, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.arrayPrepend(
         javaCast( "string", arguments.path ),
         arguments.values
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 
@@ -163,14 +177,15 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @delta.hint The value to increment or decrement the counter by
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function counter( required string path, required numeric delta ) {
+  public function counter( required string path, required numeric delta, boolean createParents=true ) {
     if( delta > 0 ) {
-      return increment( path, abs( delta ) );
+      return increment( path, abs( delta ), createParents );
     } else {
-      return decrement( path, abs( delta ) );
+      return decrement( path, abs( delta ), createParents );
     }
   }
 
@@ -179,16 +194,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @delta.hint The value to increment or decrement the counter by
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function increment( required string path, required numeric delta ) {
+  public function increment( required string path, required numeric delta, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.increment(
         javaCast( "string", arguments.path ),
         javaCast( "long", arguments.delta )
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 
@@ -197,16 +216,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @delta.hint The value to increment or decrement the counter by
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function decrement( required string path, required numeric delta ) {
+  public function decrement( required string path, required numeric delta, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.decrement(
         javaCast( "string", arguments.path ),
         javaCast( "long", arguments.delta )
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 
@@ -215,16 +238,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function insert( required string path, required any value ) {
+  public function insert( required string path, required any value, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.insert(
         javaCast( "string", arguments.path ),
         arguments.value
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 
@@ -268,16 +295,20 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
+  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function upsert( required string path, required any value ) {
+  public function upsert( required string path, required any value, boolean createParents=true ) {
     mutateInSpecs.append( 
       couchbaseClient.MutateInSpec.upsert(
         javaCast( "string", arguments.path ),
         arguments.value
       )
     );
+    if( arguments.createParents ) {
+      mutateInSpecs.last().createPath();
+    }
     return this;
   }
 

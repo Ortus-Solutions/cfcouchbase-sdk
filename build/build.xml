@@ -166,7 +166,7 @@
     </target>
 
 	<!-- Build all distributions -->
-	<target name="build.all" description="Build all distributions" depends="run-tests,build.sdk,build.apidocs,build.samples">
+	<target name="build.all" description="Build all distributions" depends="build.sdk,build.apidocs,build.samples">
 		<!-- Build Checksum -->
 		<checksum forceoverwrite="true" fileext=".md5">
 			<fileset dir="${dir.exports}">

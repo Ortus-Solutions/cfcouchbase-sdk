@@ -99,6 +99,7 @@ component extends="testbox.system.BaseSpec"{
 
         it( "can insert a value at a specific position in an array", function(){
           var key = "mutate_array_test";
+
           var mutate = couchbase.mutateIn( key );
           mutate
             // note: the index is 0 based
@@ -244,8 +245,6 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
-            .insert( "details", {} )
-            .insert( "details.address", {} )
             .insert( "details.address.home", {
               "address": "123 CF Way",
               "address_2": "",
@@ -288,8 +287,6 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
-            .insert( "details", {} )
-            .insert( "details.address", {} )
             .insert( "details.address.home", {
               "address": "123 CF Way",
               "address_2": "",
@@ -325,8 +322,6 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
-            .upsert( "details", {} )
-            .upsert( "details.address", {} )
             .upsert( "details.address.work", {
               "address": "873 Lucee St",
               "address_2": "",
@@ -352,8 +347,6 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
-            .upsert( "details", {} )
-            .upsert( "details.address", {} )
             .upsert( "details.address.work", {
               "address": "873 Lucee St",
               "address_2": "",
@@ -364,8 +357,6 @@ component extends="testbox.system.BaseSpec"{
             .execute();
           var mutate = couchbase.mutateIn( key );
           mutate
-            .upsert( "details", {} )
-            .upsert( "details.address", {} )
             .upsert( "details.address.work", {
               "address": "873 Lucee St",
               "address_2": "",
@@ -391,8 +382,6 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
-            .upsert( "details", {} )
-            .upsert( "details.address", {} )
             .upsert( "details.address.work", {
               "address": "873 Lucee St",
               "address_2": "",

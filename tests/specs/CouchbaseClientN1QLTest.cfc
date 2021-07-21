@@ -31,7 +31,7 @@ component extends="testbox.system.BaseSpec"{
     couchbase = new cfcouchbase.CouchbaseClient( {
       bucketName="travel-sample",
       username="cfcouchbase",
-      password=""
+      password="password"
     } );
 
     // add custom matcher
@@ -102,7 +102,7 @@ component extends="testbox.system.BaseSpec"{
         expect( data.results[1].city ).toBe ( "London" );
       });
 
-      it( "can query without an index", function(){
+      xit( "can query without an index", function(){
         var data = couchbase.n1qlQuery("
           SELECT callsign, country, iata, icao, id, name, type
           FROM `travel-sample`
@@ -219,14 +219,17 @@ component extends="testbox.system.BaseSpec"{
         expect( structCount( data.metrics ) ).toBeGTE( 4 );
       });
 
-      it( "can handle errors", function(){
+      it( "can handle errors with JSON return", function(){
         // invalid SQL statement because table names with dashes
         // must be escaped with back ticks
-        var data = couchbase.n1qlQuery("
-          SELECT *
-          FROM travel-sample
-          LIMIT 1
-        ");
+        var data = couchbase.n1qlQuery(
+          statement="
+            SELECT *
+            FROM travel-sample
+            LIMIT 1
+          ",
+          throwOnException=false
+        );
         expect( data ).toBeStruct();
         expect( data ).toHaveKey( "errors" );
         expect( arrayLen( data.errors ) ).toBe( 1 );
@@ -234,6 +237,30 @@ component extends="testbox.system.BaseSpec"{
         expect( data.errors[1].code ).toBeOneOf( [ 3000, 4010 ] );
         expect( data ).toHaveKey( "success" );
         expect( data.success ).toBeFalse();
+      });
+
+      it( "can handle errors with exception raised return", function(){
+        // invalid SQL statement because table names with dashes
+        // must be escaped with back ticks
+        try {
+          var data = couchbase.n1qlQuery(
+            statement="
+              SELECT *
+              FROM travel-sample
+              LIMIT 1
+            ",
+            throwOnException=true
+          );
+        } catch( any e ) {
+          expect( e.type ).toInclude( 'com.couchbase' );
+          expect( e.extendedInfo ).toBeJSON();
+          var data = deserializeJSON( e.extendedInfo );
+          expect( data ).toBeStruct();
+          expect( data ).toHaveKey( "errors" );
+          expect( arrayLen( data.errors ) ).toBe( 1 );
+          // depending on the version of couchbase this can be different error codes
+          expect( data.errors[1].code ).toBeOneOf( [ 3000, 4010 ] );
+        }
       });
 
       it( "can invalid query cache", function(){
@@ -301,11 +328,10 @@ component extends="testbox.system.BaseSpec"{
 
       it( "can do a paginated query", function(){
         var data = couchbase.n1qlQuery('
-          SELECT DISTINCT(type)
+          SELECT type
           FROM `travel-sample`
-          ORDER BY type ASC
           LIMIT 1
-          OFFSET 2
+          OFFSET 2;          
         ');
         expect( data ).toBeStruct();
         expect( data ).toHaveKey( "results" );
@@ -344,22 +370,7 @@ component extends="testbox.system.BaseSpec"{
           ',
           returnType = "native"
         );
-        expect( data.getClass().getName() ).toBe( "com.couchbase.client.java.query.DefaultN1qlQueryResult" );
-      });
-
-      it( "can return a native iterator", function(){
-        var data = couchbase.n1qlQuery(
-          statement='
-            SELECT callsign, country, iata, icao, id, name, type
-            FROM `travel-sample`
-            WHERE type = "airline"
-            LIMIT 10
-          ',
-          returnType = "iterator"
-        );
-        var row = data.next();
-        expect( row.getClass().getName() ).toBe( "com.couchbase.client.java.query.DefaultN1qlQueryRow" );
-        expect( row.value().getClass().getName() ).toBe( "com.couchbase.client.java.document.json.JsonObject" );
+        expect( data.getClass().getName() ).toBe( "com.couchbase.client.java.query.QueryResult" );
       });
 
       it( "can throw on invalid adhoc", function(){
@@ -450,9 +461,12 @@ component extends="testbox.system.BaseSpec"{
       });
 
       it( "can drop index", function(){
-        var index = couchbase.n1qlQuery("
-          DROP INDEX `travel-sample`.`idx_travel_sample_type` USING GSI
-        ");
+        var index = couchbase.n1qlQuery(
+            statement="
+              DROP INDEX `travel-sample`.`idx_travel_sample_type` USING GSI
+            ",
+            throwOnException=false
+        );
         var check = couchbase.n1qlQuery("
           SELECT datastore_id, id, index_key, keyspace_id, name, namespace_id, state, `using`
           FROM system:indexes
@@ -470,9 +484,12 @@ component extends="testbox.system.BaseSpec"{
 
       it( "can defer the build of an index", function(){
         // drop the index first since it will fail after the first test otherwise
-        couchbase.n1qlQuery("
-          DROP INDEX `travel-sample`.`idx_travel_sample_test` USING GSI
-        ");
+        couchbase.n1qlQuery(
+            statement="
+            DROP INDEX `travel-sample`.`idx_travel_sample_test` USING GSI
+            ",
+            throwOnException=false
+        );
         var index = couchbase.n1qlQuery('
           CREATE INDEX `idx_travel_sample_test` ON `travel-sample` (type) USING GSI
           WITH {"defer_build": true}
@@ -523,56 +540,6 @@ component extends="testbox.system.BaseSpec"{
 
         expect( indexes ).toBeArray();
         expect( arrayLen( indexes ) ).toBeGT( 0 );
-      });
-
-      it( "can produce a raw query object", function(){
-        var oQuery = couchbase.newN1qlQuery("
-          SELECT *
-          FROM `travel-sample`
-          LIMIT 1
-        ");
-
-        expect( oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.query.SimpleN1qlQuery" );
-      });
-
-      it( "can produce a raw query object with options", function(){
-        var oQuery = couchbase.newN1qlQuery(
-          statement="
-            SELECT *
-            FROM `travel-sample`
-            LIMIT 1
-          ",
-          options={
-            adhoc = true,
-            consistency = "STATEMENT_PLUS",
-            maxParallelism = 2,
-            scanWait = 2500,
-            serverSideTimeout = 2500,
-            clientContextId = "client-id"
-          }
-        );
-        expect( oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.query.SimpleN1qlQuery" );
-        // there are not getting methods for values that have been set but we can verify the values
-        // set by calling the toString() method of the N1qlQuery.params() object
-        expect( oQuery.params().toString() ).toInclude( "serverSideTimeout='2500ms'" );
-        expect( oQuery.params().toString() ).toInclude( "consistency=STATEMENT_PLUS" );
-        expect( oQuery.params().toString() ).toInclude( "scanWait='2500ms'" );
-        expect( oQuery.params().toString() ).toInclude( "clientContextId='client-id'" );
-        expect( oQuery.params().toString() ).toInclude( "maxParallelism=2" );
-        expect( oQuery.params().toString() ).toInclude( "adhoc=true" );
-      });
-
-      it( "can do a raw query", function(){
-        var oQuery = couchbase.newN1qlQuery(
-          statement="
-            SELECT *
-            FROM `travel-sample`
-            LIMIT 1
-          "
-        );
-        var results = couchbase.rawQuery( oQuery );
-
-        expect( results.finalSuccess() ).toBeTrue();
       });
 
     });

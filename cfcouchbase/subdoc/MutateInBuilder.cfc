@@ -14,21 +14,15 @@ component serializable="false" accessors="true"{
   */
   property name="couchbaseClient" type="CouchbaseClient";
   /**
-  * A reference to the MutateInBuilder (com.couchbase.client.java.subdoc.MutateInBuilder)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/MutateInBuilder.html
   */
-  property name="builder";
-  /**
-  * A reference to the DocumentFragment (com.couchbase.client.java.subdoc.DocumentFragment<OPERATION>)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/DocumentFragment.html
-  */
-  property name="result";
+  property name="MutateInSpecs";
+  property name="mutateInOptions";
+
 
   // Default params, just in case using cf9
   variables['id'] = "";
   variables['couchbaseClient'] = "";
   variables['builder'] = "";
-  variables['result'] = "";
 
   /**
   * Constructor
@@ -39,7 +33,7 @@ component serializable="false" accessors="true"{
   *
   * @return
   */
-  public function init( required string id, required couchbaseClient) {
+  public function init( required string id, required couchbaseClient, required mutateInOptions ) {
 
     // Check incoming arguments
     for(var thisArg in arguments){
@@ -48,8 +42,7 @@ component serializable="false" accessors="true"{
       }
     }
 
-    // set a reference to the builder, as most methods will just call the java class
-    setBuilder( variables.couchbaseClient.getCouchbaseBucket().mutateIn( variables.id ) );
+    variables.MutateInSpecs=[];
     return this;
   }
 
@@ -59,17 +52,16 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayAddUnique( required string path, required any value, boolean createParents=true ) {
-    variables.builder
-      .arrayAddUnique(
+  public function arrayAddUnique( required string path, required any value ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.arrayAddUnique(
         javaCast( "string", arguments.path ),
-        arguments.value,
-        javaCast( "boolean", arguments.createParents )
-      );
+        arguments.value
+      )
+    );
     return this;
   }
 
@@ -78,18 +70,11 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayAppend( required string path, required any value, boolean createParents=true ) {
-    variables.builder
-      .arrayAppend(
-        javaCast( "string", arguments.path ),
-        arguments.value,
-        javaCast( "boolean", arguments.createParents )
-      );
-    return this;
+  public function arrayAppend( required string path, required any value ) {
+    return arrayAppendAll( path, [ value ] );
   }
 
   /**
@@ -98,17 +83,16 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @values.hint The collection of values to individually append to the end of the array
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayAppendAll( required string path, required any values, boolean createParents=true ) {
-    variables.builder
-      .arrayAppendAll(
+  public function arrayAppendAll( required string path, required any values ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.arrayAppend(
         javaCast( "string", arguments.path ),
-        arguments.values,
-        javaCast( "boolean", arguments.createParents )
-      );
+        arguments.values
+      )
+    );
     return this;
   }
 
@@ -121,12 +105,7 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder
   */
   public function arrayInsert( required string path, required any value ) {
-    variables.builder
-      .arrayInsert(
-        javaCast( "string", arguments.path ),
-        arguments.value
-      );
-    return this;
+     return arrayInsertAll( path, [ value ] );
   }
 
   /**
@@ -139,11 +118,12 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder
   */
   public function arrayInsertAll( required string path, required any values ) {
-    variables.builder
-      .arrayInsertAll(
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.arrayInsert(
         javaCast( "string", arguments.path ),
         arguments.values
-      );
+      )
+    );
     return this;
   }
 
@@ -152,18 +132,11 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayPrepend( required string path, required any value, boolean createParents=true ) {
-    variables.builder
-      .arrayPrepend(
-        javaCast( "string", arguments.path ),
-        arguments.value,
-        javaCast( "boolean", arguments.createParents )
-      );
-    return this;
+  public function arrayPrepend( required string path, required any value ) {
+    return arrayPrependAll( path, [ value ] );
   }
 
   /**
@@ -172,17 +145,16 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The collection of values to individually preprend to the front of the array
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function arrayPrependAll( required string path, required any values, boolean createParents=true ) {
-    variables.builder
-      .arrayPrependAll(
+  public function arrayPrependAll( required string path, required any values ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.arrayPrepend(
         javaCast( "string", arguments.path ),
-        arguments.values,
-        javaCast( "boolean", arguments.createParents )
-      );
+        arguments.values
+      )
+    );
     return this;
   }
 
@@ -191,17 +163,50 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @delta.hint The value to increment or decrement the counter by
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function counter( required string path, required numeric delta, boolean createParents=true ) {
-    variables.builder
-      .counter(
+  public function counter( required string path, required numeric delta ) {
+    if( delta > 0 ) {
+      return increment( path, abs( delta ) );
+    } else {
+      return decrement( path, abs( delta ) );
+    }
+  }
+
+  /**
+  * Increment a numerical fragment in a JSON document.
+  *
+  * @path.hint A dot notation path within the document from the documents root
+  * @delta.hint The value to increment or decrement the counter by
+  *
+  * @return MutateInBuilder
+  */
+  public function increment( required string path, required numeric delta ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.increment(
         javaCast( "string", arguments.path ),
-        javaCast( "long", arguments.delta ),
-        javaCast( "boolean", arguments.createParents )
-      );
+        javaCast( "long", arguments.delta )
+      )
+    );
+    return this;
+  }
+
+  /**
+  * decrement a numerical fragment in a JSON document.
+  *
+  * @path.hint A dot notation path within the document from the documents root
+  * @delta.hint The value to increment or decrement the counter by
+  *
+  * @return MutateInBuilder
+  */
+  public function decrement( required string path, required numeric delta ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.decrement(
+        javaCast( "string", arguments.path ),
+        javaCast( "long", arguments.delta )
+      )
+    );
     return this;
   }
 
@@ -210,17 +215,16 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function insert( required string path, required any value, boolean createParents=true ) {
-    variables.builder
-      .insert(
+  public function insert( required string path, required any value ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.insert(
         javaCast( "string", arguments.path ),
-        arguments.value,
-        javaCast( "boolean", arguments.createParents )
-      );
+        arguments.value
+      )
+    );
     return this;
   }
 
@@ -233,7 +237,11 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder
   */
   public function remove( required string path ) {
-    variables.builder.remove( javaCast( "string", arguments.path ) );
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.remove(
+        javaCast( "string", arguments.path )
+      )
+    );
     return this;
   }
 
@@ -246,11 +254,12 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder
   */
   public function replace( required string path, required any value ) {
-    variables.builder
-      .replace(
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.replace(
         javaCast( "string", arguments.path ),
         arguments.value
-      );
+      )
+    );
     return this;
   }
 
@@ -259,17 +268,16 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   * @value.hint The new value to be applied
-  * @createParents.hint Whether or not to create missing intermediary / parent nodes
   *
   * @return MutateInBuilder
   */
-  public function upsert( required string path, required any value, boolean createParents=true ) {
-    variables.builder
-      .upsert(
+  public function upsert( required string path, required any value ) {
+    mutateInSpecs.append( 
+      couchbaseClient.MutateInSpec.upsert(
         javaCast( "string", arguments.path ),
-        arguments.value,
-        javaCast( "boolean", arguments.createParents )
-      );
+        arguments.value
+      )
+    );
     return this;
   }
 
@@ -281,7 +289,7 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder
   */
   public function withCas( required numeric cas ) {
-    variables.builder.withCas( javaCast( "long", arguments.cas ) );
+    mutateInOptions.cas( javaCast( "long", arguments.cas ) );
     return this;
   }
 
@@ -295,8 +303,7 @@ component serializable="false" accessors="true"{
   */
   public function withDurability( string persistTo, string replicateTo ) {
     // default persist and replicate
-    variables.couchbaseClient.defaultPersistReplicate( arguments );
-    variables.builder.withDurability( arguments.persistTo, arguments.replicateTo );
+    variables.couchbaseClient.defaultPersistReplicate( arguments, mutateInOptions );
     return this;
   }
 
@@ -308,7 +315,19 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder
   */
   public function withExpiry( required numeric expiry ) {
-    variables.builder.withExpiry( javaCast( "int", arguments.expiry ) );
+    variables.couchbaseClient.defaultTimeout( { timeout : expiry }, mutateInOptions );
+    return this;
+  }
+
+  /**
+  * Changes the storing semantics of the outer/enclosing document.
+  *
+  * @storeSemantic.hint One of the values INSERT, REPLACE, or UPSERT
+  *
+  * @return MutateInBuilder
+  */
+  public function storeSemantics( required string storeSemantic ) {
+    mutateInOptions.storeSemantics( variables.couchbaseClient.newJava( 'com.couchbase.client.java.kv.StoreSemantics' ).valueOf( uCase( arguments.storeSemantic ) ) );
     return this;
   }
 
@@ -323,15 +342,20 @@ component serializable="false" accessors="true"{
   * @return MutateInBuilder or null
   */
   public function execute( numeric timeout ) {
-    if ( structKeyExists( arguments, "timeout" ) ) {
-      variables['result'] = variables.builder.execute(
-        javaCast( "long", arguments.timeout ),
-        createObject( "java", "java.util.concurrent.TimeUnit" ).MILLISECONDS
-      );
-    } else {
-      variables['result'] = variables.builder.execute();
+
+    if( !len( mutateInSpecs ) ) {
+      throw( 'No mutate specs specified.  Please call methods on this object first to describe the mutation(s) to perform.' )
     }
-    return new DocumentFragment( variables.result, variables.couchbaseClient );
+    if( !isNull( arguments.timeout ) ) {
+      mutateInOptions.timeout( variables.couchbaseClient.newJava( 'java.time.Duration' ).ofMillis( arguments.timeout ) )
+    }
+    var MutateInResult = couchbaseClient.getCouchbaseBucket().defaultCollection().mutateIn(
+        couchbaseClient.getUtil().normalizeID( getID() ),
+        mutateInSpecs,
+        mutateInOptions
+    );
+    return MutateInResult;
+
   }
 
 }

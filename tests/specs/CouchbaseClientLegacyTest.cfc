@@ -29,7 +29,7 @@ component extends="testbox.system.BaseSpec"{
   function beforeAll(){
     couchbase = new cfcouchbase.CouchbaseClient( config={
       username="cfcouchbase",
-      password=""
+      password="password"
     });
   }
 

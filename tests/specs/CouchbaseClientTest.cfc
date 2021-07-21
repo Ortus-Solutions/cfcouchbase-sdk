@@ -29,7 +29,7 @@ component extends="testbox.system.BaseSpec"{
   function beforeAll(){
     couchbase = new cfcouchbase.CouchbaseClient(config={
       username="cfcouchbase",
-      password=""
+      password="password"
     });
   }
 
@@ -47,8 +47,6 @@ component extends="testbox.system.BaseSpec"{
 
       xit( "can flush docs", function(){
         couchbase.flush();
-
-        expect( couchbase.getAggregateStat( "Administrator", this.adminPassword, "curr_items" ) ).toBeNumeric();
       } );
 
       it( "can touch an expiration time", function(){
@@ -58,20 +56,20 @@ component extends="testbox.system.BaseSpec"{
       } );
 
       it( "can get available servers", function(){
-        var servers = couchbase.getAvailableServers( "Administrator", this.adminPassword );
+        var servers = couchbase.getAvailableServers();
         expect( arrayLen( servers ) ).toBeGTE( 1 );
       } );
 
       it( "can get unavailable servers", function(){
-        var servers = couchbase.getUnAvailableServers( "Administrator", this.adminPassword );
+        var servers = couchbase.getUnAvailableServers();
         expect( arrayLen( servers ) ).toBe( 0 );
       } );
 
       it( "can get the environment", function(){
         var env = couchbase.getEnvironment();
         expect( env ).toBeStruct();
-        expect( env ).toHaveKey( "kvTimeout" );
-        expect( env.kvTimeout ).toBeNumeric();
+        expect( env ).toHaveKey( "timeoutConfig" );
+        expect( env.timeoutConfig.kvMs ).toBeNumeric();
       } );
 
       /**************************************************************/
@@ -390,7 +388,7 @@ component extends="testbox.system.BaseSpec"{
           };
           var binary_data = objectSave( data );
           couchbase.upsert( id="unittest", value=binary_data, dataType="binary" );
-          var doc = couchbase.get( id="unittest" );
+          var doc = couchbase.get( id="unittest", dataType="binary" );
 
           expect( doc ).toBeBinary();
           expect( doc ).toBe( binary_data );
@@ -462,6 +460,7 @@ component extends="testbox.system.BaseSpec"{
         } );
 
         it( "can determine when an id exists", function(){
+          couchbase.upsert( ID="unittest", value="value1" );
           expect( couchbase.exists( "unittest" ) ).toBeTrue();
         } );
 
@@ -470,10 +469,22 @@ component extends="testbox.system.BaseSpec"{
         } );
 
         it( "can get a document from a replica", function(){
+          couchbase.upsert( ID="unittest", value="value1" );
           var replica = couchbase.getFromReplica( id="unittest" );
 
-          expect( replica ).toBeArray();
-          expect( arrayLen( replica ) ).toBeGT( 0 );
+          expect( replica ).toBeStruct();
+          expect( replica ).toHaveKey( 'isReplica' );
+          expect( replica.isReplica ).toBeBoolean();
+        } );
+
+        it( "can get a document from all replicas", function(){
+          couchbase.upsert( ID="unittest", value="value1" );
+          var replicas = couchbase.getFromAllReplicas( id="unittest" );
+
+          expect( replicas ).toBeArray();
+          expect( replicas ).notToBeEmpty();
+          expect( replicas[1] ).toHaveKey( 'isReplica' );
+          expect( replicas[1].isReplica ).toBeBoolean();
         } );
 
         /**************************************************************/
@@ -532,11 +543,11 @@ component extends="testbox.system.BaseSpec"{
 
           couchbase.upsert( id=key, value="lock me" );
 
-          var doc = couchbase.getAndLock( id=key );
+          var doc = couchbase.getAndLock( id=key, lockTime=30 );
 
           expect( function(){
             couchbase.getAndLock( id=key );
-          }).toThrow( type="CouchbaseClient.LockedDocument" );
+          }).toThrow( type="com.couchbase.client.core.error.AmbiguousTimeoutException" );
         } );
 
         it( "can unlock a document", function(){
@@ -690,9 +701,8 @@ component extends="testbox.system.BaseSpec"{
       describe( "stats operations", function(){
 
         it( "can get global stats", function(){
-          var stats = couchbase.getStats( "Administrator", this.adminPassword );
-          expect( stats ).toBeArray();
-          expect( couchbase.getAggregateStat( "Administrator", this.adminPassword, "curr_items" ) ).toBeNumeric();
+          var stats = couchbase.getStats();
+          expect( stats ).toBeStruct();
         } );
 
         it( "will throw for get doc stats", function(){

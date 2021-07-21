@@ -31,7 +31,7 @@ component extends="testbox.system.BaseSpec"{
     couchbase = new cfcouchbase.CouchbaseClient( {
       bucketName="beer-sample",
       username="cfcouchbase",
-      password=""
+      password="password"
     } );
   }
 
@@ -46,27 +46,7 @@ component extends="testbox.system.BaseSpec"{
 
       it( "can get a view", function(){
         var view = couchbase.getView( 'beer', 'by_location' );
-        expect( view.name() ).toBe( 'by_location' );
-      });
-
-      it( "can produce a raw query object", function(){
-        var oQuery = couchbase.newViewQuery( 'beer', 'by_location' );
-        expect(  oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.view.ViewQuery" );
-      });
-
-      it( "can produce a raw query object with options", function(){
-        var oQuery = couchbase.newViewQuery( 'beer', 'by_location', { debug: true, limit: 10 } );
-        expect(  oQuery.getClass().getName() ).toBe( "com.couchbase.client.java.view.ViewQuery" );
-        // there are not getting methods for values that have been set but we can verify the values
-        // set by calling the toString() method of the ViewQuery object
-        expect(  oQuery.toString() ).toInclude( "limit=10" );
-        expect(  oQuery.toString() ).toInclude( "debug=true" );
-      });
-
-      it( "can do a raw query", function(){
-        var oQuery = couchbase.newQuery( 'beer', 'by_location', { limit: 10, includeDocs:true } );
-        var results = couchbase.rawQuery( oQuery );
-        expect(  results.success() ).toBeTrue();
+        expect( view.getClass().getName() ).toBe( 'com.couchbase.client.java.manager.view.View' );
       });
 
       it( "can do a enhanced query with no docs", function(){
@@ -86,7 +66,6 @@ component extends="testbox.system.BaseSpec"{
 
       it( "can do a non-deserialized query with docs", function(){
         var results = couchbase.query( 'beer', 'brewery_beers', { limit: 100, includeDocs: true}, false );
-        //debug( results );
         expect(  results ).toBeArray();
         expect(  arrayLen( results ) ).toBeGT( 1 );
         expect(  results[ 1 ].document ).toBeString();
@@ -164,13 +143,7 @@ component extends="testbox.system.BaseSpec"{
 
       it( "can return native results", function(){
         var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="native" );
-        expect(  results.getClass().getName() ).toBe( "com.couchbase.client.java.view.DefaultViewResult" );
-      });
-
-      it( "can return a native iterator", function(){
-        var results = couchbase.query( designDocumentName='beer', viewName='brewery_beers', options={ limit: 10, skip: 20, includeDocs: true}, returnType="iterator" );
-        // ensure obj behaves as an iterator
-        results.next();
+        expect(  results.getClass().getName() ).toBe( "com.couchbase.client.java.view.ViewResult" );
       });
 
       it( "can return results explicitly ordered ascending", function(){
@@ -334,12 +307,12 @@ component extends="testbox.system.BaseSpec"{
 
         it( "can initialize new design document", function(){
           designDocument = couchbase.newDesignDocument( 'brandNew' );
-                expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.java.view.DesignDocument" );
+                expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.java.manager.view.DesignDocument" );
         });
 
         it( "can get a design document", function(){
           designDocument = couchbase.getDesignDocument( 'beer' );
-                expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.java.view.DesignDocument" );
+                expect( designDocument.getClass().getName() ).toBe( "com.couchbase.client.java.manager.view.DesignDocument" );
         });
 
         it( "can be null for design document that doesn't exist", function(){
@@ -398,32 +371,32 @@ component extends="testbox.system.BaseSpec"{
         });
 
         it( "can check for non-existant view", function(){
-          var viewDesign = couchbase.getDesignDocument('myDoc2').views()[1];
-          var viewName = viewDesign.name();
-          var mapFunction = viewDesign.map();
+          var views = couchbase.getDesignDocument('beer').views();
+          var viewName = views.keyArray()[1];
+          var mapFunction = views[ viewName ].map();
 
           // Invalid design document
           expect( couchbase.viewExists( 'invalid', 'invalid' ) ).toBeFalse();
           // Invalid new name
-          expect( couchbase.viewExists( 'myDoc2', 'invalid' ) ).toBeFalse();
+          expect( couchbase.viewExists( 'beer', 'invalid' ) ).toBeFalse();
           // Invalid map function
-          expect( couchbase.viewExists( 'myDoc2', viewName, 'invalid' ) ).toBeFalse();
+          expect( couchbase.viewExists( 'beer', viewName, 'invalid' ) ).toBeFalse();
           // Invalid reduce function
-          expect( couchbase.viewExists( 'myDoc2', viewName, mapFunction, "invalid" ) ).toBeFalse();
+          expect( couchbase.viewExists( 'beer', viewName, mapFunction, "invalid" ) ).toBeFalse();
         });
 
         it( "can check for existing view", function(){
-          var viewDesign = couchbase.getDesignDocument('myDoc2').views()[1];
-          var viewName = viewDesign.name();
-          var mapFunction = viewDesign.map();
-          var reduceFunction = viewDesign.reduce();
+          var views = couchbase.getDesignDocument('beer').views();
+          var viewName = 'by_location';
+          var mapFunction = views[ viewName ].map();
+          var reduceFunction = views[ viewName ].reduce().get();
 
           // Name only
-          expect( couchbase.viewExists( 'myDoc2', viewName) ).toBeTrue();
+          expect( couchbase.viewExists( 'beer', viewName) ).toBeTrue();
           // Name, and map function
-          expect( couchbase.viewExists( 'myDoc2', viewName, mapFunction ) ).toBeTrue();
+          expect( couchbase.viewExists( 'beer', viewName, mapFunction ) ).toBeTrue();
           // Name, map function, and reduce function
-          expect( couchbase.viewExists( 'myDoc2', viewName, mapFunction, reduceFunction ) ).toBeTrue();
+          expect( couchbase.viewExists( 'beer', viewName, mapFunction, reduceFunction ) ).toBeTrue();
         });
 
         it( "can delete a view", function(){

@@ -31,7 +31,7 @@ component extends="testbox.system.BaseSpec"{
     couchbase = new cfcouchbase.CouchbaseClient( {
       bucketName="default",
       username="cfcouchbase",
-      password=""
+      password="password"
     } );
   }
 
@@ -67,7 +67,7 @@ component extends="testbox.system.BaseSpec"{
               .arrayAddUnique( "names", "Aaron" )
               .execute();
           })
-          .toThrow( type="com.couchbase.client.java.error.subdoc.MultiMutationException" );
+          .toThrow( type="com.couchbase.client.core.error.subdoc.PathExistsException" );
         });
 
         it( "can append an item to the end of an array", function(){
@@ -216,6 +216,12 @@ component extends="testbox.system.BaseSpec"{
       });
 
       describe( "Fragment Operations", function(){
+
+        beforeEach( function(){
+          var key = "mutate_fragment_test";
+          couchbase.upsert( id=key, value={ "id": key } );
+        } );
+
         it( "can insert a fragment", function(){
           var key = "mutate_fragment_test";
           couchbase.upsert( id=key, value={ "id": key } );
@@ -238,6 +244,8 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
+            .insert( "details", {} )
+            .insert( "details.address", {} )
             .insert( "details.address.home", {
               "address": "123 CF Way",
               "address_2": "",
@@ -262,23 +270,34 @@ component extends="testbox.system.BaseSpec"{
         it( "will error if the path exists", function(){
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
+            mutate
+              .insert( "details", {} )
+              .execute();
+              
+          var mutate = couchbase.mutateIn( key );
           expect( function(){
             mutate
-              .insert( "details.address.home", {
-                "address": "123 CF Way",
-                "address_2": "",
-                "city": "Greensboro",
-                "state": "NC",
-                "zip": "27409",
-              } )
+              .insert( "details", {} )
               .execute();
           })
-          .toThrow( type="com.couchbase.client.java.error.subdoc.MultiMutationException" );
+          .toThrow( type="com.couchbase.client.core.error.subdoc.PathExistsException" );
 
         });
 
         it( "can replace a fragment", function(){
           var key = "mutate_fragment_test";
+          var mutate = couchbase.mutateIn( key );
+          mutate
+            .insert( "details", {} )
+            .insert( "details.address", {} )
+            .insert( "details.address.home", {
+              "address": "123 CF Way",
+              "address_2": "",
+              "city": "Greensboro",
+              "state": "NC",
+              "zip": "27409",
+            } )
+            .execute();
           var mutate = couchbase.mutateIn( key );
           mutate
             .replace( "details.address.home", {
@@ -306,6 +325,8 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
+            .upsert( "details", {} )
+            .upsert( "details.address", {} )
             .upsert( "details.address.work", {
               "address": "873 Lucee St",
               "address_2": "",
@@ -331,6 +352,20 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
+            .upsert( "details", {} )
+            .upsert( "details.address", {} )
+            .upsert( "details.address.work", {
+              "address": "873 Lucee St",
+              "address_2": "",
+              "city": "Houston",
+              "state": "TX",
+              "zip": "87834",
+            } )
+            .execute();
+          var mutate = couchbase.mutateIn( key );
+          mutate
+            .upsert( "details", {} )
+            .upsert( "details.address", {} )
             .upsert( "details.address.work", {
               "address": "873 Lucee St",
               "address_2": "",
@@ -356,6 +391,18 @@ component extends="testbox.system.BaseSpec"{
           var key = "mutate_fragment_test";
           var mutate = couchbase.mutateIn( key );
           mutate
+            .upsert( "details", {} )
+            .upsert( "details.address", {} )
+            .upsert( "details.address.work", {
+              "address": "873 Lucee St",
+              "address_2": "",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "09821",
+            } )
+            .execute();
+          var mutate = couchbase.mutateIn( key );
+          mutate
             .remove( "details.address.work")
             .execute();
           var doc = couchbase.get( id=key );
@@ -373,7 +420,7 @@ component extends="testbox.system.BaseSpec"{
               .remove( "details.address.unknown")
               .execute();
           })
-          .toThrow( type="com.couchbase.client.java.error.subdoc.MultiMutationException" );
+          .toThrow( type="com.couchbase.client.core.error.subdoc.PathNotFoundException" );
         });
       });
 
@@ -402,7 +449,7 @@ component extends="testbox.system.BaseSpec"{
               .withCas( 123456789 )
               .execute();
           })
-          .toThrow( type="com.couchbase.client.java.error.CASMismatchException" );
+          .toThrow( type="com.couchbase.client.core.error.CasMismatchException" );
         });
 
         it( "can update a document with durability (persistTo only)", function(){
@@ -462,7 +509,7 @@ component extends="testbox.system.BaseSpec"{
             .upsert( "name", "Scott" )
             .execute();
           })
-          .toThrow( type="com.couchbase.client.java.error.DocumentDoesNotExistException" );
+          .toThrow( type="com.couchbase.client.core.error.DocumentNotFoundException" );
         });
       });
 
@@ -550,16 +597,36 @@ component extends="testbox.system.BaseSpec"{
           ]
         };
         couchbase.upsert( id=key, value=data );
-        var lookup = couchbase.lookupIn(key);
-        var result = lookup.get( "details.first_name" ).execute();
-        expect( result.content( "details.first_name" ) ).toBe( "Shirley" );
+        var result = couchbase.lookupIn(key)
+          .get( "details.first_name" )
+          .exists( "details.last_name" )
+          .count( "phones" )
+          .execute();
+
+        expect( result ).toBeStruct();
+        expect( result ).toHaveKey( "details.first_name" );
+        expect( result ).toHaveKey( "details.last_name" );
+        expect( result ).toHaveKey( "phones" );
+        expect( result[ "details.first_name" ] ).toBe( "Shirley" );
+        expect( result[ "details.last_name" ] ).toBe( true );
+        expect( result[ "phones" ] ).toBe( 2 );
       });
 
       it( "will return null value if the path does not exist", function(){
         var key = "lookup_test";
-        var lookup = couchbase.lookupIn(key);
-        var result = lookup.get( "path.does.not.exist" ).execute();
-        expect( result.content( "path.does.not.exist" ) ).toBeNull();
+        var result = couchbase.lookupIn(key)
+          .get( "path.does.not.exist1" )
+          .exists( "path.does.not.exist2" )
+          .count( "path.does.not.exist3" )
+          .execute();
+
+        expect( result ).toBeStruct();
+        expect( result.keyList() ).toInclude( "path.does.not.exist1" );
+        expect( result.keyList() ).toInclude( "path.does.not.exist2" );
+        expect( result.keyList() ).toInclude( "path.does.not.exist3" );
+        expect( isNull( result[ "path.does.not.exist1" ] ) ).toBeTrue();
+        expect( result[ "path.does.not.exist2" ] ).toBeFalse();
+        expect( isNull( result[ "path.does.not.exist3" ] ) ).toBeTrue();
       });
 
       it( "will return null result if the document does not exist", function(){
@@ -570,15 +637,14 @@ component extends="testbox.system.BaseSpec"{
 
       it( "can retrieve multiple paths", function(){
         var key = "lookup_test";
-        var lookup = couchbase.lookupIn(key);
-        var result = lookup
-                      .get('account.username')
-                      .get('account.password')
-                      .get('details.first_name')
-                      .execute();
-        expect( result.content('account.username') ).toBe( "Lulu2" );
-        expect( result.content('account.password') ).toBe( "aeLfXKc1oz_HIRX" );
-        expect( result.content('details.first_name') ).toBe( "Shirley" );
+        var result = couchbase.lookupIn(key)
+          .get('account.username')
+          .get('account.password')
+          .get('details.first_name')
+          .execute();
+        expect( result['account.username'] ).toBe( "Lulu2" );
+        expect( result['account.password'] ).toBe( "aeLfXKc1oz_HIRX" );
+        expect( result['details.first_name'] ).toBe( "Shirley" );
       });
 
       it( "can retrieve multiple paths from array", function(){
@@ -587,21 +653,49 @@ component extends="testbox.system.BaseSpec"{
         var result = lookup
                       .get( [ "account.username", "account.password", "details.first_name"] )
                       .execute();
-        expect( result.content( "account.username" ) ).toBe( "Lulu2" );
-        expect( result.content( "account.password" ) ).toBe( "aeLfXKc1oz_HIRX" );
-        expect( result.content( "details.first_name" ) ).toBe( "Shirley" );
+        expect( result[ "account.username" ] ).toBe( "Lulu2" );
+        expect( result[ "account.password" ] ).toBe( "aeLfXKc1oz_HIRX" );
+        expect( result[ "details.first_name" ] ).toBe( "Shirley" );
+      });
+
+      it( "can retrieve an array", function(){
+        var key = "lookup_test";
+        var lookup = couchbase.lookupIn(key);
+        var result = lookup
+                      .get( 'phones' )
+                      .execute();
+        expect( result[ "phones" ] ).toBeArray();
+      });
+
+      it( "can retrieve an object", function(){
+        var key = "lookup_test";
+        var lookup = couchbase.lookupIn(key);
+        var result = lookup
+                      .get( 'details' )
+                      .execute();
+        expect( result[ "details" ] ).toBeStruct();
+      });
+
+      it( "can retrieve multiple paths from multuple arguments", function(){
+        var key = "lookup_test";
+        var lookup = couchbase.lookupIn(key);
+        var result = lookup
+                      .get( "account.username", "account.password", "details.first_name" )
+                      .execute();
+        expect( result[ "account.username" ] ).toBe( "Lulu2" );
+        expect( result[ "account.password" ] ).toBe( "aeLfXKc1oz_HIRX" );
+        expect( result[ "details.first_name" ] ).toBe( "Shirley" );
       });
 
       it( "can retrieve a specific array index", function(){
         var key = "lookup_test";
-        var lookup = couchbase.lookupIn(key);
-        var result = lookup
-                      .get( "emails[2]" ) // note this is a zero based index
-                      .execute();
-        expect( result.content( "emails[2]" ) ).toBeStruct();
-        expect( result.content( "emails[2]" ).type ).toBe( "Work" );
-        expect( result.content( "emails[2]" ).email_address ).toBe( "Payton5@gmail.com" );
-        expect( result.content( "emails[2]" ).primary ).toBeTrue();
+        var result = couchbase.lookupIn(key)
+          .get( "emails[2]" ) // note this is a zero based index
+          .execute();
+        expect( result[ "emails[2]" ] ).toBeStruct();
+        expect( result[ "emails[2]" ].type ).toBe( "Work" );
+        expect( result[ "emails[2]" ].email_address ).toBe( "Payton5@gmail.com" );
+        expect( result[ "emails[2]" ].primary ).toBeTrue();
       });
 
       it( "can determine if a path exists", function(){
@@ -610,7 +704,7 @@ component extends="testbox.system.BaseSpec"{
         var result = lookup
                       .exists( "details.first_name" )
                       .execute();
-        expect( result.exists( "details.first_name" ) ).toBeTrue();
+        expect( result[ "details.first_name" ] ).toBeTrue();
       });
 
       it( "can determine if multiple paths exists", function(){
@@ -620,8 +714,8 @@ component extends="testbox.system.BaseSpec"{
                       .exists( "details.first_name" )
                       .exists( "account.username" )
                       .execute();
-        expect( result.exists( "details.first_name" ) ).toBeTrue();
-        expect( result.exists( "account.username" ) ).toBeTrue();
+        expect( result[ "details.first_name" ] ).toBeTrue();
+        expect( result[ "account.username" ] ).toBeTrue();
       });
 
       it( "can determine if multiple paths exists from an array", function(){
@@ -631,8 +725,8 @@ component extends="testbox.system.BaseSpec"{
                       .exists( [ "details.first_name", "account.username" ] )
                       .execute();
                       debug(result);
-        expect( result.exists( "details.first_name" ) ).toBeTrue();
-        expect( result.exists( "account.username" ) ).toBeTrue();
+        expect( result[ "details.first_name" ] ).toBeTrue();
+        expect( result[ "account.username" ] ).toBeTrue();
       });
 
     });

@@ -14,15 +14,9 @@ component serializable="false" accessors="true"{
   */
   property name="couchbaseClient" type="CouchbaseClient";
   /**
-  * A reference to the LookupInBuilder (com.couchbase.client.java.subdoc.LookupInBuilder)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/LookupInBuilder.html
   */
-  property name="builder";
-  /**
-  * A reference to the DocumentFragment (com.couchbase.client.java.subdoc.DocumentFragment<OPERATION>)
-  * http://docs.couchbase.com/sdk-api/couchbase-java-client-2.3.1/com/couchbase/client/java/subdoc/DocumentFragment.html
-  */
-  property name="result";
+  property name="LookupInSpecs";
+  
 
   // Default params, just in case using cf9
   variables['id'] = "";
@@ -48,8 +42,8 @@ component serializable="false" accessors="true"{
       }
     }
 
-    // set a reference to the builder, as most methods will just call the java class
-    variables['builder'] = variables.couchbaseClient.getCouchbaseBucket().lookupIn( variables.id );
+  
+    variables.LookupInSpecs=[];
     return this;
   }
 
@@ -61,17 +55,15 @@ component serializable="false" accessors="true"{
   * @return LookupInBuilder
   */
   public function get( required paths ) {
-    if( isSimpleValue(arguments.paths) ) {
-      variables.builder.get( javaCast( "string[]", [ arguments.paths ] ) );
-    }
-    else if ( isArray(arguments.paths) ) {
-      variables.builder.get( javaCast( "string[]", arguments.paths.toArray() ) );
-    } else {
-      throw(
-        message="Invalid path",
-        detail="Valid values are a string or array",
-        type="CouchbaseClient.LookupInBuilder.InvalidPath"
-      );
+    for( var key in arguments ) {
+      var path = arguments[key];
+      if ( isArray( path ) ) {
+        for( var thispath in path ) {
+          addSpec( thispath, couchbaseClient.LookupInSpec.get( thispath ), 'get' );
+        }
+      } else {
+        addSpec( path, couchbaseClient.LookupInSpec.get( path ), 'get' );
+      }      
     }
     return this;
   }
@@ -84,19 +76,47 @@ component serializable="false" accessors="true"{
   * @return LookupInBuilder
   */
   public function exists( required paths ) {
-    if( isSimpleValue(arguments.paths) ) {
-      variables.builder.exists( javaCast( "string[]", [ arguments.paths ] ) );
-    }
-    else if ( isArray(arguments.paths) ) {
-      variables.builder.exists( javaCast( "string[]", arguments.paths.toArray() ) );
-    } else {
-      throw(
-        message="Invalid path",
-        detail="Valid values are a string or array",
-        type="CouchbaseClient.LookupInBuilder.InvalidPath"
-      );
+    for( var key in arguments ) {
+      var path = arguments[key];
+      if ( isArray( path ) ) {
+        for( var thispath in path ) {
+          addSpec( thispath, couchbaseClient.LookupInSpec.exists( thispath ), 'exists' );
+        }
+      } else {
+        addSpec( path, couchbaseClient.LookupInSpec.exists( path ), 'exists' );
+      }      
     }
     return this;
+  }
+
+  /**
+  * Calls the builders count method and returns "this" so that multiple calls can be chained
+  *
+  * @path.hint A dot notation path within the document from the documents root
+  *
+  * @return LookupInBuilder
+  */
+  public function count( required paths ) {
+    for( var key in arguments ) {
+      var path = arguments[key];
+      if ( isArray( path ) ) {
+        for( var thispath in path ) {
+          addSpec( thispath, couchbaseClient.LookupInSpec.count( thispath ), 'count' );
+        }
+      } else {
+        addSpec( path, couchbaseClient.LookupInSpec.count( path ), 'count' );
+      }      
+    }
+    return this;
+  }
+
+
+  private function addSpec( path, spec, type ) {
+    LookupInSpecs.append( {
+      path : path,
+      spec : spec,
+      type : type
+    } );    
   }
 
   /**
@@ -106,20 +126,40 @@ component serializable="false" accessors="true"{
   *
   * @path.hint A dot notation path within the document from the documents root
   *
-  * @return LookupInBuilder or null
+  * @return LookupInBuilder or null if document not found
   */
   public function execute() {
+    if( !len( LookupInSpecs ) ) {
+      throw( 'No lookup specs specified.  Please call get(), exists(), or count() on this object first with a path or array of paths.' )
+    }
     try {
-      // execute
-      variables['result'] = new DocumentFragment(variables.builder.execute(), variables.couchbaseClient);
+      var result = couchbaseClient.getCouchbaseBucket().defaultCollection().lookupIn(
+          couchbaseClient.getUtil().normalizeID( getID() ),
+          LookupInSpecs.reduce( function(acc,s) {
+            return acc.append( s.spec );
+          }, [] )
+      );
     } catch( any e ) {
-      if (e.type == "com.couchbase.client.java.error.DocumentDoesNotExistException" ) { // trap not found exceptions
-        variables['result'] = javaCast( "null", "" );
+      if (e.type == "com.couchbase.client.core.error.DocumentNotFoundException" ) { // trap not found exceptions
+        return;
       } else {
         rethrow;
       }
     }
-    return !isNull(variables.result) ? variables.result : javaCast( "null", "" );
+    var i=0;
+    var cfResult = {};
+    for( var spec in LookupInSpecs ) {
+      var exists = result.exists( i );
+      if( spec.type == 'exists' ) {
+        cfResult[ spec.path ] = exists;
+      } else if( ( spec.type == 'count' || spec.type == 'get' ) && exists ) {
+          cfResult[ spec.path ] = couchbaseClient.deserializeData( '', toString( result.contentAs( i, javaCast( 'byte[]', [] ).getClass() ), 'utf-8' ) );
+      } else {
+        cfResult[ spec.path ] = javaCast( 'null', '' );
+      }
+      i++
+    }
+    return cfResult;
   }
 
 }

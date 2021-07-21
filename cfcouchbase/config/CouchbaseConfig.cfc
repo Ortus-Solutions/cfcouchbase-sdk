@@ -51,6 +51,12 @@ component accessors="true"{
   * the RBAC users password
   */
   property name="password" default="";
+  /**
+  * True to throw an exception when a N1QL query errors, false to match the 2.x version of the SDK that returns an object with the errors embedded
+  */
+  property name="queryThrowOnException" default="true";
+
+
 
   //****************************************************************************************
   // Couchbase Environment Configuration Properties
@@ -407,6 +413,7 @@ component accessors="true"{
   variables['servers'] = "127.0.0.1";
   variables['bucketName'] = "default";
   variables['password'] = "";
+  variables['queryThrowOnException'] = true;
   variables['sslEnabled'] = false;
   variables['sslKeystoreFile'] = "";
   variables['sslKeystorePassword'] = "";

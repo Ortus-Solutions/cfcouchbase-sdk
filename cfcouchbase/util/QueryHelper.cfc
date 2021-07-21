@@ -12,10 +12,18 @@ component accessors="true" {
     variables['client'] = arguments.client;
 
     // load enums
-    this['scanConsistency'] = variables.client.newJava( "com.couchbase.client.java.view.ViewScanConsistency" );
+    this['ViewScanConsistency'] = variables.client.newJava( "com.couchbase.client.java.view.ViewScanConsistency" );
+    this['QueryScanConsistency'] = variables.client.newJava( "com.couchbase.client.java.query.QueryScanConsistency" );
+    this['QueryProfile'] = variables.client.newJava( "com.couchbase.client.java.query.QueryProfile" );
 
     // Java Time Units
     variables['timeUnit'] = createObject( "java", "java.util.concurrent.TimeUnit" );
+    variables['JsonArray'] = variables.client.newJava( "com.couchbase.client.java.json.JsonArray" );
+    variables['JsonObject'] = variables.client.newJava( "com.couchbase.client.java.json.JsonObject" );
+    
+    variables['Duration'] = variables.client.newJava( "java.time.Duration" );
+
+    
 
     // utility
     variables['util'] = variables.client.getUtility();
@@ -78,6 +86,12 @@ component accessors="true" {
         }
         // validate the stale parameter
         case "stale":  {
+          if( arguments.options[ key ] == 'false' ) {
+            arguments.options[ key ] = 'REQUEST_PLUS';
+          }
+          if( arguments.options[ key ] == 'OK' ) {
+            arguments.options[ key ] = 'NOT_BOUNDED';
+          }
           if( !listFindNoCase( "NOT_BOUNDED,REQUEST_PLUS,UPDATE_AFTER", arguments.options[ key ] ) ) {
             throw(
               message="Invalid " & key & " value of " & arguments.options[ key ],
@@ -85,7 +99,7 @@ component accessors="true" {
               type="CouchbaseClient.Invalid" & key
             );
           }
-          opts[ key ] = this.scanConsistency[uCase( arguments.options[ key ] )];
+          opts[ key ] = this.ViewScanConsistency[uCase( arguments.options[ key ] )];
           break;
         }
       
@@ -125,9 +139,8 @@ component accessors="true" {
           break;
         }
         case "keys":  {
-          // keys has to be set as a com.couchbase.client.java.document.json.JsonArray object
-          opts['keys'] = variables.client.newJava( "com.couchbase.client.java.document.json.JsonArray" )
-            .create()
+          // keys has to be set as a com.couchbase.client.java.json.JsonArray object
+          opts['keys'] = variables.client.newJava( "com.couchbase.client.java.json.JsonArray" )
             .from( arguments.options[ key ] );
           break;
         }
@@ -154,12 +167,12 @@ component accessors="true" {
     // key can be string, array, long, double, object, boolean
     switch( dataType ) {
       case "array":
-        castKey = variables.client.newJava( "com.couchbase.client.java.document.json.JsonArray" )
+        castKey = variables.client.newJava( "com.couchbase.client.java.json.JsonArray" )
           .create()
           .from( arguments.key );
       break;
       case "struct":
-        castKey = variables.client.newJava( "com.couchbase.client.java.document.json.JsonObject" )
+        castKey = variables.client.newJava( "com.couchbase.client.java.json.JsonObject" )
           .create()
           .from( arguments.key );
       break;
@@ -196,14 +209,14 @@ component accessors="true" {
       for( var param in arguments.parameters ) {
         arguments['parameters'][ index++ ] = castN1qlParameter( param );
       }
-      n1qlParams = variables.client.newJava( "com.couchbase.client.java.document.json.JsonArray" ).from( arguments.parameters );
+      n1qlParams = JsonArray.from( arguments.parameters );
     }
     else { // we are dealing with named params
       // loop over all of the params and javaCast them as the sdk expects explicit types
       for( var param in arguments.parameters ) {
         arguments['parameters'][ param ] = castN1qlParameter( arguments.parameters[ param ] );
       }
-      n1qlParams = variables.client.newJava( "com.couchbase.client.java.document.json.JsonObject" ).from( arguments.parameters );
+      n1qlParams = JsonObject.from( arguments.parameters );
     }
     return n1qlParams;
   }
@@ -244,9 +257,9 @@ component accessors="true" {
   /**
   * Process N1ql Query Options
   * @options.hint The query level options for the N1ql query
+  * @options.hint com.couchbase.client.java.query.QueryOptions instance
   */
-  public any function processN1qlOptions( required any options ) {
-    var n1qlParams = variables.client.newJava( "com.couchbase.client.java.query.N1qlParams" ).build();
+  public any function processN1qlOptions( required any queryOptions, required any options ) {
     // is there adhoc?
     if( structKeyExists( arguments.options, "adhoc" ) ) {
       // make sure the consistency is value
@@ -258,20 +271,38 @@ component accessors="true" {
         );
       }
       // set the adhoc value
-      n1qlParams = n1qlParams.adhoc( javaCast( "boolean", arguments.options.adhoc ) );
+      queryOptions.adhoc( javaCast( "boolean", arguments.options.adhoc ) );
+    }
+    // is there metrics?
+    if( structKeyExists( arguments.options, "metrics" ) ) {
+      // make sure the consistency is value
+      if( !isBoolean( arguments.options.metrics ) ) {
+        throw(
+          message="Invalid metrics Value",
+          detail="Invalid metrics value, must be TRUE or FALSE",
+          type="CouchbaseClient.N1qlParam.metricsException"
+        );
+      }
+      // set the adhoc value
+      queryOptions.metrics( javaCast( "boolean", arguments.options.metrics ) );
+    } else {
+      queryOptions.metrics( true );
     }
     // is there consistency?
     if( structKeyExists( arguments.options, "consistency" ) ) {
       // make sure the consistency is valid
-      if( !listFindNoCase( "NOT_BOUNDED,REQUEST_PLUS,STATEMENT_PLUS", arguments.options.consistency ) ) {
+      if( arguments.options.consistency == 'STATEMENT_PLUS' ) {
+        arguments.options.consistency = 'REQUEST_PLUS';
+      }      
+      if( !listFindNoCase( "NOT_BOUNDED,REQUEST_PLUS", arguments.options.consistency ) ) {
         throw(
           message="Invalid consistency Value",
-          detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS, REQUEST_PLUS",
+          detail="Invalid consistency value, valid values are: NOT_BOUNDED, REQUEST_PLUS",
           type="CouchbaseClient.N1qlParam.ConsistencyException"
         );
       }
       // set the consistency from the enum
-      n1qlParams = n1qlParams.consistency( this.scanConsistency[uCase( arguments.options.consistency )] );
+      queryOptions.scanConsistency( this.QueryScanConsistency[uCase( arguments.options.consistency )] );
     }
     // is there maxParallelism?
     if( structKeyExists( arguments.options, "maxParallelism" ) ) {
@@ -283,7 +314,7 @@ component accessors="true" {
         );
       }
       // set the maxParallelism
-      n1qlParams = n1qlParams.maxParallelism( javaCast( "int", arguments.options.maxParallelism ) );
+      queryOptions.maxParallelism( javaCast( "int", arguments.options.maxParallelism ) );
     }
     // is there a scanWait?
     if( structKeyExists( arguments.options, "scanWait" ) ) {
@@ -295,9 +326,8 @@ component accessors="true" {
         );
       }
       // set the scanWait
-      n1qlParams = n1qlParams.scanWait(
-        javaCast( "long", arguments.options.scanWait ),
-        variables.timeUnit.MILLISECONDS
+      queryOptions.scanWait(
+        Duration.ofMillis( javaCast( "long", arguments.options.scanWait ) )
       );
     }
     // is there a serverSideTimeout?
@@ -310,24 +340,125 @@ component accessors="true" {
         );
       }
       // set the serverSideTimeout
-      n1qlParams = n1qlParams.serverSideTimeout(
-        javaCast( "long", arguments.options.serverSideTimeout ),
-        variables.timeUnit.MILLISECONDS
+      queryOptions.timeout(
+       Duration.ofMillis( javaCast( "long", arguments.options.serverSideTimeout ) )
        );
     }
     // is there a clientContextId?
     if( structKeyExists( arguments.options, "clientContextId" ) ) {
       if( !isSimpleValue( arguments.options.clientContextId ) ) {
         throw(
-          message="Invalid clientContextId Value",
+          message="Invalid clientContextId Value`",
           detail="The value for clientContextId must be a string",
           type="CouchbaseClient.N1qlParam.ClientContextIdException"
         );
       }
       // set the clientContextId
-      n1qlParams = n1qlParams.withContextId( javaCast( "string", arguments.options.clientContextId ) );
+      queryOptions.clientContextId( javaCast( "string", arguments.options.clientContextId ) );
     }
-    return n1qlParams;
+    // is there a scanCap?
+    if( structKeyExists( arguments.options, "scanCap" ) ) {
+      if( !isNumeric( arguments.options.scanCap ) ) {
+        throw(
+          message="Invalid scanCap Value`",
+          detail="The value for scanCap must be a int",
+          type="CouchbaseClient.N1qlParam.scanCapException"
+        );
+      }
+      // set the scanCap
+      queryOptions.scanCap( javaCast( "int", arguments.options.scanCap ) );
+    }
+    // is there a pipelineCap?
+    if( structKeyExists( arguments.options, "pipelineCap" ) ) {
+      if( !isNumeric( arguments.options.pipelineCap ) ) {
+        throw(
+          message="Invalid pipelineCap Value`",
+          detail="The value for pipelineCap must be a int",
+          type="CouchbaseClient.N1qlParam.pipelineCapException"
+        );
+      }
+      // set the pipelineCap
+      queryOptions.pipelineCap( javaCast( "int", arguments.options.pipelineCap ) );
+    }
+    // is there flexIndex?
+    if( structKeyExists( arguments.options, "flexIndex" ) ) {
+      // make sure the consistency is flexIndex
+      if( !isBoolean( arguments.options.flexIndex ) ) {
+        throw(
+          message="Invalid flexIndex Value",
+          detail="Invalid flexIndex value, must be TRUE or FALSE",
+          type="CouchbaseClient.N1qlParam.flexIndexException"
+        );
+      }
+      // set the adhoc value
+      queryOptions.flexIndex( javaCast( "boolean", arguments.options.flexIndex ) );
+    }
+    // is there readonly?
+    if( structKeyExists( arguments.options, "readonly" ) ) {
+      // make sure the consistency is readonly
+      if( !isBoolean( arguments.options.readonly ) ) {
+        throw(
+          message="Invalid readonly Value",
+          detail="Invalid readonly value, must be TRUE or FALSE",
+          type="CouchbaseClient.N1qlParam.readonlyException"
+        );
+      }
+      // set the readonly value
+      queryOptions.readonly( javaCast( "boolean", arguments.options.readonly ) );
+    }
+    // is there a pipelineBatch?
+    if( structKeyExists( arguments.options, "pipelineBatch" ) ) {
+      if( !isNumeric( arguments.options.pipelineBatch ) ) {
+        throw(
+          message="Invalid pipelineBatch Value`",
+          detail="The value for pipelineBatch must be a int",
+          type="CouchbaseClient.N1qlParam.pipelineBatchException"
+        );
+      }
+      // set the pipelineBatch
+      queryOptions.pipelineBatch( javaCast( "int", arguments.options.pipelineBatch ) );
+    }
+    // is there a raw?
+    if( structKeyExists( arguments.options, "raw" ) ) {
+      if( !isStruct( arguments.options.raw ) ) {
+        throw(
+          message="Invalid raw Value`",
+          detail="The value for raw must be a struct",
+          type="CouchbaseClient.N1qlParam.rawBatchException"
+        );
+      }
+      // set the raw
+      for( var key in arguments.options.raw ) {
+        queryOptions.raw( javaCast( "string", key ), arguments.options.raw[ key ] );
+      }
+    }
+    // is there profile?
+    if( structKeyExists( arguments.options, "profile" ) ) {
+      // make sure the profile is valid
+      if( !listFindNoCase( "OFF,PHASES,TIMINGS", arguments.options.profile ) ) {
+        throw(
+          message="Invalid profile Value",
+          detail="Invalid profile value, valid values are: OFF, PHASES, and TIMINGS",
+          type="CouchbaseClient.N1qlParam.profileException"
+        );
+      }
+      // set the consistency from the enum
+      queryOptions.profile( this.QueryProfile[uCase( arguments.options.profile )] );
+    }
+    // is there consistentWith?
+    if( structKeyExists( arguments.options, "consistentWith" ) ) {
+      // make sure the consistentWith is valid
+      if( !arguments.options.consistentWith.getClass().getName() == 'com.couchbase.client.java.kv.MutationState' ) {
+        throw(
+          message="Invalid consistentWith Value",
+          detail="Invalid consistentWith value, must be instance of com.couchbase.client.java.kv.MutationState",
+          type="CouchbaseClient.N1qlParam.consistentWithException"
+        );
+      }
+      // set the consistency from the enum
+      queryOptions.consistentWith( arguments.options.consistentWith );
+    }
+
   }
 
 }

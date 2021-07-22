@@ -374,7 +374,7 @@ component serializable="false" accessors="true"{
   */
   public function execute( numeric timeout ) {
 
-    if( !len( mutateInSpecs ) ) {
+    if( !mutateInSpecs.len() ) {
       throw( 'No mutate specs specified.  Please call methods on this object first to describe the mutation(s) to perform.' )
     }
     if( !isNull( arguments.timeout ) ) {

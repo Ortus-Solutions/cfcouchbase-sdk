@@ -12,7 +12,7 @@
 			couchbaseSettings = {
 				servers='http://127.0.0.1:8091',
 				bucketname='beer-sample',
-        username="beer-sample",
+        username="cfcouchbase",
         password="password"
 			}
 		};

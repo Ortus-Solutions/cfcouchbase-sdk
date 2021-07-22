@@ -250,7 +250,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "Greensboro",
               "state": "NC",
-              "zip": "27409",
+              "zip": "27409"
             } )
             .execute();
           var doc = couchbase.get( id=key );
@@ -292,7 +292,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "Greensboro",
               "state": "NC",
-              "zip": "27409",
+              "zip": "27409"
             } )
             .execute();
           var mutate = couchbase.mutateIn( key );
@@ -302,7 +302,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "Salina",
               "state": "KS",
-              "zip": "67401",
+              "zip": "67401"
             } )
             .execute();
           var doc = couchbase.get( id=key );
@@ -327,7 +327,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "Houston",
               "state": "TX",
-              "zip": "87834",
+              "zip": "87834"
             } )
             .execute();
           var doc = couchbase.get( id=key );
@@ -352,7 +352,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "Houston",
               "state": "TX",
-              "zip": "87834",
+              "zip": "87834"
             } )
             .execute();
           var mutate = couchbase.mutateIn( key );
@@ -362,7 +362,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "San Francisco",
               "state": "CA",
-              "zip": "09821",
+              "zip": "09821"
             } )
             .execute();
           var doc = couchbase.get( id=key );
@@ -387,7 +387,7 @@ component extends="testbox.system.BaseSpec"{
               "address_2": "",
               "city": "San Francisco",
               "state": "CA",
-              "zip": "09821",
+              "zip": "09821"
             } )
             .execute();
           var mutate = couchbase.mutateIn( key );

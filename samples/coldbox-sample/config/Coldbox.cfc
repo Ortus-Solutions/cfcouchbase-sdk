@@ -23,7 +23,7 @@
 			//Error/Exception Handling
 			exceptionHandler		= "",
 			onInvalidEvent			= "",
-			//customErrorTemplate		= "/coldbox/system/includes/BugReport.cfm",
+			customErrorTemplate		= "/coldbox/system/exceptions/Whoops.cfm",
 
 			//Application Aspects
 			handlerCaching 			= false,
@@ -47,9 +47,9 @@
 			servers		= "http://127.0.0.1:8091",
 			bucketname	= "beer-sample",
 			viewTimeout	= "1000",
-      // this is only needed for Couchbase Server 5.0+
-      username="beer-sample",
-      password="password"
+			// this is only needed for Couchbase Server 5.0+
+			username="cfcouchbase",
+			password="password"
 		};
 
 	}

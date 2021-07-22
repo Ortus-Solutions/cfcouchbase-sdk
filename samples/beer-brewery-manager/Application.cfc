@@ -16,11 +16,11 @@ component{
 	// application start
 	public boolean function onApplicationStart(){
 		application.couchbase = new cfcouchbase.CouchbaseClient( {
-      bucketName="beer-sample",
-      // this is only needed for Couchbase Server 5.0+
-      username="beer-sample",
-      password="password"
-    } );
+			bucketName="beer-sample",
+			// this is only needed for Couchbase Server 5.0+
+			username="cfcouchbase",
+			password="password"
+		} );
 
 		// Specify the views the applications needs here.  They will be created/updated
 		// when the client is initialized if they don't already exist.

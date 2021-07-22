@@ -209,7 +209,6 @@ component serializable="false" accessors="true" {
         options.transcoder( variables.RawBinaryTranscoder.INSTANCE );
         result.class = ByteArrayClass;
         break;
-      break;
       case "string":
         options.transcoder( variables.RawStringTranscoder.INSTANCE );
         result.value = toString( value );
@@ -516,9 +515,9 @@ component serializable="false" accessors="true" {
       results[id] = this.upsert(
         id=id,
         value=arguments.data[id],
-        timeout=arguments.timeout,
-        persistTo=arguments.persistTo,
-        replicateTo=arguments.replicateTo
+        timeout=arguments.timeout?:javaCast('null',''),
+        persistTo=arguments.persistTo?:javaCast('null',''),
+        replicateTo=arguments.replicateTo?:javaCast('null','')
       );
     }
     return results;
@@ -701,6 +700,10 @@ component serializable="false" accessors="true" {
     any inflateTo="",
     string dataType="json"
   ) {
+    if( !len( arguments.id ) ) {
+      return;
+    }
+
     var options = GetOptions.getOptions();
     var transcoderResult = setTranscoder( options=options, dataType=dataType );
     
@@ -774,7 +777,7 @@ component serializable="false" accessors="true" {
     
     var thisExpiryDuration = '';
     var fakeOptions = {
-      expiry : (e)=>thisExpiryDuration=e
+      expiry : (e)=>{thisExpiryDuration=e}
     };
     defaultTimeout( arguments, fakeOptions );
     
@@ -1317,7 +1320,7 @@ component serializable="false" accessors="true" {
     
     var thisExpiryDuration = '';
     var fakeOptions = {
-      expiry : (e)=>thisExpiryDuration=e
+      expiry : (e)=>{thisExpiryDuration=e}
     };
     defaultTimeout( arguments, fakeOptions );
     
@@ -1789,7 +1792,7 @@ component serializable="false" accessors="true" {
     for( var row in results.rows() ) {
       var IDOpt = row.id();
       // Keys don't have to be a string, they can come back as an array.
-      var keyOpt = row.keyAs( ObjectClass );
+      var keyOpt = row.keyAs( ByteArrayClass );
       var valueOpt = row.valueAs( StringClass );
 
 
@@ -1818,7 +1821,7 @@ component serializable="false" accessors="true" {
 
       // Add key if not null
       if( !keyOpt.isEmpty() ) {
-        document['key'] = keyOpt.get();
+        document['key'] = toString( keyOpt.get() );
       }
 
       // ID is wrapped in an Optional
@@ -1827,7 +1830,13 @@ component serializable="false" accessors="true" {
       }
       // Did we get a document or none?
       if( !IDOpt.isEmpty() && structKeyExists( arguments.options, "includeDocs" ) && arguments.options.includeDocs ) {
-        document['document'] = this.get( document.id, deserialize );
+        document['document'] = deserializeData(
+          document.id,
+          this.get( document.id, deserialize ),
+          arguments.inflateTo,
+          arguments.deserialize,
+          arguments.deserializeOptions
+        );
       }
 
       // Do we have a transformer?
@@ -1975,8 +1984,8 @@ component serializable="false" accessors="true" {
       var QueryResult = variables.couchbaseCluster.query( statement, n1qlQueryOptions );
     } catch( any e ) {
       // We only care about CouchbaseExceptions
-      if( e.type != 'com.couchbase.client.core.error.CouchbaseException' ) {
-        retrow;
+      if( !lCase( e.type ).startsWith( 'com.couchbase' ) ) {        
+        rethrow;
       }
       // Lucee and Adobe differ in how to access underlying java exception class
 			if( server.keyExists( 'lucee' ) ) {
@@ -2818,10 +2827,9 @@ component serializable="false" accessors="true" {
     if( len( arguments.config.propertyFile ) ) {
       
       var fis = CreateObject( 'java', 'java.io.FileInputStream' ).init( arguments.config.propertyFile );
-      var BOMfis = CreateObject( 'java', 'org.apache.commons.io.input.BOMInputStream' ).init( fis );
       var propertyFile = newJava( "java.util.Properties" ).init();
-      propertyFile.load( BOMfis );
-      BOMfis.close();
+      propertyFile.load( fis );
+      fis.close();
       var SystemPropertyLoader = newJava( "com.couchbase.client.core.env.SystemPropertyPropertyLoader" )
         .init( propertyFile ); 
         

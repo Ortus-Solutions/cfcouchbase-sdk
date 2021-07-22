@@ -129,7 +129,7 @@ component serializable="false" accessors="true"{
   * @return LookupInBuilder or null if document not found
   */
   public function execute() {
-    if( !len( LookupInSpecs ) ) {
+    if( !LookupInSpecs.len() ) {
       throw( 'No lookup specs specified.  Please call get(), exists(), or count() on this object first with a path or array of paths.' )
     }
     try {

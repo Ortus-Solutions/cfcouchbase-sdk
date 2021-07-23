@@ -162,7 +162,7 @@
 
 
         <!-- Zip Distro -->
-        <zip destfile="${dir.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}">
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-${cfcouchbase.version.full}.zip" basedir="${dir.build}">
         	<exclude name="version.json" />
         </zip>
     </target>

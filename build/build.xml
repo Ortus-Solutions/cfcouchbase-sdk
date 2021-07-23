@@ -83,6 +83,7 @@
 
         <!-- Build Label -->
         <property name="build.label" value="cfcouchbase-${cfcouchbase.version.full}-${start.DSTAMP}${start.TSTAMP}"/>
+        <property name="dir.exports" value="${dir.artifacts}/${cfcouchbase.slug}/${cfcouchbase.version.full}"/>
 
         <!-- Get Build Dependencies -->
         <antcall target="getDependencies" />

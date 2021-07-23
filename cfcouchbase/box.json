@@ -4,7 +4,7 @@
     "author":"Ortus Solutions <info@ortussolutions.com>",
     "slug":"cfcouchbase",
     "type":"modules",
-    "location":"http://downloads.ortussolutions.com/ortussolutions/cfcouchbase/@build.version@/cfcouchbase-@build.version@.zip",
+    "location":"http://downloads.ortussolutions.com/ortussolutions/cfcouchbase/@build.version@+@build.number@/cfcouchbase-@build.version@+@build.number@.zip",
     "directory":"modules",
     "keywords":"nosql,couchbase,sdk",
     "homepage":"https://www.ortussolutions.com/products/cfcouchbase",

@@ -65,11 +65,24 @@
 				</propertyfile>
 
 				<property file="build/build.number"/>
+
 			</then>
 		</if>
 
+
+		<!-- Determine snapshot vs master artifact -->
+		<if>
+			<equals arg1="${build.branch}" arg2="development" />
+			<then>
+    			<property name="cfcouchbase.version.full" value="${cfcouchbase.version}-snapshot"/>
+			</then>
+			<else>
+    			<property name="cfcouchbase.version.full" value="${cfcouchbase.version}+${build.number}"/>
+			</else>
+		</if>
+
         <!-- Build Label -->
-        <property name="build.label" value="cfcouchbase-${cfcouchbase.version}+${build.number}-${start.DSTAMP}${start.TSTAMP}"/>
+        <property name="build.label" value="cfcouchbase-${cfcouchbase.version.full}-${start.DSTAMP}${start.TSTAMP}"/>
 
         <!-- Get Build Dependencies -->
         <antcall target="getDependencies" />
@@ -116,7 +129,7 @@
     <target name="build.sdk" description="Build the SDK distribution" depends="init">
         <!-- Copy build ID -->
     	<concat destfile="${dir.build}/${build.label}">Built on ${start.TODAY}</concat>
-    	<concat destfile="${dir.build}/version.json">{ "version" : "${cfcouchbase.version}" }</concat>
+    	<concat destfile="${dir.build}/version.json">{ "version" : "${cfcouchbase.version.full}" }</concat>
 
         <!-- Copy Src -->
         <copy todir="${dir.build}" encoding="UTF-8">
@@ -136,28 +149,17 @@
 
         <!-- Replace Version + Build Numbers -->
         <!-- Semantic Versioning for Unstable Builds -->
-        <echo>Updating placeholders for version ${cfcouchbase.version}, branch ${build.branch}, build ${build.number}</echo>
+        <echo>Updating placeholders for version ${cfcouchbase.version.full}, branch ${build.branch}, build ${build.number}</echo>
 
-		<!-- Replace Version + Build Numbers -->
+		<replaceregexp match='@build\.version@\+@build\.number@' replace="${cfcouchbase.version.full}" flags="ig" byline="true" encoding="UTF-8">
+			<fileset dir="${dir.build}" />
+		</replaceregexp>
+
+		<!-- Replace any remaining placeholders for only build number -->
 		<replaceregexp match='@build\.version@' replace="${cfcouchbase.version}" flags="ig" byline="true" encoding="UTF-8">
 			<fileset dir="${dir.build}" />
 		</replaceregexp>
 
-		<!-- Determine snapshot vs master artifact -->
-		<if>
-			<equals arg1="${build.branch}" arg2="development" />
-			<then>
-				<!-- Update to version-snapshot -->
-				<replaceregexp match='\+@build.number@' replace="-snapshot" flags="ig" byline="true" encoding="UTF-8">
-				  <fileset dir="${dir.build}" />
-				</replaceregexp>
-			</then>
-			<else>
-				<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
-				  <fileset dir="${dir.build}" />
-				</replaceregexp>
-			</else>
-		</if>
 
         <!-- Zip Distro -->
         <zip destfile="${dir.exports}/${cfcouchbase.slug}-${cfcouchbase.version}.zip" basedir="${dir.build}">
@@ -184,14 +186,14 @@
                   artifactID="${cfcouchbase.slug}"
                   buildID="${build.number}"
                   groupID="${groupID}"
-                  latest="${cfcouchbase.version}"
+                  latest="${cfcouchbase.version.full}"
                   classifiers="apidocs,samples"/>
 	</target>
 
 	<!-- Build Samples -->
 	<target name="build.samples" description="Build the samples" depends="init">
 		<!-- Zip Samples -->
-        <zip destfile="${dir.exports}/${cfcouchbase.slug}-samples-${cfcouchbase.version}.zip" basedir="samples"></zip>
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-samples-${cfcouchbase.version.full}.zip" basedir="samples"></zip>
 	</target>
 
 	<!-- Build API Docs -->
@@ -209,7 +211,7 @@
         <sleep seconds="5"/>
         <!-- Get the apidocs now -->
         <get dest="${dir.build}/docbox.html"
-             src="${url.apidocs}?version=${cfcouchbase.version}&amp;path=${dir.api}"
+             src="${url.apidocs}?version=${cfcouchbase.version.full}&amp;path=${dir.api}"
              verbose="true"
              retries="5"/>
         <!-- stop server -->
@@ -218,7 +220,7 @@
         </exec>
         <delete file="${dir.build}/docbox.html" />
         <!-- Zip API Docs -->
-        <zip destfile="${dir.exports}/${cfcouchbase.slug}-apidocs-${cfcouchbase.version}.zip" basedir="${dir.api}"></zip>
+        <zip destfile="${dir.exports}/${cfcouchbase.slug}-apidocs-${cfcouchbase.version.full}.zip" basedir="${dir.api}"></zip>
 	</target>
 
     <!-- Get Dependencies -->

@@ -24,3 +24,5 @@ apidocs/CFCouchbase-APIDocs
 apidocs/docbox/*
 node_modules
 /samples/coldbox-sample/modules
+/samples/cachebox-standalone-provider/modules
+samples/cachebox-standalone-provider/cachebox

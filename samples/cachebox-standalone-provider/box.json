@@ -1,0 +1,10 @@
+{
+    "dependencies":{
+        "cachebox":"^6.5.2+37",
+        "couchbase-cachebox-provider":"3.1.0-snapshot"
+    },
+    "installPaths":{
+        "cachebox":"cachebox/",
+        "couchbase-cachebox-provider":"modules/couchbase-cachebox-provider/"
+    }
+}

@@ -52,6 +52,34 @@
 			password="password"
 		};
 
+		moduleSettings = {
+
+			// Provider Configuration Settings
+			couchbaseCacheBoxProvider = {
+				// Register all the custom named caches you like here using CacheBox Syntax
+				// https://cachebox.ortusbooks.com/content/cachebox_configuration/caches.html
+				caches : { 
+					"couchBase" : {
+						provider 	: "couchbaseCacheBoxProvider.models.CouchbaseProvider",
+						properties 	: {
+							// The default timeout for cache entries
+							objectDefaultTimeout    : 120,
+							// Ignores timeouts on Couchbase operations due to async natures
+							ignoreCouchbaseTimeouts : true,
+							// The bucketname in Couchbase to store cache entries under, the default value is 'default'
+							bucket                  : "default",
+							// The list of servers in the Couchbase cluster
+							servers					: "127.0.0.1:8091",
+							// The username for the Couchbase bucket, if any
+							username				: "cfcouchbase",
+							// The password for the Couchbase bucket, if any
+							password				: "password"
+						}
+					}
+				}
+			}
+		};
+
 	}
 
 }

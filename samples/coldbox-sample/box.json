@@ -43,12 +43,14 @@
     "contributors":[],
     "dependencies":{
         "coldbox":"stable",
-        "cfcouchbase":"stable"
+        "cfcouchbase":"3.0.0-snapshot",
+        "couchbase-cachebox-provider":"3.1.0-snapshot"
     },
     "devDependencies":{},
     "installPaths":{
         "coldbox":"coldbox/",
-        "cfcouchbase":"modules/cfcouchbase/"
+        "cfcouchbase":"modules/cfcouchbase/",
+        "couchbase-cachebox-provider":"modules/couchbase-cachebox-provider/"
     },
     "ignore":[],
     "testbox":{

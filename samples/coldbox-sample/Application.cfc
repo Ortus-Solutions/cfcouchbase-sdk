@@ -10,6 +10,7 @@ component{
 	this.sessionManagement = true;
 	this.sessionTimeout = createTimeSpan(0,0,30,0);
 	this.setClientCookies = true;
+	this.bufferOutput=true;
 
 	// Mappings Imports
 	import coldbox.system.*;

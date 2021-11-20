@@ -61,7 +61,9 @@ component{
 	*/
 	function onUnload(){
 		// safely destroy connection
-		wirebox.getInstance( "CouchbaseClient@cfcouchbase" ).shutdown();
+		if( wirebox.getScope( 'singleton' ).getSingletons().containsKey( "couchbaseclient@cfcouchbase" ) ) {
+			wirebox.getInstance( "CouchbaseClient@cfcouchbase" ).shutdown();
+		}
 	}
 
 	/**

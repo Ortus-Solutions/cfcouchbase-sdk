@@ -1988,14 +1988,14 @@ component serializable="false" accessors="true" {
         rethrow;
       }
       // Lucee and Adobe differ in how to access underlying java exception class
-			if( server.keyExists( 'lucee' ) ) {
-        if( e.getClass().getName() != 'lucee.runtime.exp.PageException' ) {
-          retrow;
-        }
-				var root = e.getPageException().getCause() ?: e.getPageException().getException();
-			} else {
-  			var root = e.cause ?: e;
-      }
+		if( server.keyExists( 'lucee' ) ) {
+	        if( e.getClass().getName() != 'lucee.runtime.exp.PageException' ) {
+	          retrow;
+	        }
+			var root = e.getPageException().getCause() ?: e.getPageException().getException();
+		} else {
+			var root = e.cause ?: e;
+  		}
 
       var type = root.getClass().getName();
       var message = root.getMessage();

@@ -723,7 +723,7 @@ component serializable="false" accessors="true" {
     }
 
     return {
-      'expiry' = result.expiry().isEmpty() ? "" : result.expiry().get(),
+      'expiry' = !result.expiry().isPresent() ? "" : result.expiry().get(),
       'cas' = result.cas(),
       'value' = deserializeData(
         arguments.id,
@@ -800,7 +800,7 @@ component serializable="false" accessors="true" {
     }
 
     return {
-      'expiry' = result.expiryTime().isEmpty() ? "" : result.expiryTime().get().getEpochSecond(),
+      'expiry' = !result.expiryTime().isPresent() ? "" : result.expiryTime().get().getEpochSecond(),
       'cas' = result.cas(),
       'value' = deserializeData(
         arguments.id,
@@ -894,7 +894,7 @@ component serializable="false" accessors="true" {
     }
 
     return {
-      'expiry' = result.expiryTime().isEmpty() ? "" : result.expiryTime().get().getEpochSecond(),
+      'expiry' = !result.expiryTime().isPresent() ? "" : result.expiryTime().get().getEpochSecond(),
       'cas' = result.cas(),
       'value' = deserializeData(
         arguments.id,
@@ -967,7 +967,7 @@ component serializable="false" accessors="true" {
     }
 
     return {
-      'expiry' = result.expiry().isEmpty() ? "" : result.expiry().get(),
+      'expiry' = !result.expiry().isPresent() ? "" : result.expiry().get(),
       'cas' = result.cas(),
       'isReplica' = result.isReplica(),
       'value' = deserializeData(
@@ -1011,7 +1011,7 @@ component serializable="false" accessors="true" {
 
     return arrayMap( result, function(result){
       return {
-        'expiry' = result.expiry().isEmpty() ? "" : result.expiry().get(),
+        'expiry' = !result.expiry().isPresent() ? "" : result.expiry().get(),
         'cas' = result.cas(),
         'isReplica' = result.isReplica(),
         'value' = deserializeData(
@@ -1809,7 +1809,7 @@ component serializable="false" accessors="true" {
         'value' = ""
       };
       // Add value if not null
-      if( !valueOpt.isEmpty() ) {
+      if( valueOpt.isPresent() ) {
         document['value'] = deserializeData(
           "",
           valueOpt.get(),
@@ -1820,16 +1820,16 @@ component serializable="false" accessors="true" {
       }
 
       // Add key if not null
-      if( !keyOpt.isEmpty() ) {
+      if( keyOpt.isPresent() ) {
         document['key'] = toString( keyOpt.get() );
       }
 
       // ID is wrapped in an Optional
-      if( !IDOpt.isEmpty() ) {
+      if( IDOpt.isPresent() ) {
         document['id'] = IDOpt.get();
       }
       // Did we get a document or none?
-      if( !IDOpt.isEmpty() && structKeyExists( arguments.options, "includeDocs" ) && arguments.options.includeDocs ) {
+      if( IDOpt.isPresent() && structKeyExists( arguments.options, "includeDocs" ) && arguments.options.includeDocs ) {
         document['document'] = deserializeData(
           document.id,
           this.get( document.id, deserialize ),
@@ -2035,7 +2035,7 @@ component serializable="false" accessors="true" {
     cfresults[ 'warnings' ] = arrayAppend( [], QueryResult.metadata().warnings(), true );
     cfresults[ 'success' ] = arrayLen( cfresults.errors ) == 0;
 
-    if( !QueryResult.metadata().metrics().isEmpty() ){
+    if( QueryResult.metadata().metrics().isPresent() ){
       var metrics = QueryResult.metadata().metrics().get();
       cfresults.metrics[ 'executionTime' ] = metrics.executionTime().toMillis() & ' ms';
       cfresults.metrics[ 'errorCount' ] = metrics.errorCount();
@@ -2328,7 +2328,7 @@ component serializable="false" accessors="true" {
           return 0;
         }
         if( arguments.keyExists( 'reduceFunction' ) ) {
-          if( view.reduce().isEmpty() || arguments.reduceFunction != view.reduce().get() ) {
+          if( !view.reduce().isPresent() || arguments.reduceFunction != view.reduce().get() ) {
             return 0;
           } 
         }

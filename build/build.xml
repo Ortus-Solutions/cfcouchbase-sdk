@@ -6,7 +6,7 @@
 
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
     <property name="groupID"                value="ortussolutions" />
-    <property name="cfcouchbase.version"    value="3.0.1"/>
+    <property name="cfcouchbase.version"    value="3.0.2"/>
     <property name="cfcouchbase.slug"       value="cfcouchbase"/>
 
 	<!-- Build Labels -->
